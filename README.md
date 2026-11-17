@@ -12,6 +12,10 @@
 </p>
 
 <p align="center">
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/mrsoundmind/bolke?label=Download&style=for-the-badge&color=2F6BFF" alt="Download Bolke"></a>
+</p>
+
+<p align="center">
   <a href="#install-on-mac"><b>Mac</b></a> &nbsp;·&nbsp;
   <a href="#install-on-windows"><b>Windows</b></a> &nbsp;·&nbsp;
   <a href="#install-on-linux"><b>Linux</b></a> &nbsp;·&nbsp;
@@ -98,19 +102,17 @@ Everything runs on your own computer. Your voice never leaves it: no account, no
 
 ## Install on Mac
 
-1. Sign in to GitHub and open the [macOS Build](../../actions/workflows/macos-build.yml) page.
-2. Click the newest run that has a green tick.
-3. Scroll down to **Artifacts** and download the one for your Mac:
-   - **Apple Silicon (M1, M2, M3, M4 and newer):** `bolke-aarch64-apple-darwin`
-   - **Intel:** `bolke-x86_64-apple-darwin`
+1. Download the one for your Mac:
+   - **Apple Silicon (M1, M2, M3, M4 and newer):** [Bolke-mac-apple-silicon.dmg](https://github.com/mrsoundmind/bolke/releases/latest/download/Bolke-mac-apple-silicon.dmg)
+   - **Intel:** [Bolke-mac-intel.dmg](https://github.com/mrsoundmind/bolke/releases/latest/download/Bolke-mac-intel.dmg)
 
    Not sure which you have? Click the Apple menu → **About This Mac** and look at **Chip** (Apple M…) or **Processor** (Intel).
 
-4. Double-click the downloaded zip, then double-click the **`.dmg`** file inside.
-5. Drag **Bolke** into the **Applications** folder.
-6. Open **Bolke** from Applications. Because Bolke isn't notarised by Apple yet, macOS says it can't check the app. Click **Done**, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to Bolke. You only need to do this once.
-7. Bolke asks for two permissions: **Microphone** (to hear you) and **Accessibility** (to type the text and catch your shortcut). Allow both.
-8. The first time, Bolke downloads a speech model. After that it works offline.
+2. Double-click the downloaded **`.dmg`** file.
+3. Drag **Bolke** into the **Applications** folder.
+4. Open **Bolke** from Applications. Because Bolke isn't notarised by Apple yet, macOS says it can't check the app. Click **Done**, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to Bolke. You only need to do this once.
+5. Bolke asks for two permissions: **Microphone** (to hear you) and **Accessibility** (to type the text and catch your shortcut). Allow both.
+6. The first time, Bolke downloads a speech model. After that it works offline.
 
 To dictate, hold **⌥ Space** (Option + Space), speak, and let go.
 
@@ -118,14 +120,10 @@ To uninstall, quit Bolke from the menu bar and drag it from Applications to the 
 
 ## Install on Windows
 
-1. Sign in to GitHub and open the [Windows Build](../../actions/workflows/windows-build.yml) page.
-2. Click the newest run that has a green tick.
-3. Scroll down to **Artifacts** and click **bolke-x86_64-pc-windows-msvc** to download it.
-4. Open the downloaded zip and drag its contents out to a folder.
-5. Double-click the installer that ends in **`-setup.exe`**. (The `.msi` file is the same app, for computers managed by an office or school.)
-6. Windows may say **"Windows protected your PC"**. This is because Bolke isn't code-signed yet. Click **More info**, then **Run anyway**.
-7. Follow the installer, then open **Bolke** from the Start menu.
-8. The first time, Bolke asks for microphone access and downloads a speech model. After that it works offline.
+1. Download [Bolke-windows-setup.exe](https://github.com/mrsoundmind/bolke/releases/latest/download/Bolke-windows-setup.exe) and double-click it. ([Bolke-windows.msi](https://github.com/mrsoundmind/bolke/releases/latest/download/Bolke-windows.msi) is the same app, for computers managed by an office or school.)
+2. Windows may say **"Windows protected your PC"**. This is because Bolke isn't code-signed yet. Click **More info**, then **Run anyway**.
+3. Follow the installer, then open **Bolke** from the Start menu.
+4. The first time, Bolke asks for microphone access and downloads a speech model. After that it works offline.
 
 To dictate, hold **Ctrl + Space**, speak, and let go. You can change the shortcut in Bolke's settings. Your words are typed where your cursor is.
 
@@ -137,25 +135,23 @@ Tested on clean installs of Ubuntu 22.04 and 24.04, Debian 12, Fedora and openSU
 
 **1. Download**
 
-1. Sign in to GitHub and open the [Linux Build](../../actions/workflows/linux-build.yml) page.
-2. Click the newest run that has a green tick.
-3. Scroll down to **Artifacts** and download the one for your system:
-   - **Ubuntu, Debian, Linux Mint, Pop!\_OS, Zorin, elementary:** `bolke-ubuntu-22.04-x86_64-unknown-linux-gnu` (has a `.deb` file)
-   - **Fedora, openSUSE:** `bolke-ubuntu-24.04-x86_64-unknown-linux-gnu` (use the `.rpm` file)
-   - **Bazzite, Fedora Silverblue, SteamOS or anything else:** `bolke-ubuntu-24.04-x86_64-unknown-linux-gnu` (use the `.AppImage` file)
-4. Unzip the download. Open the folder you unzipped, right-click an empty space and choose **Open in Terminal**.
+1. Download the one for your system:
+   - **Ubuntu, Debian, Linux Mint, Pop!\_OS, Zorin, elementary:** [Bolke-linux.deb](https://github.com/mrsoundmind/bolke/releases/latest/download/Bolke-linux.deb)
+   - **Fedora, openSUSE:** [Bolke-linux.rpm](https://github.com/mrsoundmind/bolke/releases/latest/download/Bolke-linux.rpm)
+   - **Bazzite, Fedora Silverblue, SteamOS or anything else:** [Bolke-linux.AppImage](https://github.com/mrsoundmind/bolke/releases/latest/download/Bolke-linux.AppImage)
+2. Open your **Downloads** folder, right-click an empty space and choose **Open in Terminal**.
 
 **2. Install: type one command in that Terminal and press Enter**
 
 > [!IMPORTANT]
 > Don't double-click the `.deb` or `.rpm` file. That opens the software store, which on some systems fails or asks you to restart without installing. The command below installs Bolke and everything it needs in one go. It asks for your password; nothing shows while you type it, which is normal.
 
-| Your system                                | Command                                                             |
-| ------------------------------------------ | ------------------------------------------------------------------- |
-| Ubuntu, Debian, Mint, Pop!\_OS and similar | `sudo apt install ./deb/Bolke_*.deb`                                |
-| Fedora                                     | `sudo dnf install ./rpm/Bolke-*.rpm`                                |
-| openSUSE                                   | `sudo zypper install --allow-unsigned-rpm ./rpm/Bolke-*.rpm`        |
-| AppImage (any system)                      | `chmod +x appimage/Bolke_*.AppImage && ./appimage/Bolke_*.AppImage` |
+| Your system                                | Command                                                      |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| Ubuntu, Debian, Mint, Pop!\_OS and similar | `sudo apt install ./Bolke-linux.deb`                         |
+| Fedora                                     | `sudo dnf install ./Bolke-linux.rpm`                         |
+| openSUSE                                   | `sudo zypper install --allow-unsigned-rpm ./Bolke-linux.rpm` |
+| AppImage (any system)                      | `chmod +x Bolke-linux.AppImage && ./Bolke-linux.AppImage`    |
 
 On **Ubuntu 24.04**, an AppImage also needs `sudo apt install libfuse2t64` once. The `.deb` doesn't.
 
