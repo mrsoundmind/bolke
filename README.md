@@ -5,13 +5,14 @@
 <p align="center">
   <a href="../../actions/workflows/windows-build.yml"><img src="https://img.shields.io/github/actions/workflow/status/mrsoundmind/bolke/windows-build.yml?branch=main&label=Windows&logo=windows&style=flat-square&color=2F6BFF" alt="Windows build"></a>
   <a href="../../actions/workflows/linux-build.yml"><img src="https://img.shields.io/github/actions/workflow/status/mrsoundmind/bolke/linux-build.yml?branch=main&label=Linux&logo=linux&logoColor=white&style=flat-square&color=2F6BFF" alt="Linux build"></a>
-  <img src="https://img.shields.io/badge/macOS-in%20development-9AA7C7?style=flat-square&logo=apple" alt="macOS: in development">
+  <a href="../../actions/workflows/macos-build.yml"><img src="https://img.shields.io/github/actions/workflow/status/mrsoundmind/bolke/macos-build.yml?branch=main&label=macOS&logo=apple&style=flat-square&color=2F6BFF" alt="macOS build"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2F6BFF?style=flat-square" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/runs-100%25%20on--device-1E46C8?style=flat-square" alt="Runs 100% on-device">
   <a href="https://github.com/mrsoundmind"><img src="https://img.shields.io/badge/created%20by-Shashank%20Rai%20(Mr.%20Soundmind)-0E142C?style=flat-square&logo=github" alt="Created by Shashank Rai (Mr. Soundmind)"></a>
 </p>
 
 <p align="center">
+  <a href="#install-on-mac"><b>Mac</b></a> &nbsp;·&nbsp;
   <a href="#install-on-windows"><b>Windows</b></a> &nbsp;·&nbsp;
   <a href="#install-on-linux"><b>Linux</b></a> &nbsp;·&nbsp;
   <a href="#features"><b>Features</b></a> &nbsp;·&nbsp;
@@ -89,11 +90,31 @@ Everything runs on your own computer. Your voice never leaves it: no account, no
 
 ## Platforms
 
-| Platform    | Status                                                                      |
-| ----------- | --------------------------------------------------------------------------- |
-| **Windows** | ✅ Ready to try (Windows 10 and 11, 64-bit). [Install](#install-on-windows) |
-| **Linux**   | ✅ Ready to try (64-bit). [Install](#install-on-linux)                      |
-| **macOS**   | 🛠️ In development                                                           |
+| Platform    | Status                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------- |
+| **Windows** | ✅ Ready to try (Windows 10 and 11, 64-bit). [Install](#install-on-windows)                 |
+| **Linux**   | ✅ Ready to try (64-bit). [Install](#install-on-linux)                                      |
+| **macOS**   | ✅ Ready to try (macOS 10.15 or newer; Apple Silicon and Intel). [Install](#install-on-mac) |
+
+## Install on Mac
+
+1. Sign in to GitHub and open the [macOS Build](../../actions/workflows/macos-build.yml) page.
+2. Click the newest run that has a green tick.
+3. Scroll down to **Artifacts** and download the one for your Mac:
+   - **Apple Silicon (M1, M2, M3, M4 and newer):** `bolke-aarch64-apple-darwin`
+   - **Intel:** `bolke-x86_64-apple-darwin`
+
+   Not sure which you have? Click the Apple menu → **About This Mac** and look at **Chip** (Apple M…) or **Processor** (Intel).
+
+4. Double-click the downloaded zip, then double-click the **`.dmg`** file inside.
+5. Drag **Bolke** into the **Applications** folder.
+6. Open **Bolke** from Applications. Because Bolke isn't notarised by Apple yet, macOS says it can't check the app. Click **Done**, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to Bolke. You only need to do this once.
+7. Bolke asks for two permissions: **Microphone** (to hear you) and **Accessibility** (to type the text and catch your shortcut). Allow both.
+8. The first time, Bolke downloads a speech model. After that it works offline.
+
+To dictate, hold **⌥ Space** (Option + Space), speak, and let go.
+
+To uninstall, quit Bolke from the menu bar and drag it from Applications to the Bin.
 
 ## Install on Windows
 
