@@ -1,5 +1,5 @@
 {
-  "_comment": "The models Bolke offers, copied into Bolke's own Hugging Face account by scripts/copy_models.py. Models with licences that limit re-sharing are left out.",
+  "_comment": "The models Bolke offers, copied into Bolke's own Hugging Face account (huggingface.co/mrsoundmind). Models with licences that limit re-sharing are left out.",
   "models": [
     "parakeet-unified-en-0.6b",
     "canary-180m-flash",

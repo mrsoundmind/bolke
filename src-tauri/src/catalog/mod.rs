@@ -29,11 +29,12 @@ use crate::managers::model_capabilities::{CapabilityProbe, Compatibility};
 /// breaking change; additive fields are ignored.
 const SCHEMA: u32 = 2;
 
-/// Base URLs tried in order when the Hugging Face download fails. The full
+/// Base URLs tried in order when the Hugging Face download fails. Empty until
+/// Bolke has its own mirror. The full
 /// file URL is `{mirror}/{repo_id}/{revision}/{filename}` — the same three
 /// values that form the HF resolve URL, so a mirror is a plain static host.
 /// `scripts/mirror_models.py` populates it from this catalog.
-const MIRRORS: &[&str] = &["https://blob.handy.computer"];
+const MIRRORS: &[&str] = &[];
 
 /// Bolke's list order and onboarding set, keyed by catalog id. Kept from the
 /// previous generator until onboarding moves to the package's recommendations.
@@ -41,7 +42,6 @@ const MIRRORS: &[&str] = &["https://blob.handy.computer"];
 /// higher); recommended is the small badged onboarding subset.
 const BOLKE_RANKING: &[(&str, u32, bool)] = &[
     ("parakeet-unified-en-0.6b", 1, true),
-    ("nemotron-3.5-asr-streaming-0.6b", 2, true),
     ("canary-180m-flash", 3, true),
     ("cohere-transcribe-03-2026", 4, true),
     ("whisper-medium", 5, true),
@@ -49,7 +49,6 @@ const BOLKE_RANKING: &[(&str, u32, bool)] = &[
     ("parakeet-tdt-0.6b-v3", 7, false),
     ("parakeet-tdt-0.6b-v2", 8, false),
     ("Qwen3-ASR-0.6B", 9, false),
-    ("Fun-ASR-MLT-Nano-2512", 10, false),
 ];
 
 #[derive(Deserialize)]
@@ -79,7 +78,7 @@ struct CatalogModel {
     name: String,
     /// Editorial copy; empty for models that aren't curated.
     description: String,
-    /// HF repo id, e.g. `handy-computer/whisper-small-gguf`.
+    /// HF repo id, e.g. `mrsoundmind/whisper-small-gguf`.
     repository: String,
     /// Commit the files and hashes are pinned to. Both HF acquisition and
     /// mirror keys use it, so downloaded bytes provably match the hashes.
@@ -572,10 +571,16 @@ mod tests {
     #[test]
     fn every_offered_model_has_mirror_fallbacks_with_hashes() {
         // The mirror fallback is the safety net for HF outages and blocked
-        // networks; an offered entry without one silently loses that net.
+        // networks. Bolke has no mirror yet (MIRRORS is empty); once one is
+        // added, every offered entry must get a complete fallback.
         for d in CATALOG.iter() {
             let mirrors = mirror_fallbacks(&d.id);
-            assert!(!mirrors.is_empty(), "{}: no mirror fallbacks", d.id);
+            assert_eq!(
+                mirrors.len(),
+                MIRRORS.len(),
+                "{}: missing mirror fallbacks",
+                d.id
+            );
             for m in &mirrors {
                 assert_eq!(m.sha256.len(), 64, "{}: mirror entry lacks a sha256", d.id);
                 assert!(m.size_bytes > 0, "{}: mirror entry lacks a size", d.id);
@@ -637,11 +642,11 @@ mod tests {
     #[test]
     fn generated_descriptions_read_naturally() {
         let gigaam = transcription_models()
-            .find(|m| m.id == "gigaam-v3-ctc")
+            .find(|m| m.id == "gigaam-v3-e2e-ctc")
             .unwrap();
         assert!(generated_description(gigaam).starts_with("Russian speech-to-text"));
         let whisper = transcription_models()
-            .find(|m| m.id == "whisper-tiny")
+            .find(|m| m.id == "whisper-small")
             .unwrap();
         assert!(generated_description(whisper).contains("-language speech-to-text with"));
     }

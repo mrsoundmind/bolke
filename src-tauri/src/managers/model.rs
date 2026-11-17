@@ -26,7 +26,7 @@ use download::{
 /// for downloading and on-disk resolution.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum ModelSource {
-    /// Direct HTTP download from a URL (current blob.handy.computer hosting).
+    /// Direct HTTP download from a URL.
     Url {
         url: String,
         /// Expected SHA-256 for integrity verification; `None` skips it.
@@ -781,77 +781,42 @@ const RETIRED_ONNX_MODELS: &[RetiredOnnxModel] = &[
         name: "Parakeet V2",
         disk_names: &["parakeet-tdt-0.6b-v2-int8"],
         size_mb: 451,
-        replacement_repo: "handy-computer/parakeet-tdt-0.6b-v2-gguf",
+        replacement_repo: "mrsoundmind/parakeet-tdt-0.6b-v2-gguf",
     },
     RetiredOnnxModel {
         id: "parakeet-tdt-0.6b-v3",
         name: "Parakeet V3",
         disk_names: &["parakeet-tdt-0.6b-v3-int8"],
         size_mb: 456,
-        replacement_repo: "handy-computer/parakeet-tdt-0.6b-v3-gguf",
-    },
-    RetiredOnnxModel {
-        id: "moonshine-base",
-        name: "Moonshine Base",
-        disk_names: &["moonshine-base"],
-        size_mb: 55,
-        replacement_repo: "handy-computer/moonshine-base-gguf",
-    },
-    RetiredOnnxModel {
-        id: "moonshine-tiny-streaming-en",
-        name: "Moonshine V2 Tiny",
-        disk_names: &["moonshine-tiny-streaming-en"],
-        size_mb: 31,
-        replacement_repo: "handy-computer/moonshine-streaming-tiny-gguf",
-    },
-    RetiredOnnxModel {
-        id: "moonshine-small-streaming-en",
-        name: "Moonshine V2 Small",
-        disk_names: &["moonshine-small-streaming-en"],
-        size_mb: 99,
-        replacement_repo: "handy-computer/moonshine-streaming-small-gguf",
-    },
-    RetiredOnnxModel {
-        id: "moonshine-medium-streaming-en",
-        name: "Moonshine V2 Medium",
-        disk_names: &["moonshine-medium-streaming-en"],
-        size_mb: 192,
-        replacement_repo: "handy-computer/moonshine-streaming-medium-gguf",
-    },
-    RetiredOnnxModel {
-        id: "sense-voice-int8",
-        name: "SenseVoice",
-        disk_names: &["sense-voice-int8"],
-        size_mb: 152,
-        replacement_repo: "handy-computer/SenseVoiceSmall-gguf",
+        replacement_repo: "mrsoundmind/parakeet-tdt-0.6b-v3-gguf",
     },
     RetiredOnnxModel {
         id: "gigaam-v3-e2e-ctc",
         name: "GigaAM v3",
         disk_names: &["giga-am-v3-int8", "giga-am-v3.int8.onnx"],
         size_mb: 151,
-        replacement_repo: "handy-computer/gigaam-v3-e2e-ctc-gguf",
+        replacement_repo: "mrsoundmind/gigaam-v3-e2e-ctc-gguf",
     },
     RetiredOnnxModel {
         id: "canary-180m-flash",
         name: "Canary 180M Flash",
         disk_names: &["canary-180m-flash"],
         size_mb: 146,
-        replacement_repo: "handy-computer/canary-180m-flash-gguf",
+        replacement_repo: "mrsoundmind/canary-180m-flash-gguf",
     },
     RetiredOnnxModel {
         id: "canary-1b-v2",
         name: "Canary 1B v2",
         disk_names: &["canary-1b-v2"],
         size_mb: 691,
-        replacement_repo: "handy-computer/canary-1b-v2-gguf",
+        replacement_repo: "mrsoundmind/canary-1b-v2-gguf",
     },
     RetiredOnnxModel {
         id: "cohere-int8",
         name: "Cohere",
         disk_names: &["cohere-int8"],
         size_mb: 1708,
-        replacement_repo: "handy-computer/cohere-transcribe-03-2026-gguf",
+        replacement_repo: "mrsoundmind/cohere-transcribe-03-2026-gguf",
     },
 ];
 
@@ -889,173 +854,6 @@ impl ModelManager {
         }
 
         let mut available_models = HashMap::new();
-
-        // Whisper supported languages (99 languages from tokenizer)
-        let whisper_languages: Vec<String> = vec![
-            "en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar",
-            "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs", "ro", "da", "hu",
-            "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy", "sk", "te", "fa",
-            "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is", "hy", "ne", "mn",
-            "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo", "so", "af", "oc",
-            "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht", "ps", "tk", "nn",
-            "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln", "ha", "ba", "jw",
-            "su", "yue",
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
-
-        available_models.insert(
-            "small".to_string(),
-            ModelInfo {
-                id: "small".to_string(),
-                name: "Whisper Small".to_string(),
-                description: "Fast and fairly accurate.".to_string(),
-                filename: "ggml-small.bin".to_string(),
-                source: ModelSource::Url {
-                    url: "https://blob.handy.computer/ggml-small.bin".to_string(),
-                    sha256: Some(
-                        "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b"
-                            .to_string(),
-                    ),
-                },
-                size_mb: 465,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                accuracy_score: 0.60,
-                speed_score: 0.85,
-                supports_translation: true,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                supports_language_selection: true,
-                is_custom: false,
-                supports_streaming: false,
-                supports_language_detection: true,
-            },
-        );
-
-        // Add downloadable models
-        available_models.insert(
-            "medium".to_string(),
-            ModelInfo {
-                id: "medium".to_string(),
-                name: "Whisper Medium".to_string(),
-                description: "Good accuracy, medium speed".to_string(),
-                filename: "whisper-medium-q4_1.bin".to_string(),
-                source: ModelSource::Url {
-                    url: "https://blob.handy.computer/whisper-medium-q4_1.bin".to_string(),
-                    sha256: Some(
-                        "79283fc1f9fe12ca3248543fbd54b73292164d8df5a16e095e2bceeaaabddf57"
-                            .to_string(),
-                    ),
-                },
-                size_mb: 469,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                accuracy_score: 0.75,
-                speed_score: 0.60,
-                supports_translation: true,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                supports_language_selection: true,
-                is_custom: false,
-                supports_streaming: false,
-                supports_language_detection: true,
-            },
-        );
-
-        available_models.insert(
-            "turbo".to_string(),
-            ModelInfo {
-                id: "turbo".to_string(),
-                name: "Whisper Turbo".to_string(),
-                description: "Balanced accuracy and speed.".to_string(),
-                filename: "ggml-large-v3-turbo.bin".to_string(),
-                source: ModelSource::Url {
-                    url: "https://blob.handy.computer/ggml-large-v3-turbo.bin".to_string(),
-                    sha256: Some(
-                        "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69"
-                            .to_string(),
-                    ),
-                },
-                size_mb: 1549,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                accuracy_score: 0.80,
-                speed_score: 0.40,
-                supports_translation: false, // Turbo doesn't support translation
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                supports_language_selection: true,
-                is_custom: false,
-                supports_streaming: false,
-                supports_language_detection: true,
-            },
-        );
-
-        available_models.insert(
-            "large".to_string(),
-            ModelInfo {
-                id: "large".to_string(),
-                name: "Whisper Large".to_string(),
-                description: "Good accuracy, but slow.".to_string(),
-                filename: "ggml-large-v3-q5_0.bin".to_string(),
-                source: ModelSource::Url {
-                    url: "https://blob.handy.computer/ggml-large-v3-q5_0.bin".to_string(),
-                    sha256: Some(
-                        "d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1"
-                            .to_string(),
-                    ),
-                },
-                size_mb: 1031,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                accuracy_score: 0.85,
-                speed_score: 0.30,
-                supports_translation: true,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                supports_language_selection: true,
-                is_custom: false,
-                supports_streaming: false,
-                supports_language_detection: true,
-            },
-        );
-
-        available_models.insert(
-            "breeze-asr".to_string(),
-            ModelInfo {
-                id: "breeze-asr".to_string(),
-                name: "Breeze ASR".to_string(),
-                description: "Optimized for Taiwanese Mandarin. Code-switching support."
-                    .to_string(),
-                filename: "breeze-asr-q5_k.bin".to_string(),
-                source: ModelSource::Url {
-                    url: "https://blob.handy.computer/breeze-asr-q5_k.bin".to_string(),
-                    sha256: Some(
-                        "8efbf0ce8a3f50fe332b7617da787fb81354b358c288b008d3bdef8359df64c6"
-                            .to_string(),
-                    ),
-                },
-                size_mb: 1030,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                accuracy_score: 0.85,
-                speed_score: 0.35,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: whisper_languages,
-                supports_language_selection: true,
-                is_custom: false,
-                supports_streaming: false,
-                supports_language_detection: true,
-            },
-        );
 
         // Seed the bundled offline catalog before the on-disk scans, so a model
         // already in the HF cache dedups onto its richer catalog entry (the scans
@@ -2655,7 +2453,7 @@ mod tests {
         let legacy = TempDir::new().unwrap();
         let expected = add_cached_model(
             legacy.path(),
-            "handy-computer/test-model",
+            "mrsoundmind/test-model",
             "old-revision",
             "model.gguf",
         );
@@ -2667,7 +2465,7 @@ mod tests {
         assert_eq!(
             hf_cached_path_in(
                 &caches,
-                "handy-computer/test-model",
+                "mrsoundmind/test-model",
                 "old-revision",
                 "model.gguf"
             ),
@@ -2681,13 +2479,13 @@ mod tests {
         let legacy = TempDir::new().unwrap();
         let expected = add_cached_model(
             active.path(),
-            "handy-computer/test-model",
+            "mrsoundmind/test-model",
             "revision",
             "model.gguf",
         );
         add_cached_model(
             legacy.path(),
-            "handy-computer/test-model",
+            "mrsoundmind/test-model",
             "revision",
             "model.gguf",
         );
@@ -2697,12 +2495,7 @@ mod tests {
         ];
 
         assert_eq!(
-            hf_cached_path_in(
-                &caches,
-                "handy-computer/test-model",
-                "revision",
-                "model.gguf"
-            ),
+            hf_cached_path_in(&caches, "mrsoundmind/test-model", "revision", "model.gguf"),
             Some(expected)
         );
     }
@@ -2759,8 +2552,8 @@ mod tests {
                     )
                 });
             assert!(
-                !crate::catalog::mirror_fallbacks(&replacement.id).is_empty(),
-                "{}: replacement {} has no mirror fallback",
+                replacement.filename.ends_with(".gguf"),
+                "{}: replacement {} is not a catalog download",
                 retired.id,
                 replacement.id
             );
@@ -2793,7 +2586,7 @@ mod tests {
 
     #[test]
     fn test_old_q5_is_discovered_and_survives_deleting_all_q8_copies() {
-        let desc = catalog_model("handy-computer/whisper-large-v3-gguf/");
+        let desc = catalog_model("mrsoundmind/whisper-large-v3-gguf/");
         let (repo, revision) = hf_source(desc);
         let q5 = desc.files.iter().find(|f| f.quant == "Q5_K_M").unwrap();
         let q8 = desc.default_file().unwrap();
@@ -2877,7 +2670,7 @@ mod tests {
         // fail the delete, not report success while the model stays on disk.
         use std::os::unix::fs::PermissionsExt;
 
-        let desc = catalog_model("handy-computer/canary-180m-flash-gguf/");
+        let desc = catalog_model("mrsoundmind/canary-180m-flash-gguf/");
         let (repo_id, revision) = hf_source(desc);
         let filename = &desc.default_file().unwrap().filename;
         let caches_in = |cache: &TempDir| vec![Cache::new(cache.path().to_path_buf())];
@@ -3309,13 +3102,12 @@ mod tests {
         // HF repo ids are case-insensitive, so another tool can cache a catalog
         // repo under other casing. On a case-sensitive filesystem only that
         // casing finds the file again, so it must not take the catalog's.
-        let filename = "SenseVoiceSmall-Q8_0.gguf";
-        let folder_repo = "handy-computer/sensevoicesmall-gguf";
-        assert!(crate::catalog::file_in_catalog(
-            filename,
-            Some("handy-computer/SenseVoiceSmall-gguf")
-        )
-        .is_some());
+        let filename = "Qwen3-ASR-0.6B-Q8_0.gguf";
+        let folder_repo = "mrsoundmind/qwen3-asr-0.6b-gguf";
+        assert!(
+            crate::catalog::file_in_catalog(filename, Some("mrsoundmind/Qwen3-ASR-0.6B-gguf"))
+                .is_some()
+        );
 
         let cache = TempDir::new().unwrap();
         let path = add_cached_model(cache.path(), folder_repo, "main", filename);
@@ -3341,7 +3133,7 @@ mod tests {
         let root = tmp.path();
 
         // ASR repo: a whisper gguf -> should be discovered.
-        let repo = root.join("models--handy-computer--whisper-test");
+        let repo = root.join("models--mrsoundmind--whisper-test");
         fs::create_dir_all(repo.join("snapshots").join("abc123")).unwrap();
         fs::create_dir_all(repo.join("refs")).unwrap();
         fs::write(repo.join("refs").join("main"), "abc123").unwrap();
@@ -3368,12 +3160,12 @@ mod tests {
         let mut models = HashMap::new();
         ModelManager::discover_hf_cache_models_in(root, &mut models);
 
-        let id = "handy-computer/whisper-test/whisper-q8.gguf";
+        let id = "mrsoundmind/whisper-test/whisper-q8.gguf";
         let m = models.get(id).expect("whisper gguf should be discovered");
         assert!(m.is_downloaded);
         assert!(
             matches!(&m.source, ModelSource::HuggingFace { repo_id, revision }
-            if repo_id == "handy-computer/whisper-test" && revision == "abc123")
+            if repo_id == "mrsoundmind/whisper-test" && revision == "abc123")
         );
         assert_eq!(
             m.supported_languages,

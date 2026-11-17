@@ -44,7 +44,7 @@ bun run format:backend    # cargo fmt only
 
 ```bash
 mkdir -p src-tauri/resources/models
-curl -L -o src-tauri/resources/models/silero-vad-v6.2-F32.gguf https://huggingface.co/handy-computer/silero-vad-v6.2-gguf/resolve/main/silero-vad-v6.2-F32.gguf
+curl -L -o src-tauri/resources/models/silero-vad-v6.2-F32.gguf https://huggingface.co/mrsoundmind/silero-vad-v6.2-gguf/resolve/main/silero-vad-v6.2-F32.gguf
 ```
 
 For detailed platform-specific build setup, see [BUILD.md](BUILD.md).
