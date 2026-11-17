@@ -1,0 +1,119 @@
+name: "Linux Install Test"
+
+# Installs each new Linux build on clean systems, the way a user would, and
+# checks that Bolke starts. A clean system has none of the build tools, so
+# this catches packages that only work on the machine that built them.
+#
+# Runs after every successful Linux Build, or on demand with a run id.
+
+on:
+  workflow_run:
+    workflows: ["Linux Build"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: "Linux Build run id to test"
+        required: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  install:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Ubuntu 22.04 (.deb)"
+            image: "ubuntu:22.04"
+            kind: deb
+            artifact: bolke-ubuntu-22.04-x86_64-unknown-linux-gnu
+          - name: "Ubuntu 24.04 (.deb)"
+            image: "ubuntu:24.04"
+            kind: deb
+            artifact: bolke-ubuntu-22.04-x86_64-unknown-linux-gnu
+          - name: "Debian 12 (.deb)"
+            image: "debian:12"
+            kind: deb
+            artifact: bolke-ubuntu-22.04-x86_64-unknown-linux-gnu
+          - name: "Fedora (.rpm)"
+            image: "fedora:latest"
+            kind: rpm-dnf
+            artifact: bolke-ubuntu-24.04-x86_64-unknown-linux-gnu
+          - name: "openSUSE Tumbleweed (.rpm)"
+            image: "opensuse/tumbleweed"
+            kind: rpm-zypper
+            artifact: bolke-ubuntu-24.04-x86_64-unknown-linux-gnu
+          - name: "Ubuntu 24.04 (AppImage)"
+            image: "ubuntu:24.04"
+            kind: appimage
+            artifact: bolke-ubuntu-24.04-x86_64-unknown-linux-gnu
+    steps:
+      - name: Download the build
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: pkg
+          run-id: ${{ github.event.workflow_run.id || inputs.run-id }}
+          github-token: ${{ github.token }}
+
+      - name: Install (.deb with apt)
+        if: matrix.kind == 'deb'
+        run: |
+          set -eu
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y ./pkg/deb/Bolke_*.deb xvfb xauth
+          echo "BOLKE=/usr/bin/Bolke" >> "$GITHUB_ENV"
+
+      - name: Install (.rpm with dnf)
+        if: matrix.kind == 'rpm-dnf'
+        run: |
+          set -eu
+          dnf install -y ./pkg/rpm/Bolke-*.rpm
+          dnf install -y xorg-x11-server-Xvfb xvfb-run || dnf install -y xorg-x11-server-Xvfb
+          echo "BOLKE=/usr/bin/Bolke" >> "$GITHUB_ENV"
+
+      - name: Install (.rpm with zypper)
+        if: matrix.kind == 'rpm-zypper'
+        run: |
+          set -eu
+          zypper --non-interactive refresh
+          zypper --non-interactive install --allow-unsigned-rpm ./pkg/rpm/Bolke-*.rpm
+          zypper --non-interactive install xvfb-run
+          echo "BOLKE=/usr/bin/Bolke" >> "$GITHUB_ENV"
+
+      - name: Prepare (AppImage)
+        if: matrix.kind == 'appimage'
+        run: |
+          set -eu
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y xvfb xauth
+          app="$(ls pkg/appimage/*.AppImage | head -1)"
+          chmod +x "$app"
+          # Containers have no FUSE, so unpack instead of mounting. On a desktop
+          # the AppImage mounts itself (Ubuntu 24.04 needs libfuse2t64 for that).
+          echo "APPIMAGE_EXTRACT_AND_RUN=1" >> "$GITHUB_ENV"
+          echo "BOLKE=$(readlink -f "$app")" >> "$GITHUB_ENV"
+
+      - name: Check the menu entry and icon
+        if: matrix.kind != 'appimage'
+        run: |
+          set -eu
+          test -f /usr/share/applications/Bolke.desktop
+          grep -q '^Icon=Bolke$' /usr/share/applications/Bolke.desktop
+          ls /usr/share/icons/hicolor/*/apps/Bolke.png
+          test -f /usr/share/metainfo/app.bolke.desktop.metainfo.xml
+
+      - name: Start Bolke
+        run: |
+          set -eu
+          BOLKE_NO_GTK_LAYER_SHELL=1 timeout 120 xvfb-run -a "$BOLKE" --list-devices | tee devices.txt
+          test -s devices.txt
+          echo "Bolke installed and started on ${{ matrix.name }}"
