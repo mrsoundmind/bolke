@@ -513,6 +513,51 @@ jobs:
             fi
           )
 
+      # Opens the built app the way a user would get it, and checks it starts.
+      # --list-devices loads the speech engine, lists the compute devices
+      # (CPU, Metal or Vulkan) and exits without opening a window.
+      - name: Smoke test macOS app
+        # The runner is Apple Silicon, so only the Apple Silicon build runs here.
+        if: contains(inputs.platform, 'macos') && startsWith(inputs.target, 'aarch64')
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUNDLE="src-tauri/target/${{ inputs.target }}/${{ steps.build-profile.outputs.profile }}/bundle"
+          DMG="$(find "$BUNDLE/dmg" -name '*.dmg' -print -quit)"
+          test -n "$DMG" || { echo "ERROR: no .dmg was built" >&2; exit 1; }
+          MOUNT="$(mktemp -d)"
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MOUNT" >/dev/null
+          trap 'hdiutil detach "$MOUNT" -quiet || true' EXIT
+          APP="$(find "$MOUNT" -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$APP" || { echo "ERROR: the .dmg has no app in it" >&2; exit 1; }
+          EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
+          codesign --verify --deep --strict "$APP"
+          "$APP/Contents/MacOS/$EXE" --list-devices | tee /tmp/bolke-devices.txt
+          test -s /tmp/bolke-devices.txt || { echo "ERROR: Bolke listed no devices" >&2; exit 1; }
+          echo "macOS app from the .dmg starts"
+
+      - name: Smoke test Windows installer
+        # The runner is x64, so only the x64 build runs here.
+        if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
+        shell: bash
+        run: |
+          set -euo pipefail
+          SETUP="$(find src-tauri/target -path '*/bundle/nsis/*-setup.exe' -print -quit)"
+          test -n "$SETUP" || { echo "ERROR: no -setup.exe was built" >&2; exit 1; }
+          echo "Installing $SETUP silently"
+          "$SETUP" /S
+          # The installer can return a moment before its files are in place.
+          for _ in $(seq 1 30); do
+            EXE="$(find "$LOCALAPPDATA/Bolke" -maxdepth 1 -iname 'bolke.exe' -print -quit 2>/dev/null || true)"
+            [ -n "$EXE" ] && break
+            sleep 2
+          done
+          test -n "${EXE:-}" || { echo "ERROR: Bolke.exe not installed under $LOCALAPPDATA/Bolke" >&2; ls -R "$LOCALAPPDATA/Bolke" >&2 || true; exit 1; }
+          "$EXE" --list-devices > /tmp/bolke-devices.txt 2>/tmp/bolke-devices.log || { cat /tmp/bolke-devices.log >&2; exit 1; }
+          cat /tmp/bolke-devices.txt
+          test -s /tmp/bolke-devices.txt || { echo "ERROR: Bolke listed no devices" >&2; cat /tmp/bolke-devices.log >&2; exit 1; }
+          echo "Windows app installed and starts"
+
       - name: Upload artifacts (macOS)
         if: inputs.upload-artifacts && contains(inputs.platform, 'macos')
         uses: actions/upload-artifact@v7

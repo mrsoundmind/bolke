@@ -1,0 +1,40 @@
+name: "macOS Build"
+
+# Builds the Mac app on every push to main, and on demand from the Actions tab:
+#   - Apple Silicon (M1 and newer): bolke-aarch64-apple-darwin
+#   - Intel Macs:                   bolke-x86_64-apple-darwin
+# Each artifact holds a .dmg and is kept for 30 days. Not notarised yet, so
+# macOS asks the user to allow it once (see the README).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    # Text-only changes (like the README) don't need a new installer.
+    paths-ignore:
+      - "**.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-26"
+            target: "aarch64-apple-darwin"
+          - platform: "macos-latest"
+            target: "x86_64-apple-darwin"
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: ${{ matrix.platform }}
+      target: ${{ matrix.target }}
+      build-args: "--target ${{ matrix.target }} --bundles app,dmg"
+      upload-artifacts: true
+      sign-binaries: false
+    secrets: inherit
