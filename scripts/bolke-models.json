@@ -1,0 +1,30 @@
+{
+  "_comment": "The models Bolke offers, copied into Bolke's own Hugging Face account by scripts/copy_models.py. Models with licences that limit re-sharing are left out.",
+  "models": [
+    "parakeet-unified-en-0.6b",
+    "canary-180m-flash",
+    "cohere-transcribe-03-2026",
+    "whisper-medium",
+    "Voxtral-Mini-4B-Realtime-2602",
+    "parakeet-ultra",
+    "parakeet-tdt-0.6b-v3",
+    "parakeet-tdt-0.6b-v2",
+    "Qwen3-ASR-0.6B",
+    "canary-1b-v2",
+    "canary-qwen-2.5b",
+    "cohere-transcribe-arabic-07-2026",
+    "gigaam-v3-e2e-ctc",
+    "gigaam-v3-e2e-rnnt",
+    "granite-speech-5.0-470m-turboctc",
+    "granite-speech-4.1-2b",
+    "parakeet-tdt_ctc-110m",
+    "Qwen3-ASR-1.7B",
+    "Voxtral-Mini-3B-2507",
+    "whisper-small",
+    "whisper-large-v3-turbo",
+    "Breeze-ASR-25",
+    "whisper-large-v3",
+    "lang-id-voxlingua107-ecapa",
+    "silero-vad-v6.2"
+  ]
+}

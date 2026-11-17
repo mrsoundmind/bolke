@@ -1,0 +1,31 @@
+name: "Copy Models"
+
+# Copies Bolke's speech models into Bolke's own Hugging Face account
+# (scripts/copy_models.py). Run by hand from the Actions tab. Needs the
+# HF_TOKEN repository secret: a Hugging Face access token with write access.
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Copy models
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          TARGET_OWNER: mrsoundmind
+          HF_HUB_DISABLE_PROGRESS_BARS: "1"
+        run: uv run scripts/copy_models.py
+      - name: Save the new revisions
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: copied-models
+          path: copied-models.json
+          if-no-files-found: ignore
