@@ -747,7 +747,7 @@
       "updateChecks": {
         "label": "Vérifier les mises à jour",
         "description": "Vérifier automatiquement les nouvelles versions de Bolke",
-        "lockedDescription": "Désactivé par la configuration système (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Désactivé par la configuration système (BOLKE_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Aperçu des nouveautés",

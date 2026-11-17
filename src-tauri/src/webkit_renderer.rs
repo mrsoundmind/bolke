@@ -5,7 +5,7 @@
 //! (`WEBKIT_DISABLE_DMABUF_RENDERER=1`, the long-standing workaround for GPU
 //! crashes — tauri-apps/tauri#9394) each partial frame arrives in a freshly
 //! allocated buffer, so every pixel outside the damage is transparent. For a
-//! frameless card like Handy's recording overlay only the animated bits (dot,
+//! frameless card like Bolke's recording overlay only the animated bits (dot,
 //! waveform) survive, which reads as a half-transparent ghost overlay.
 //!
 //! Keeping the compositor and moving its swap chain to shared memory

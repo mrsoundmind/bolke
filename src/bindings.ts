@@ -521,9 +521,9 @@ async getAvailableAccelerators() : Promise<AvailableAccelerators> {
 /**
  * Start key recording mode
  */
-async startHandyKeysRecording(bindingId: string) : Promise<Result<null, string>> {
+async startNativeKeysRecording(bindingId: string) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("start_handy_keys_recording", { bindingId }) };
+    return { status: "ok", data: await TAURI_INVOKE("start_native_keys_recording", { bindingId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -532,9 +532,9 @@ async startHandyKeysRecording(bindingId: string) : Promise<Result<null, string>>
 /**
  * Stop key recording mode
  */
-async stopHandyKeysRecording() : Promise<Result<null, string>> {
+async stopNativeKeysRecording() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("stop_handy_keys_recording") };
+    return { status: "ok", data: await TAURI_INVOKE("stop_native_keys_recording") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -673,7 +673,7 @@ async initializeShortcuts() : Promise<Result<null, string>> {
 }
 },
 /**
- * Clears Handy's macOS grant for `permission` before asking for it. A grant is
+ * Clears Bolke's macOS grant for `permission` before asking for it. A grant is
  * tied to the app's code signature, so after an update the old entry stays in
  * System Settings without matching the new build: macOS neither honors it nor
  * asks again, and onboarding waits forever (#1618). Only called while the
@@ -1011,7 +1011,7 @@ async cancelHistoryEntryTranscription(id: number) : Promise<void> {
 },
 /**
  * Adds an audio or video file to History and queues its transcription.
- * Fails without adding anything if the file has no audio Handy can read.
+ * Fails without adding anything if the file has no audio Bolke can read.
  */
 async transcribeFile(path: string) : Promise<Result<HistoryEntry, string>> {
     try {
@@ -1251,15 +1251,15 @@ export type KeyboardDiagnosticReport = { secure_input_enabled: boolean; culprit_
  * Counts only — key identity is deliberately never captured.
  */
 key_down: number; key_up: number; flags_changed: number; mouse: number; duration_ms: number }
-export type KeyboardImplementation = "tauri" | "handy_keys" | 
+export type KeyboardImplementation = "tauri" | "native_keys" | 
 /**
- * No built-in global shortcuts; trigger Handy via CLI flags or signals
+ * No built-in global shortcuts; trigger Bolke via CLI flags or signals
  * (e.g. from a Wayland compositor keybinding).
  */
 "none"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 /**
- * When Handy's spoken-language detector picks the language for Auto.
+ * When Bolke's spoken-language detector picks the language for Auto.
  */
 export type LanguageDetectionMode = 
 /**
@@ -1285,11 +1285,11 @@ export type LanguageSource =
  */
 "model" | 
 /**
- * Handy's detector picked it.
+ * Bolke's detector picked it.
  */
 "detected" | 
 /**
- * Handy had to pick without detecting (too little speech, detection
+ * Bolke had to pick without detecting (too little speech, detection
  * failed or unavailable, or Auto can't work for these languages).
  */
 "fallback"
@@ -1304,11 +1304,11 @@ export type LanguageStatus =
  */
 { kind: "selected"; language: string } | 
 /**
- * Decided per transcription: the model's own detection, or Handy's.
+ * Decided per transcription: the model's own detection, or Bolke's.
  */
 { kind: "auto" } | 
 /**
- * Auto needs Handy's detector, which isn't downloaded; `fallback` (the
+ * Auto needs Bolke's detector, which isn't downloaded; `fallback` (the
  * first preferred language) is used until it is.
  */
 { kind: "detector_missing"; fallback: string } | 
@@ -1318,13 +1318,13 @@ export type LanguageStatus =
 { kind: "auto_unavailable"; language: string; reason: AutoUnavailableReason }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 /**
- * A macOS privacy permission Handy asks for during onboarding.
+ * A macOS privacy permission Bolke asks for during onboarding.
  */
 export type MacPermission = "accessibility" | "microphone"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**
- * Where a model comes from and how Handy obtains it — the routing discriminant
+ * Where a model comes from and how Bolke obtains it — the routing discriminant
  * for downloading and on-disk resolution.
  */
 export type ModelSource = 
@@ -1359,7 +1359,7 @@ detail: string | null }
 export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "PasteBlockedElevated" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed"
 export type NoticeLevel = 
 /**
- * Nothing came out, or Handy can't do its job.
+ * Nothing came out, or Bolke can't do its job.
  */
 "error" | 
 /**
@@ -1520,7 +1520,7 @@ export type StreamTextEvent = { committed: string; tentative: string }
 export type StreamWorkKind = "transcribing" | "polishing"
 /**
  * UI appearance mode. `System` follows the OS `prefers-color-scheme`; `Light`
- * and `Dark` force one of the two palettes Handy already ships.
+ * and `Dark` force one of the two palettes Bolke already ships.
  */
 export type Theme = "system" | "light" | "dark"
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"

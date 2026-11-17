@@ -206,7 +206,7 @@ pub fn complete_onboarding(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// A macOS privacy permission Handy asks for during onboarding.
+/// A macOS privacy permission Bolke asks for during onboarding.
 #[derive(Clone, Copy, Debug, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum MacPermission {
@@ -214,7 +214,7 @@ pub enum MacPermission {
     Microphone,
 }
 
-/// Clears Handy's macOS grant for `permission` before asking for it. A grant is
+/// Clears Bolke's macOS grant for `permission` before asking for it. A grant is
 /// tied to the app's code signature, so after an update the old entry stays in
 /// System Settings without matching the new build: macOS neither honors it nor
 /// asks again, and onboarding waits forever (#1618). Only called while the

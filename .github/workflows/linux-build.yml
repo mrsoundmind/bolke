@@ -1,0 +1,38 @@
+name: "Linux Build"
+
+# Builds the Linux (x64) packages on every push to main, and on demand from
+# the Actions tab:
+#   - Ubuntu 22.04 runner: .deb (Ubuntu, Debian, Linux Mint, Pop!_OS)
+#   - Ubuntu 24.04 runner: .AppImage (most distributions) and .rpm (Fedora,
+#     openSUSE)
+# Each is attached to the run as an artifact for 30 days.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "ubuntu-22.04"
+            args: "--bundles deb"
+          - platform: "ubuntu-24.04"
+            args: "--bundles appimage,rpm"
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: ${{ matrix.platform }}
+      target: "x86_64-unknown-linux-gnu"
+      build-args: ${{ matrix.args }}
+      upload-artifacts: true
+      sign-binaries: false
+    secrets: inherit

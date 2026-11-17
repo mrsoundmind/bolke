@@ -4,7 +4,7 @@
 //! catalog (the version pinned in `package.json`; `bun run check:catalog`
 //! keeps the two identical). It lists every model transcribe.cpp publishes,
 //! with pinned revisions, per-quant hashes and benchmark results, and marks
-//! the curated subset. It is compiled into the binary so Handy ships a
+//! the curated subset. It is compiled into the binary so Bolke ships a
 //! complete model list with zero network access.
 //!
 //! Every supported transcription model is offered for download and mirrored
@@ -35,11 +35,11 @@ const SCHEMA: u32 = 2;
 /// `scripts/mirror_models.py` populates it from this catalog.
 const MIRRORS: &[&str] = &["https://blob.handy.computer"];
 
-/// Handy's list order and onboarding set, keyed by catalog id. Kept from the
+/// Bolke's list order and onboarding set, keyed by catalog id. Kept from the
 /// previous generator until onboarding moves to the package's recommendations.
 /// `(id, rank, recommended)`: rank is the editorial sort position (lower =
 /// higher); recommended is the small badged onboarding subset.
-const HANDY_RANKING: &[(&str, u32, bool)] = &[
+const BOLKE_RANKING: &[(&str, u32, bool)] = &[
     ("parakeet-unified-en-0.6b", 1, true),
     ("nemotron-3.5-asr-streaming-0.6b", 2, true),
     ("canary-180m-flash", 3, true),
@@ -69,7 +69,7 @@ struct CatalogRoot {
     results: HashMap<String, ModelResults>,
 }
 
-/// One model as written in `catalog.json`. Only the fields Handy needs are
+/// One model as written in `catalog.json`. Only the fields Bolke needs are
 /// declared; serde ignores the rest (license, parameters, …).
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -142,7 +142,7 @@ impl CatalogModel {
         self.files.get(&self.quant)
     }
 
-    /// Handy uses a flat models directory for mirror downloads, so only
+    /// Bolke uses a flat models directory for mirror downloads, so only
     /// transcription models with root-level default files can be offered.
     /// Must match `offered_models` in `scripts/mirror_models.py`.
     fn is_offered(&self) -> bool {
@@ -263,7 +263,7 @@ impl From<&CatalogModel> for ModelDescriptor {
         let default_filename = default_quant_file(&files, Some(&m.quant))
             .map(|f| f.filename.clone())
             .unwrap_or_default();
-        let ranking = HANDY_RANKING.iter().find(|(id, _, _)| *id == m.id);
+        let ranking = BOLKE_RANKING.iter().find(|(id, _, _)| *id == m.id);
         let results = ROOT.results.get(&m.id);
 
         ModelDescriptor {
@@ -314,7 +314,7 @@ static ROOT: Lazy<CatalogRoot> = Lazy::new(|| {
     root
 });
 
-/// Transcription models: the only role Handy can load. Language ID, VAD and
+/// Transcription models: the only role Bolke can load. Language ID, VAD and
 /// diarization models are published alongside them but produce no text.
 fn transcription_models() -> impl Iterator<Item = &'static CatalogModel> {
     ROOT.models.iter().filter(|m| m.role == "asr")
@@ -333,7 +333,7 @@ pub fn offers_language(identity: &str) -> bool {
     LANGUAGES.contains(identity)
 }
 
-/// Every transcription model Handy can download, normalised into descriptors.
+/// Every transcription model Bolke can download, normalised into descriptors.
 pub static CATALOG: Lazy<Vec<ModelDescriptor>> = Lazy::new(|| {
     transcription_models()
         .filter(|m| m.is_offered())
@@ -342,7 +342,7 @@ pub static CATALOG: Lazy<Vec<ModelDescriptor>> = Lazy::new(|| {
 });
 
 /// The spoken-language detector the catalog names (`languageDetector`): the
-/// file Handy fetches, at the package's default quant, and the labels it can
+/// file Bolke fetches, at the package's default quant, and the labels it can
 /// tell apart.
 pub struct LanguageDetectorFile {
     pub repo_id: String,
@@ -556,8 +556,8 @@ mod tests {
     }
 
     #[test]
-    fn handy_ranking_names_offered_models() {
-        for (id, _, _) in HANDY_RANKING {
+    fn bolke_ranking_names_offered_models() {
+        for (id, _, _) in BOLKE_RANKING {
             let model = transcription_models()
                 .find(|m| m.id == *id)
                 .unwrap_or_else(|| panic!("ranked model {id} is not in the catalog"));
@@ -565,7 +565,7 @@ mod tests {
         }
         assert_eq!(
             CATALOG.iter().filter(|d| d.recommended).count(),
-            HANDY_RANKING.iter().filter(|(_, _, r)| *r).count()
+            BOLKE_RANKING.iter().filter(|(_, _, r)| *r).count()
         );
     }
 
@@ -585,7 +585,7 @@ mod tests {
     }
 
     #[test]
-    fn catalog_matches_the_engine_handy_ships() {
+    fn catalog_matches_the_engine_bolke_ships() {
         // Every model must be loadable by the transcribe-cpp crate we link.
         let cargo = include_str!("../../Cargo.toml");
         let engine = cargo
@@ -604,7 +604,7 @@ mod tests {
         };
         assert!(
             parse(&ROOT.transcribe_cpp) <= parse(engine),
-            "catalog built for transcribe.cpp {} but Handy links {}",
+            "catalog built for transcribe.cpp {} but Bolke links {}",
             ROOT.transcribe_cpp,
             engine
         );
@@ -612,7 +612,7 @@ mod tests {
             if let Some(min) = &m.min_engine {
                 assert!(
                     parse(min) <= parse(engine),
-                    "{} needs transcribe.cpp {min}, Handy links {engine}",
+                    "{} needs transcribe.cpp {min}, Bolke links {engine}",
                     m.id
                 );
             }

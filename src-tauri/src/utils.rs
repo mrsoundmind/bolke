@@ -80,7 +80,7 @@ fn native_windows_machine() -> Option<u16> {
 
     type IsWow64Process2 = unsafe extern "system" fn(HANDLE, *mut u16, *mut u16) -> BOOL;
 
-    // Resolve IsWow64Process2 dynamically so merely starting Handy never raises
+    // Resolve IsWow64Process2 dynamically so merely starting Bolke never raises
     // the minimum Windows version. Windows-on-ARM versions provide this API,
     // while a missing symbol or failed query safely preserves the x64 behavior.
     unsafe {
@@ -107,13 +107,13 @@ fn native_windows_machine() -> Option<u16> {
 enum ForegroundIntegrity {
     Level(u32),
     /// Windows refused the query. It does that for a process that is elevated
-    /// under another account, which Handy can't send input to either.
+    /// under another account, which Bolke can't send input to either.
     Denied,
     /// No focused window, or the query failed for another reason.
     Unknown,
 }
 
-/// Fail-open: when either level is unknown, Handy pastes as usual.
+/// Fail-open: when either level is unknown, Bolke pastes as usual.
 #[cfg(any(test, target_os = "windows"))]
 fn integrity_blocks_input(foreground: ForegroundIntegrity, ours: Option<u32>) -> bool {
     match foreground {
@@ -123,7 +123,7 @@ fn integrity_blocks_input(foreground: ForegroundIntegrity, ours: Option<u32>) ->
     }
 }
 
-/// Whether the focused window drops the keystrokes Handy sends it.
+/// Whether the focused window drops the keystrokes Bolke sends it.
 ///
 /// Windows blocks input sent to a process at a higher integrity level, such as
 /// an app started with "Run as administrator", and `SendInput` isn't documented
@@ -137,7 +137,7 @@ pub fn foreground_window_is_elevated() -> bool {
         // needs no closing.
         let ours = unsafe { process_integrity_level(GetCurrentProcess()) }.ok();
         let foreground = foreground_integrity();
-        log::debug!("Integrity levels: foreground {foreground:?}, Handy {ours:?}");
+        log::debug!("Integrity levels: foreground {foreground:?}, Bolke {ours:?}");
         integrity_blocks_input(foreground, ours)
     }
 
@@ -309,7 +309,7 @@ pub fn env_flag_enabled(name: &str) -> bool {
 }
 
 #[cfg(target_os = "linux")]
-static GAMESCOPE_WSI_DISABLED_BY_HANDY: std::sync::atomic::AtomicBool =
+static GAMESCOPE_WSI_DISABLED_BY_BOLKE: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
 /// Only set `DISABLE_GAMESCOPE_WSI` when the user hasn't set it (even to empty).
@@ -319,40 +319,40 @@ fn should_disable_gamescope_wsi(existing: Option<&std::ffi::OsStr>) -> bool {
 }
 
 /// Disable the Gamescope WSI layer, which aborts during Vulkan device creation
-/// on SteamOS (#2264). Handy only uses Vulkan for compute, so it isn't needed.
+/// on SteamOS (#2264). Bolke only uses Vulkan for compute, so it isn't needed.
 #[cfg(target_os = "linux")]
 pub fn disable_gamescope_wsi_layer() {
     let existing = std::env::var_os("DISABLE_GAMESCOPE_WSI");
     if should_disable_gamescope_wsi(existing.as_deref()) {
         std::env::set_var("DISABLE_GAMESCOPE_WSI", "1");
-        GAMESCOPE_WSI_DISABLED_BY_HANDY.store(true, std::sync::atomic::Ordering::Relaxed);
+        GAMESCOPE_WSI_DISABLED_BY_BOLKE.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
 /// True when [`disable_gamescope_wsi_layer`] set the variable itself.
 #[cfg(target_os = "linux")]
-pub fn gamescope_wsi_disabled_by_handy() -> bool {
-    GAMESCOPE_WSI_DISABLED_BY_HANDY.load(std::sync::atomic::Ordering::Relaxed)
+pub fn gamescope_wsi_disabled_by_bolke() -> bool {
+    GAMESCOPE_WSI_DISABLED_BY_BOLKE.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-/// The `GDK_BACKEND` value requested through `HANDY_GDK_BACKEND`, if any.
+/// The `GDK_BACKEND` value requested through `BOLKE_GDK_BACKEND`, if any.
 /// Empty or whitespace-only values count as unset.
 #[cfg(target_os = "linux")]
 fn requested_gdk_backend(value: Option<&str>) -> Option<&str> {
     value.map(str::trim).filter(|v| !v.is_empty())
 }
 
-/// Copy `HANDY_GDK_BACKEND` into `GDK_BACKEND` when it is set.
+/// Copy `BOLKE_GDK_BACKEND` into `GDK_BACKEND` when it is set.
 ///
 /// The AppImage's `apprun-hooks/linuxdeploy-plugin-gtk.sh` unconditionally
 /// runs `export GDK_BACKEND=x11` (a workaround for tauri-apps/tauri#8541) after
-/// the user's environment, so `GDK_BACKEND=wayland ./Handy.AppImage` never
-/// reaches Handy. The hook cannot overwrite a variable it does not know about,
-/// so `HANDY_GDK_BACKEND=wayland ./Handy.AppImage` is the opt-in to native
-/// Wayland (cjpais/Handy#1729, #2034). Must run before GTK initializes.
+/// the user's environment, so `GDK_BACKEND=wayland ./Bolke.AppImage` never
+/// reaches Bolke. The hook cannot overwrite a variable it does not know about,
+/// so `BOLKE_GDK_BACKEND=wayland ./Bolke.AppImage` is the opt-in to native
+/// Wayland (issue #1729, #2034). Must run before GTK initializes.
 #[cfg(target_os = "linux")]
-pub fn apply_handy_gdk_backend() {
-    let requested = std::env::var("HANDY_GDK_BACKEND").ok();
+pub fn apply_bolke_gdk_backend() {
+    let requested = std::env::var("BOLKE_GDK_BACKEND").ok();
     if let Some(backend) = requested_gdk_backend(requested.as_deref()) {
         std::env::set_var("GDK_BACKEND", backend);
     }
@@ -370,7 +370,7 @@ mod tests {
 
         assert!(integrity_blocks_input(Level(HIGH), Some(MEDIUM)));
         assert!(!integrity_blocks_input(Level(MEDIUM), Some(MEDIUM)));
-        // Handy itself running as administrator can paste anywhere.
+        // Bolke itself running as administrator can paste anywhere.
         assert!(!integrity_blocks_input(Level(HIGH), Some(HIGH)));
         assert!(!integrity_blocks_input(Level(MEDIUM), Some(HIGH)));
         assert!(integrity_blocks_input(Denied, Some(MEDIUM)));
@@ -418,20 +418,20 @@ mod tests {
     #[test]
     fn env_flag_enabled_true_for_truthy_values() {
         for value in ["1", "true", "TRUE", "yes", "on", " 1 "] {
-            std::env::set_var("HANDY_TEST_FLAG_TRUTHY", value);
-            assert!(env_flag_enabled("HANDY_TEST_FLAG_TRUTHY"), "{value:?}");
+            std::env::set_var("BOLKE_TEST_FLAG_TRUTHY", value);
+            assert!(env_flag_enabled("BOLKE_TEST_FLAG_TRUTHY"), "{value:?}");
         }
-        std::env::remove_var("HANDY_TEST_FLAG_TRUTHY");
+        std::env::remove_var("BOLKE_TEST_FLAG_TRUTHY");
     }
 
     #[test]
     fn env_flag_enabled_false_for_falsy_or_unset() {
-        assert!(!env_flag_enabled("HANDY_TEST_FLAG_UNSET"));
+        assert!(!env_flag_enabled("BOLKE_TEST_FLAG_UNSET"));
 
         for value in ["0", "false", "FALSE", "no", "off", ""] {
-            std::env::set_var("HANDY_TEST_FLAG_FALSY", value);
-            assert!(!env_flag_enabled("HANDY_TEST_FLAG_FALSY"), "{value:?}");
+            std::env::set_var("BOLKE_TEST_FLAG_FALSY", value);
+            assert!(!env_flag_enabled("BOLKE_TEST_FLAG_FALSY"), "{value:?}");
         }
-        std::env::remove_var("HANDY_TEST_FLAG_FALSY");
+        std::env::remove_var("BOLKE_TEST_FLAG_FALSY");
     }
 }

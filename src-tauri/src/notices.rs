@@ -1,4 +1,4 @@
-//! Notices: how Handy reports a failure that happens in the background.
+//! Notices: how Bolke reports a failure that happens in the background.
 //! [`raise`] is the one way to do it; see "Error notices" in `AGENTS.md` for
 //! how to add one.
 //!
@@ -19,7 +19,7 @@ use tauri_specta::Event;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum NoticeLevel {
-    /// Nothing came out, or Handy can't do its job.
+    /// Nothing came out, or Bolke can't do its job.
     Error,
     /// The user got a result, but not the one they set up.
     Warning,

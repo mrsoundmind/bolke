@@ -747,7 +747,7 @@
       "updateChecks": {
         "label": "التحقق من وجود تحديثات",
         "description": "التحقق تلقائياً من وجود إصدارات جديدة من Bolke",
-        "lockedDescription": "معطّل بواسطة إعدادات النظام (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "معطّل بواسطة إعدادات النظام (BOLKE_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "معاينة الجديد",

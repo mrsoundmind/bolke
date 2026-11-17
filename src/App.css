@@ -36,7 +36,7 @@
 /* Noto Sans CJK subset (see src/lib/utils/cjkFont.ts): Windows' CJK fonts
    have no semibold to match Segoe UI. */
 @font-face {
-  font-family: "Handy CJK Subset";
+  font-family: "Bolke CJK Subset";
   src: url("./assets/fonts/cjk-subset.woff2") format("woff2");
   font-weight: 100 900;
   font-display: block;
@@ -52,7 +52,7 @@
     "Inter Variable", system-ui, -apple-system, "Segoe UI Variable Text",
     "Segoe UI", Roboto, "Noto Sans", sans-serif;
   --font-cjk-subset:
-    "Handy CJK Subset", -apple-system, "Segoe UI Variable Text", "Segoe UI",
+    "Bolke CJK Subset", -apple-system, "Segoe UI Variable Text", "Segoe UI",
     system-ui, sans-serif;
 
   --text-title: 26px; /* screen titles */

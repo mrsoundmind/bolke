@@ -747,7 +747,7 @@
       "updateChecks": {
         "label": "업데이트 확인",
         "description": "Bolke의 새 버전을 자동으로 확인합니다",
-        "lockedDescription": "시스템 구성에 의해 비활성화됨 (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "시스템 구성에 의해 비활성화됨 (BOLKE_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "새 소식 미리보기",

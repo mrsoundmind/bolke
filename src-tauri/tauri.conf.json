@@ -51,7 +51,7 @@
           "libssl3t64 | libssl3"
         ],
         "files": {
-          "/usr/lib/Handy": "transcribe-libs"
+          "/usr/lib/Bolke": "transcribe-libs"
         }
       },
       "rpm": {
@@ -63,7 +63,7 @@
           "type": "none"
         },
         "files": {
-          "/usr/lib/Handy": "transcribe-libs"
+          "/usr/lib/Bolke": "transcribe-libs"
         }
       },
       "appimage": {

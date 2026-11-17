@@ -747,7 +747,7 @@
       "updateChecks": {
         "label": "Kontrolovat aktualizace",
         "description": "Automaticky kontrolovat nové verze Bolke",
-        "lockedDescription": "Zakázáno systémovou konfigurací (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Zakázáno systémovou konfigurací (BOLKE_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Náhled novinek",

@@ -9,9 +9,9 @@ import { notify } from "@/stores/noticeStore";
 
 const KEYBOARD_IMPLEMENTATION_OPTIONS: DropdownOption[] = [
   { value: "tauri", label: "Tauri Global Shortcut" },
-  { value: "handy_keys", label: "Bolke Keys" },
+  { value: "native_keys", label: "Bolke Keys" },
   // Linux only: for Wayland, where the compositor owns keybindings and
-  // triggers Handy via `handy --toggle-transcription`.
+  // triggers Bolke via `bolke --toggle-transcription`.
   ...(type() === "linux" ? [{ value: "none", label: "None" }] : []),
 ];
 

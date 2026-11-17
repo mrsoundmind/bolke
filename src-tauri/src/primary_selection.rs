@@ -4,7 +4,7 @@
 //! while GUI apps read the clipboard. Writing the transcript to both lets one
 //! Shift+Insert paste it everywhere.
 //!
-//! Wayland uses wl-clipboard when it is installed (the same tool Handy uses for
+//! Wayland uses wl-clipboard when it is installed (the same tool Bolke uses for
 //! the clipboard there); everything else goes through arboard.
 
 use log::{debug, warn};

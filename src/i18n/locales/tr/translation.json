@@ -747,7 +747,7 @@
       "updateChecks": {
         "label": "Güncellemeleri Kontrol Et",
         "description": "Bolke için yeni sürümleri otomatik olarak kontrol eder",
-        "lockedDescription": "Sistem yapılandırması tarafından devre dışı bırakıldı (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Sistem yapılandırması tarafından devre dışı bırakıldı (BOLKE_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Yenilikleri Önizle",

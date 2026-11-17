@@ -410,7 +410,7 @@ fn detect_ydotool_key_syntax() -> YdotoolKeySyntax {
                     syntax
                 })
             } else {
-                // Preserve Handy's existing behavior and compatibility with current ydotool.
+                // Preserve Bolke's existing behavior and compatibility with current ydotool.
                 log::warn!(
                     "Could not recognize ydotool key --help output (exit status {:?}); using raw-keycode syntax",
                     output.status.code()
@@ -511,7 +511,7 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
     // `--clearmodifiers` restores the modifiers that were held when xdotool
     // started. If the user releases one while xdotool is typing, that synthetic
     // restore can leave the modifier latched on the XTEST keyboard (#1817).
-    // Release both sides of Handy's supported push-style modifiers to clear any
+    // Release both sides of Bolke's supported push-style modifiers to clear any
     // stale restore. Lock keys are intentionally excluded because key events
     // toggle them.
     //
@@ -882,7 +882,7 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PasteOutcome {
     Pasted,
-    /// The focused window takes no input from Handy, so nothing arrived.
+    /// The focused window takes no input from Bolke, so nothing arrived.
     Blocked,
 }
 
@@ -903,9 +903,9 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);
 
-    // Windows drops the keystrokes Handy sends to an elevated window and may
+    // Windows drops the keystrokes Bolke sends to an elevated window and may
     // not say so, so ask before pasting instead of trusting the result. The
-    // paste still runs as usual; only what Handy reports changes.
+    // paste still runs as usual; only what Bolke reports changes.
     let blocked =
         sends_keys(settings.paste_method) && crate::utils::foreground_window_is_elevated();
     let result = paste_as_configured(text, app_handle, settings);
@@ -1160,7 +1160,7 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
         use std::thread;
 
         let script_path = std::env::temp_dir().join(format!(
-            "handy-external-script-{}-{}.sh",
+            "bolke-external-script-{}-{}.sh",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

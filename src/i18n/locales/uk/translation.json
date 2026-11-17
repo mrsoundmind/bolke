@@ -747,7 +747,7 @@
       "updateChecks": {
         "label": "Перевірка оновлень",
         "description": "Автоматично перевіряти наявність нових версій Bolke",
-        "lockedDescription": "Вимкнено системною конфігурацією (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Вимкнено системною конфігурацією (BOLKE_DISABLE_UPDATER)"
       },
       "whatsNewPreview": {
         "title": "Попередній перегляд новин",

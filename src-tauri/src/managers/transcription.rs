@@ -275,7 +275,7 @@ pub struct TranscriptionManager {
     /// True while a background job is queued or running. It holds the model,
     /// so one transcript is never written by two models.
     job_active: Arc<AtomicBool>,
-    /// Handy's spoken-language detector, loaded in this process on first
+    /// Bolke's spoken-language detector, loaded in this process on first
     /// use and unloaded with the model.
     language_detector: Arc<LanguageDetector>,
 }
@@ -998,9 +998,9 @@ impl TranscriptionManager {
         live: Option<RunOutcome>,
     ) -> Result<Transcription> {
         #[cfg(debug_assertions)]
-        if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
+        if std::env::var("BOLKE_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
-                "Simulated transcription failure (HANDY_FORCE_TRANSCRIPTION_FAILURE)"
+                "Simulated transcription failure (BOLKE_FORCE_TRANSCRIPTION_FAILURE)"
             ));
         }
 
@@ -1549,7 +1549,7 @@ fn real_time_factor(audio_secs: f64, compute_secs: f64) -> f64 {
     }
 }
 
-/// Resolve how confidently Handy knows the language of the text produced by a
+/// Resolve how confidently Bolke knows the language of the text produced by a
 /// transcription run. The UI language is deliberately not part of this
 /// decision.
 fn resolve_output_language_evidence(
@@ -1565,7 +1565,7 @@ fn resolve_output_language_evidence(
 
     // Stored language intent is only evidence when this specific engine run
     // actually received the hint. Some multilingual engines (notably Parakeet
-    // V3) always auto-detect and ignore Handy's selection; transcribe-cpp also
+    // V3) always auto-detect and ignore Bolke's selection; transcribe-cpp also
     // drops a requested hint when the loaded model does not advertise it.
     if let Some(language) = applied_language_hint.filter(|lang| !lang.is_empty() && *lang != "auto")
     {
@@ -1890,7 +1890,7 @@ pub fn describe_compute_devices(tm: &TranscriptionManager) -> Result<Vec<String>
         .collect())
 }
 
-/// Map Handy's whisper accelerator setting to a transcribe-cpp [`Backend`].
+/// Map Bolke's whisper accelerator setting to a transcribe-cpp [`Backend`].
 ///
 /// `Auto` lets the library pick the best device (with CPU fallback), while
 /// `Cpu` forces strict CPU. `Gpu` only remains as the companion setting for an
@@ -2413,7 +2413,7 @@ mod tests {
     fn fuzzy_correction_is_skipped_exactly_when_vocabulary_was_sent() {
         let settings = AppSettings {
             selected_language: "en".to_string(),
-            custom_words: vec!["Handy".to_string()],
+            custom_words: vec!["Bolke".to_string()],
             ..Default::default()
         };
         let evidence = OutputLanguageEvidence::UserSelected("en".to_string());
@@ -2421,29 +2421,29 @@ mod tests {
 
         // The model was already prompted with the term: leave its output alone.
         let prompted = post_process_transcription_text(
-            "i use handy every day".to_string(),
+            "i use bolke every day".to_string(),
             &settings,
             true,
             &evidence,
             &supported,
         );
-        assert_eq!(prompted, "i use handy every day");
+        assert_eq!(prompted, "i use bolke every day");
 
         // No vocabulary sent: the fuzzy post-correction fixes the casing.
         let corrected = post_process_transcription_text(
-            "i use handy every day".to_string(),
+            "i use bolke every day".to_string(),
             &settings,
             false,
             &evidence,
             &supported,
         );
-        assert_eq!(corrected, "i use Handy every day");
+        assert_eq!(corrected, "i use Bolke every day");
     }
 
     #[test]
     fn custom_words_read_back_are_not_a_transcript() {
         let words = [
-            "Handy",
+            "Bolke",
             "Qwen",
             "VRAM",
             "Claude",
@@ -2455,12 +2455,12 @@ mod tests {
 
         // The shapes Qwen3-ASR returned for recordings of room noise (#2498).
         for echo in [
-            "Handy Qwen VRAM Claude Opus Codex GPT-6.1 Sol.",
-            "手 Handy Qwen VRAM Claude Opus Codex GPT-6.1 Sol.",
+            "Bolke Qwen VRAM Claude Opus Codex GPT-6.1 Sol.",
+            "手 Bolke Qwen VRAM Claude Opus Codex GPT-6.1 Sol.",
             // Only the end of the list, as with a long one.
             "Claude Opus Codex GPT-6.1 Sol",
             // With a word of its own in front.
-            "Ich bin ein Handy Qwen VRAM Claude Opus Codex GPT-6.1 Sol",
+            "Ich bin ein Bolke Qwen VRAM Claude Opus Codex GPT-6.1 Sol",
         ] {
             assert!(echoes_vocabulary(echo, &words), "{echo}");
         }
@@ -2468,7 +2468,7 @@ mod tests {
         for speech in [
             "",
             "Okay.",
-            "I asked Claude to compare Opus and Codex on my Handy fork.",
+            "I asked Claude to compare Opus and Codex on my Bolke fork.",
             // Too few of them to tell from someone saying them.
             "Claude Opus",
             "GPT-6.1 Sol",
@@ -2477,7 +2477,7 @@ mod tests {
         ] {
             assert!(!echoes_vocabulary(speech, &words), "{speech}");
         }
-        assert!(!echoes_vocabulary("Handy Qwen VRAM", &[]));
+        assert!(!echoes_vocabulary("Bolke Qwen VRAM", &[]));
     }
 }
 

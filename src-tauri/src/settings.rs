@@ -232,8 +232,8 @@ pub enum RecordingRetentionPeriod {
 #[serde(rename_all = "snake_case")]
 pub enum KeyboardImplementation {
     Tauri,
-    HandyKeys,
-    /// No built-in global shortcuts; trigger Handy via CLI flags or signals
+    NativeKeys,
+    /// No built-in global shortcuts; trigger Bolke via CLI flags or signals
     /// (e.g. from a Wayland compositor keybinding).
     None,
 }
@@ -243,14 +243,14 @@ impl Default for KeyboardImplementation {
         #[cfg(target_os = "linux")]
         return KeyboardImplementation::Tauri;
         #[cfg(not(target_os = "linux"))]
-        return KeyboardImplementation::HandyKeys;
+        return KeyboardImplementation::NativeKeys;
     }
 }
 
 impl Default for PasteMethod {
     fn default() -> Self {
         // Default to CtrlV for macOS and Windows. On Linux, Shift+Insert pastes in
-        // terminals and GUI apps alike (Handy also puts the text on the primary
+        // terminals and GUI apps alike (Bolke also puts the text on the primary
         // selection, which terminals read), and unlike Direct typing it doesn't
         // depend on the keyboard layout.
         #[cfg(target_os = "linux")]
@@ -311,7 +311,7 @@ impl SoundTheme {
 }
 
 /// UI appearance mode. `System` follows the OS `prefers-color-scheme`; `Light`
-/// and `Dark` force one of the two palettes Handy already ships.
+/// and `Dark` force one of the two palettes Bolke already ships.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum Theme {
@@ -349,7 +349,7 @@ pub enum VadBackend {
     Earshot,
 }
 
-/// When Handy's spoken-language detector picks the language for Auto.
+/// When Bolke's spoken-language detector picks the language for Auto.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum LanguageDetectionMode {
@@ -389,7 +389,7 @@ impl std::ops::DerefMut for SecretMap {
     }
 }
 
-/* still handy for composing the initial JSON in the store ------------- */
+/* still bolke for composing the initial JSON in the store ------------- */
 /// The container-level `serde(default)` (backed by the `Default` impl below)
 /// guarantees every field — including ones added in the future — falls back to
 /// its `get_default_settings()` value when missing from a stored settings
@@ -677,7 +677,7 @@ fn default_paste_delay_ms() -> u64 {
 }
 
 fn default_paste_delay_after_ms() -> u64 {
-    // Linux apps fetch the pasted text from Handy only when they handle the
+    // Linux apps fetch the pasted text from Bolke only when they handle the
     // key, so restoring the old clipboard too soon pastes the old content
     // (#502). Only new installs get this; existing settings keep their value.
     #[cfg(target_os = "linux")]
@@ -1466,18 +1466,18 @@ fn self_update_possible() -> bool {
 }
 
 /// Update checks are forced off (without touching the persisted setting) when
-/// `HANDY_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
+/// `BOLKE_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
 /// can't work against an immutable /nix/store install — or when this build
 /// cannot install its own update (see `linux_self_update_possible`).
 pub fn update_checks_forced_disabled() -> bool {
     use std::sync::OnceLock;
     static IS_UPDATER_DISABLED: OnceLock<bool> = OnceLock::new();
     *IS_UPDATER_DISABLED
-        .get_or_init(|| utils::env_flag_enabled("HANDY_DISABLE_UPDATER") || !self_update_possible())
+        .get_or_init(|| utils::env_flag_enabled("BOLKE_DISABLE_UPDATER") || !self_update_possible())
 }
 
 /// Effective updater state: the user's stored preference, overridden to `false`
-/// while `HANDY_DISABLE_UPDATER` is set. Callers deciding whether to actually
+/// while `BOLKE_DISABLE_UPDATER` is set. Callers deciding whether to actually
 /// check for updates must use this rather than reading `update_checks_enabled`
 /// directly, so the forced-off state never leaks into the persisted setting.
 pub fn update_checks_effectively_enabled(settings: &AppSettings) -> bool {
@@ -1618,7 +1618,7 @@ mod tests {
             "overlay_position": "bottom",
             "debug_mode": false,
             "log_level": 2,
-            "custom_words": ["Handy", "cjpais"],
+            "custom_words": ["Bolke", "dictation"],
             "model_unload_timeout": "min5",
             "word_correction_threshold": 0.18,
             "history_limit": 5,
@@ -1650,7 +1650,7 @@ mod tests {
             "app_language": "en",
             "experimental_enabled": false,
             "lazy_stream_close": false,
-            "keyboard_implementation": "handy_keys",
+            "keyboard_implementation": "native_keys",
             "show_tray_icon": true,
             "paste_delay_ms": 60,
             "typing_tool": "auto",
@@ -1728,14 +1728,14 @@ mod tests {
         let map = stored.as_object_mut().unwrap();
         map.insert("paste_delay_ms".into(), serde_json::json!("sixty"));
         map.insert("sound_theme".into(), serde_json::json!(42));
-        map.insert("custom_words".into(), serde_json::json!(["handy"]));
+        map.insert("custom_words".into(), serde_json::json!(["bolke"]));
 
         assert!(serde_json::from_value::<AppSettings>(stored.clone()).is_err());
 
         let salvaged = salvage_settings(&stored);
         assert_eq!(salvaged.paste_delay_ms, default_paste_delay_ms());
         assert_eq!(salvaged.sound_theme, default_sound_theme());
-        assert_eq!(salvaged.custom_words, vec!["handy".to_string()]);
+        assert_eq!(salvaged.custom_words, vec!["bolke".to_string()]);
     }
 
     #[cfg(target_os = "linux")]
