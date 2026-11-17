@@ -29,10 +29,16 @@
     "targets": "all",
     "resources": ["resources/**/*"],
     "license": "MIT",
+    "category": "Utility",
+    "shortDescription": "Private voice dictation that runs on your computer",
+    "longDescription": "Hold a shortcut, speak, and Bolke types what you said. Speech recognition runs entirely on your computer.",
+    "homepage": "https://github.com/mrsoundmind/bolke",
     "icon": [
       "icons/32x32.png",
+      "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
+      "icons/icon.png",
       "icons/icon.icns",
       "icons/icon.ico"
     ],
@@ -51,7 +57,8 @@
           "libssl3t64 | libssl3"
         ],
         "files": {
-          "/usr/lib/Bolke": "transcribe-libs"
+          "/usr/lib/Bolke": "transcribe-libs",
+          "/usr/share/metainfo/app.bolke.desktop.metainfo.xml": "linux/app.bolke.desktop.metainfo.xml"
         }
       },
       "rpm": {
@@ -63,7 +70,8 @@
           "type": "none"
         },
         "files": {
-          "/usr/lib/Bolke": "transcribe-libs"
+          "/usr/lib/Bolke": "transcribe-libs",
+          "/usr/share/metainfo/app.bolke.desktop.metainfo.xml": "linux/app.bolke.desktop.metainfo.xml"
         }
       },
       "appimage": {

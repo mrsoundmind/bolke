@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tells Linux app stores and installers (Ubuntu App Center, GNOME Software,
+     KDE Discover) Bolke's name, icon and description. -->
+<component type="desktop-application">
+  <id>app.bolke.desktop</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Bolke</name>
+  <summary>Private voice dictation that runs on your computer</summary>
+  <description>
+    <p>
+      Hold a shortcut, speak, and Bolke types what you said into whatever app
+      you're using. Speech recognition runs entirely on your computer: no
+      account, no internet needed after the model downloads, and nothing you
+      say leaves your machine.
+    </p>
+  </description>
+  <launchable type="desktop-id">Bolke.desktop</launchable>
+  <icon type="stock">Bolke</icon>
+  <url type="homepage">https://github.com/mrsoundmind/bolke</url>
+  <url type="bugtracker">https://github.com/mrsoundmind/bolke/issues</url>
+  <developer id="io.github.mrsoundmind">
+    <name>shashankrai</name>
+  </developer>
+  <categories>
+    <category>Utility</category>
+    <category>Accessibility</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.10.1" date="2026-11-17"/>
+  </releases>
+</component>
