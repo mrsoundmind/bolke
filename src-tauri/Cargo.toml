@@ -71,7 +71,7 @@ symphonia = { version = "0.5.5", features = ["aac", "alac", "isomp4", "mp3", "ai
 symphonia-adapter-libopus = "0.2.9"
 # Resamples a decoded file to 16 kHz; the version recorder already uses.
 rubato = "5"
-recorder = { package = "handy-recorder", version = "0.1.1" }
+recorder = { package = "bolke-recorder", path = "crates/bolke-recorder" }
 reqwest = { version = "0.12", features = ["json", "stream", "gzip", "brotli", "deflate"] }
 futures-util = "0.3"
 rustfft = "6.4.0"
@@ -92,7 +92,7 @@ libc = "0.2"
 transcribe-cpp = { version = "0.4.2", default-features = false, features = [
   "serde",
 ] }
-hotkeys = { package = "handy-keys", version = "0.3.5" }
+hotkeys = { package = "bolke-keys", path = "crates/bolke-keys" }
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"

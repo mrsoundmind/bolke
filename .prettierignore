@@ -15,7 +15,11 @@ src-tauri/gen
 # Generated files
 src/bindings.ts
 src-tauri/src/catalog/catalog.json
+packages/models/catalog.json
 
 # Misc
 .DS_Store
 *.log
+
+# Bundled copies of outside libraries keep their own style
+src-tauri/crates

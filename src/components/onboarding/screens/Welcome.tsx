@@ -13,7 +13,7 @@ import { AppLanguageMenu } from "../AppLanguageMenu";
 import { useOnboardingStore } from "../onboardingStore";
 import { CHINESE_SCRIPTS, isChinese } from "@/lib/utils/languageSuggestions";
 import { CURATED_ASR, isWeakLanguage } from "@/lib/models/catalog";
-import { modelMatchesLanguage } from "@handy-computer/models";
+import { modelMatchesLanguage } from "@bolke/models";
 import { getSupportedLanguage } from "@/i18n";
 import { languageList } from "@/lib/constants/languages";
 import { useSettings } from "@/hooks/useSettings";

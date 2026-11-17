@@ -1,4 +1,4 @@
-import { languageIdentity } from "@handy-computer/models";
+import { languageIdentity } from "@bolke/models";
 import type { ChineseScript } from "@/bindings";
 import { LANGUAGES } from "@/lib/constants/languages";
 

@@ -552,6 +552,8 @@ version = "0.10.1"
 dependencies = [
  "anyhow",
  "arboard",
+ "bolke-keys",
+ "bolke-recorder",
  "chrono",
  "clap",
  "earshot",
@@ -561,8 +563,6 @@ dependencies = [
  "futures-util",
  "gtk",
  "gtk-layer-shell",
- "handy-keys",
- "handy-recorder",
  "hf-hub",
  "hound",
  "isolang",
@@ -618,6 +618,73 @@ dependencies = [
  "whatlang",
  "windows 0.61.3",
  "winreg 0.55.0",
+]
+
+[[package]]
+name = "bolke-cpal"
+version = "0.18.2"
+dependencies = [
+ "alsa",
+ "block2",
+ "coreaudio-rs",
+ "dasp_sample",
+ "futures",
+ "jni 0.22.4",
+ "js-sys",
+ "libc",
+ "mach2",
+ "ndk",
+ "ndk-context",
+ "num-derive",
+ "num-traits",
+ "objc2",
+ "objc2-audio-toolbox",
+ "objc2-avf-audio",
+ "objc2-core-audio",
+ "objc2-core-audio-types",
+ "objc2-core-foundation",
+ "objc2-foundation",
+ "portable-atomic",
+ "pulseaudio",
+ "web-sys",
+ "windows 0.62.2",
+ "windows-core 0.62.2",
+]
+
+[[package]]
+name = "bolke-keys"
+version = "0.3.5"
+dependencies = [
+ "bitflags 2.11.0",
+ "block2",
+ "evdev",
+ "libc",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-core-foundation",
+ "objc2-core-graphics",
+ "objc2-foundation",
+ "serde",
+ "thiserror 2.0.18",
+ "windows 0.58.0",
+]
+
+[[package]]
+name = "bolke-recorder"
+version = "0.1.1"
+dependencies = [
+ "bolke-cpal",
+ "dasp_sample",
+ "futures",
+ "libc",
+ "log",
+ "objc2-av-foundation",
+ "objc2-core-audio",
+ "objc2-core-foundation",
+ "pulseaudio",
+ "rtrb",
+ "rubato",
+ "windows 0.62.2",
 ]
 
 [[package]]
@@ -2530,79 +2597,6 @@ dependencies = [
  "cfg-if",
  "crunchy",
  "zerocopy",
-]
-
-[[package]]
-name = "handy-cpal"
-version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07b0f0a55e498d0260eae6bc9a61a976b60d0c014c038771d6fbcc95907b79d4"
-dependencies = [
- "alsa",
- "block2",
- "coreaudio-rs",
- "dasp_sample",
- "futures",
- "jni 0.22.4",
- "js-sys",
- "libc",
- "mach2",
- "ndk",
- "ndk-context",
- "num-derive",
- "num-traits",
- "objc2",
- "objc2-audio-toolbox",
- "objc2-avf-audio",
- "objc2-core-audio",
- "objc2-core-audio-types",
- "objc2-core-foundation",
- "objc2-foundation",
- "portable-atomic",
- "pulseaudio",
- "web-sys",
- "windows 0.62.2",
- "windows-core 0.62.2",
-]
-
-[[package]]
-name = "handy-keys"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a38835faa2713931599234a357985a051474c556bc19b8ce124ecb00bee89154"
-dependencies = [
- "bitflags 2.11.0",
- "block2",
- "evdev",
- "libc",
- "objc2",
- "objc2-app-kit",
- "objc2-core-foundation",
- "objc2-core-graphics",
- "objc2-foundation",
- "serde",
- "thiserror 2.0.18",
- "windows 0.58.0",
-]
-
-[[package]]
-name = "handy-recorder"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29602f3465cb080cc437b08903ea7ef395c55a41120264a897acdd25ff9b255a"
-dependencies = [
- "dasp_sample",
- "futures",
- "handy-cpal",
- "libc",
- "log",
- "objc2-av-foundation",
- "objc2-core-audio",
- "objc2-core-foundation",
- "pulseaudio",
- "rtrb",
- "rubato",
- "windows 0.62.2",
 ]
 
 [[package]]

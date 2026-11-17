@@ -1,6 +1,6 @@
 //! The bundled, offline model catalog.
 //!
-//! `catalog.json` is a verbatim copy of the `@handy-computer/models` package's
+//! `catalog.json` is a verbatim copy of the `@bolke/models` package's
 //! catalog (the version pinned in `package.json`; `bun run check:catalog`
 //! keeps the two identical). It lists every model transcribe.cpp publishes,
 //! with pinned revisions, per-quant hashes and benchmark results, and marks

@@ -1,0 +1,16 @@
+{
+  "name": "@bolke/models",
+  "version": "0.2.3",
+  "private": true,
+  "description": "Bolke's speech-to-text model catalog and recommendation method.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./catalog.json": "./catalog.json"
+  },
+  "sideEffects": false
+}

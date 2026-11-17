@@ -1,4 +1,4 @@
-// The Rust app compiles in a copy of @handy-computer/models' catalog.json
+// The Rust app compiles in a copy of @bolke/models' catalog.json
 // (src-tauri can't depend on node_modules: cargo-only builds never run bun
 // install). This keeps the copy identical to the version pinned in
 // package.json.
@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
-const source = require.resolve("@handy-computer/models/catalog.json");
+const source = require.resolve("@bolke/models/catalog.json");
 const target = fileURLToPath(
   new URL("../src-tauri/src/catalog/catalog.json", import.meta.url),
 );
@@ -31,13 +31,13 @@ try {
 }
 
 if (current?.equals(expected)) {
-  console.log(`catalog.json matches @handy-computer/models@${version}`);
+  console.log(`catalog.json matches @bolke/models@${version}`);
 } else if (process.argv.includes("--check")) {
   console.error(
-    `src-tauri/src/catalog/catalog.json differs from @handy-computer/models@${version}; run \`bun run sync:catalog\``,
+    `src-tauri/src/catalog/catalog.json differs from @bolke/models@${version}; run \`bun run sync:catalog\``,
   );
   process.exit(1);
 } else {
   writeFileSync(target, expected);
-  console.log(`catalog.json synced from @handy-computer/models@${version}`);
+  console.log(`catalog.json synced from @bolke/models@${version}`);
 }

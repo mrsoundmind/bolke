@@ -77,3 +77,5 @@ For platform-specific setup, see [BUILD.md](BUILD.md).
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+Bolke includes its own copies of a few open-source libraries, kept under their original licences: the keyboard, microphone and audio libraries in `src-tauri/crates/` and the model list in `packages/models/`. Each folder has its licence file.

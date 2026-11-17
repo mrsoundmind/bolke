@@ -1,5 +1,5 @@
 //! Which language a transcription runs in. Ported from `autoLanguagePolicy`
-//! in `@handy-computer/models`, plus Bolke's single-language and Always rules.
+//! in `@bolke/models`, plus Bolke's single-language and Always rules.
 
 use serde::Serialize;
 use specta::Type;

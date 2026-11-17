@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { commands } from "@/bindings";
-import { LANGUAGE_DETECTION_MODEL, modelFile } from "@handy-computer/models";
+import { LANGUAGE_DETECTION_MODEL, modelFile } from "@bolke/models";
 import { useModelStore } from "@/stores/modelStore";
 import { BYTES_PER_MB, formatModelSize } from "@/lib/utils/format";
 

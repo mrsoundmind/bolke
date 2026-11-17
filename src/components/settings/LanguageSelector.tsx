@@ -9,7 +9,7 @@ import { LanguageDetectorDownload } from "./LanguageDetectorDownload";
 import { useSettings } from "../../hooks/useSettings";
 import { isComposingKeyEvent } from "../../lib/utils/keyboard";
 import { useLanguageDetector } from "../../hooks/useLanguageDetector";
-import { languageIdentity } from "@handy-computer/models";
+import { languageIdentity } from "@bolke/models";
 import {
   commands,
   type AutoUnavailableReason,

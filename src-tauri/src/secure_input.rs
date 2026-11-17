@@ -389,7 +389,7 @@ mod imp {
         }
 
         let carbon_hotkey = hotkeys::Hotkey::new(widened, hotkey.key).ok()?;
-        Some((carbon_hotkey.to_handy_string(), degraded))
+        Some((carbon_hotkey.to_bolke_string(), degraded))
     }
 
     /// Desired fallback for one binding, computed without plugin calls.
