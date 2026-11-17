@@ -51,7 +51,7 @@ To dictate, hold **Ctrl + Alt + Space**, speak, and let go.
 
 Shortcuts and typing work differently on each Linux desktop.
 
-- **The shortcut doesn't work (common on Wayland):** add a shortcut in your desktop's keyboard settings that runs `bolke --toggle-transcription`. Press it once to start and again to stop.
+- **The shortcut doesn't work (common on Wayland):** add a shortcut in your desktop's keyboard settings that runs `Bolke --toggle-transcription`. Press it once to start and again to stop.
 - **Text isn't typed into other apps:** install a typing helper. On Wayland, install `wtype` (or `dotool` or `ydotool` on GNOME and KDE). On X11, install `xdotool`. Then restart Bolke.
 - **No microphone:** allow microphone access in your system's sound or privacy settings.
 

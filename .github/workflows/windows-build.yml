@@ -9,6 +9,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    # Text-only changes (like the README) don't need a new installer.
+    paths-ignore:
+      - "**.md"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
