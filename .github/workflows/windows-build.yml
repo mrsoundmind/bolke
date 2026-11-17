@@ -1,0 +1,28 @@
+name: "Windows Build"
+
+# Builds the Windows (x64) installers on every push to main, and on demand
+# from the Actions tab. Unsigned for now: Windows SmartScreen will warn until
+# Bolke has its own code-signing certificate. The installers are attached to
+# the run as the "bolke-x86_64-pc-windows-msvc" artifact for 30 days.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: "windows-latest"
+      target: "x86_64-pc-windows-msvc"
+      build-args: ""
+      upload-artifacts: true
+      sign-binaries: false
+    secrets: inherit
