@@ -570,24 +570,35 @@ jobs:
       - name: Smoke test Windows installer
         # The runner is x64, so only the x64 build runs here.
         if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
-        shell: bash
+        # PowerShell, not bash: Git Bash rewrites "/S" as a path, so the
+        # installer opens its window and waits for a click forever.
+        shell: pwsh
+        timeout-minutes: 10
         run: |
-          set -euo pipefail
-          SETUP="$(find src-tauri/target -path '*/bundle/nsis/*-setup.exe' -print -quit)"
-          test -n "$SETUP" || { echo "ERROR: no -setup.exe was built" >&2; exit 1; }
-          echo "Installing $SETUP silently"
-          "$SETUP" /S
-          # The installer can return a moment before its files are in place.
-          for _ in $(seq 1 30); do
-            EXE="$(find "$LOCALAPPDATA/Bolke" -maxdepth 1 -iname 'bolke.exe' -print -quit 2>/dev/null || true)"
-            [ -n "$EXE" ] && break
-            sleep 2
-          done
-          test -n "${EXE:-}" || { echo "ERROR: Bolke.exe not installed under $LOCALAPPDATA/Bolke" >&2; ls -R "$LOCALAPPDATA/Bolke" >&2 || true; exit 1; }
-          "$EXE" --list-devices > /tmp/bolke-devices.txt 2>/tmp/bolke-devices.log || { cat /tmp/bolke-devices.log >&2; exit 1; }
-          cat /tmp/bolke-devices.txt
-          test -s /tmp/bolke-devices.txt || { echo "ERROR: Bolke listed no devices" >&2; cat /tmp/bolke-devices.log >&2; exit 1; }
-          echo "Windows app installed and starts"
+          $ErrorActionPreference = 'Stop'
+          $setup = Get-ChildItem -Recurse src-tauri/target -Filter '*-setup.exe' |
+            Where-Object { $_.FullName -match '\\bundle\\nsis\\' } | Select-Object -First 1
+          if (-not $setup) { throw 'No -setup.exe was built' }
+          Write-Host "Installing $($setup.Name) silently"
+          $p = Start-Process -FilePath $setup.FullName -ArgumentList '/S' -PassThru
+          if (-not $p.WaitForExit(300000)) { $p.Kill(); throw 'The installer did not finish within 5 minutes' }
+          if ($p.ExitCode -ne 0) { throw "The installer failed with exit code $($p.ExitCode)" }
+
+          $dir = Join-Path $env:LOCALAPPDATA 'Bolke'
+          $exe = Get-ChildItem $dir -Filter '*.exe' -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -ieq 'bolke.exe' } | Select-Object -First 1
+          if (-not $exe) { Get-ChildItem -Recurse $dir -ErrorAction SilentlyContinue | Out-Host; throw "Bolke.exe was not installed under $dir" }
+          Write-Host "Installed $($exe.FullName)"
+
+          $out = Join-Path $env:RUNNER_TEMP 'bolke-devices.txt'
+          $err = Join-Path $env:RUNNER_TEMP 'bolke-devices.log'
+          $app = Start-Process -FilePath $exe.FullName -ArgumentList '--list-devices' -PassThru `
+            -RedirectStandardOutput $out -RedirectStandardError $err
+          if (-not $app.WaitForExit(120000)) { $app.Kill(); Get-Content $err | Out-Host; throw 'Bolke did not exit within 2 minutes' }
+          Get-Content $out | Out-Host
+          if ($app.ExitCode -ne 0) { Get-Content $err | Out-Host; throw "Bolke exited with code $($app.ExitCode)" }
+          if ((Get-Item $out).Length -eq 0) { Get-Content $err | Out-Host; throw 'Bolke listed no devices' }
+          Write-Host 'Windows app installed and starts'
 
       - name: Upload artifacts (macOS)
         if: inputs.upload-artifacts && contains(inputs.platform, 'macos')
