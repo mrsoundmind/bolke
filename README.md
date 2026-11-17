@@ -133,19 +133,39 @@ To uninstall, go to **Settings → Apps → Installed apps**, find **Bolke** and
 
 ## Install on Linux
 
+Tested on clean installs of Ubuntu 22.04 and 24.04, Debian 12, Fedora and openSUSE.
+
+**1. Download**
+
 1. Sign in to GitHub and open the [Linux Build](../../actions/workflows/linux-build.yml) page.
 2. Click the newest run that has a green tick.
 3. Scroll down to **Artifacts** and download the one for your system:
-   - **Ubuntu, Debian, Linux Mint, Pop!\_OS:** `bolke-ubuntu-22.04-x86_64-unknown-linux-gnu` (a `.deb` file)
-   - **Fedora, openSUSE:** `bolke-ubuntu-24.04-x86_64-unknown-linux-gnu` (the `.rpm` file)
-   - **Any other system:** `bolke-ubuntu-24.04-x86_64-unknown-linux-gnu` (the `.AppImage` file)
-4. Unzip it, then install:
-   - `.deb`: `sudo apt install ./Bolke_*.deb`
-   - `.rpm`: `sudo dnf install ./Bolke-*.rpm`
-   - `.AppImage`: `chmod +x Bolke_*.AppImage`, then double-click it.
-5. Open **Bolke** from your apps menu. The first time, it downloads a speech model. After that it works offline.
+   - **Ubuntu, Debian, Linux Mint, Pop!\_OS, Zorin, elementary:** `bolke-ubuntu-22.04-x86_64-unknown-linux-gnu` (has a `.deb` file)
+   - **Fedora, openSUSE:** `bolke-ubuntu-24.04-x86_64-unknown-linux-gnu` (use the `.rpm` file)
+   - **Bazzite, Fedora Silverblue, SteamOS or anything else:** `bolke-ubuntu-24.04-x86_64-unknown-linux-gnu` (use the `.AppImage` file)
+4. Unzip the download. Open the folder you unzipped, right-click an empty space and choose **Open in Terminal**.
+
+**2. Install: type one command in that Terminal and press Enter**
+
+> [!IMPORTANT]
+> Don't double-click the `.deb` or `.rpm` file. That opens the software store, which on some systems fails or asks you to restart without installing. The command below installs Bolke and everything it needs in one go. It asks for your password; nothing shows while you type it, which is normal.
+
+| Your system                                | Command                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------- |
+| Ubuntu, Debian, Mint, Pop!\_OS and similar | `sudo apt install ./deb/Bolke_*.deb`                                |
+| Fedora                                     | `sudo dnf install ./rpm/Bolke-*.rpm`                                |
+| openSUSE                                   | `sudo zypper install --allow-unsigned-rpm ./rpm/Bolke-*.rpm`        |
+| AppImage (any system)                      | `chmod +x appimage/Bolke_*.AppImage && ./appimage/Bolke_*.AppImage` |
+
+On **Ubuntu 24.04**, an AppImage also needs `sudo apt install libfuse2t64` once. The `.deb` doesn't.
+
+On **Bazzite, Silverblue and other "atomic" systems**, use the AppImage. Installing a `.rpm` there only takes effect after a restart.
+
+**3. Open Bolke** from your apps menu (for the AppImage, double-click the file). The first time, it downloads a speech model. After that it works offline.
 
 To dictate, hold **Ctrl + Alt + Space**, speak, and let go.
+
+To uninstall: `sudo apt remove bolke` (Ubuntu and Debian), `sudo dnf remove Bolke` (Fedora) or `sudo zypper remove Bolke` (openSUSE). For the AppImage, delete the file.
 
 ### Linux setup
 
