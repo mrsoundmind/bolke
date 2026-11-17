@@ -8,6 +8,7 @@
   <img src="https://img.shields.io/badge/macOS-in%20development-9AA7C7?style=flat-square&logo=apple" alt="macOS: in development">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2F6BFF?style=flat-square" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/runs-100%25%20on--device-1E46C8?style=flat-square" alt="Runs 100% on-device">
+  <a href="https://github.com/mrsoundmind"><img src="https://img.shields.io/badge/created%20by-Shashank%20Rai%20(Mr.%20Soundmind)-0E142C?style=flat-square&logo=github" alt="Created by Shashank Rai (Mr. Soundmind)"></a>
 </p>
 
 <p align="center">
@@ -15,6 +16,7 @@
   <a href="#install-on-linux"><b>Linux</b></a> &nbsp;·&nbsp;
   <a href="#features"><b>Features</b></a> &nbsp;·&nbsp;
   <a href="#screenshots"><b>Screenshots</b></a> &nbsp;·&nbsp;
+  <a href="#logo-and-colours"><b>Logo</b></a> &nbsp;·&nbsp;
   <a href="#building-it-yourself"><b>Build it</b></a>
 </p>
 
@@ -23,6 +25,10 @@
 **Bolke** (बोलके, "by speaking") is private voice dictation for your computer. Hold a shortcut, speak, and your words are typed into whatever app you're using.
 
 Everything runs on your own computer. Your voice never leaves it: no account, no cloud.
+
+<p align="center">
+  <img src=".github/assets/in-action.png" alt="Bolke typing a dictated message into a notes window, with its live recording bubble at the bottom of the screen" width="100%">
+</p>
 
 ## How it works
 
@@ -47,17 +53,37 @@ Everything runs on your own computer. Your voice never leaves it: no account, no
 ## Screenshots
 
 <p align="center">
-  <img src=".github/assets/screenshot-home.png" alt="Bolke's home screen" width="80%">
+  <img src=".github/assets/screenshot-home.png" alt="Bolke's home screen" width="85%">
+  <br><sub><b>Home:</b> your shortcut, your model and recent dictations at a glance</sub>
 </p>
 
 <table>
+  <tr>
+    <td width="50%"><img src=".github/assets/screenshot-welcome.png" alt="First-run welcome screen, choosing languages"></td>
+    <td width="50%"><img src=".github/assets/screenshot-models.png" alt="The Models screen, with speed, accuracy and size for each model"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Welcome:</b> pick the languages you speak</sub></td>
+    <td align="center"><sub><b>Models:</b> compare accuracy, speed and size</sub></td>
+  </tr>
   <tr>
     <td width="50%"><img src=".github/assets/screenshot-history.png" alt="History of past dictations"></td>
     <td width="50%"><img src=".github/assets/screenshot-settings.png" alt="Bolke's settings"></td>
   </tr>
   <tr>
     <td align="center"><sub><b>History:</b> everything you've dictated</sub></td>
-    <td align="center"><sub><b>Settings:</b> shortcut, microphone and model</sub></td>
+    <td align="center"><sub><b>Settings:</b> shortcut, microphone and sounds</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src=".github/assets/screenshot-advanced.png" alt="Advanced settings"></td>
+    <td width="50%" align="center">
+      <img src=".github/assets/bubble-recording.png" alt="The small recording bubble" width="80%"><br><br>
+      <img src=".github/assets/bubble-live.png" alt="The live bubble, showing words as you speak" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Advanced:</b> overlay, pasting and more</sub></td>
+    <td align="center"><sub><b>Recording bubble:</b> floats over your work while you speak</sub></td>
   </tr>
 </table>
 
@@ -116,6 +142,14 @@ macOS turns on **Secure Input** while you type a password, and some apps (passwo
 - In Terminal or iTerm, open the app menu and turn off **Secure Keyboard Entry**.
 - If nothing helps, log out and back in.
 
+## Logo and colours
+
+<p align="center">
+  <img src="brand/bolke-brand-sheet.png" alt="Bolke logos on dark and light, app icon, menu bar icon and colours" width="100%">
+</p>
+
+The logo, app icon and colours are in the [`brand`](brand) folder, as SVG and PNG.
+
 ## Building it yourself
 
 You need [Rust](https://rustup.rs/) and [Bun](https://bun.sh/).
@@ -138,5 +172,9 @@ Bolke includes its own copies of a few open-source libraries, kept under their o
 <br>
 
 <p align="center">
-  <sub>Made with care by <a href="https://github.com/mrsoundmind">@mrsoundmind</a> · बोलके, just speak.</sub>
+  <img src="brand/bolke-app-icon-512.png" alt="" width="72">
+  <br>
+  <b>Created by Shashank Rai</b> · <a href="https://github.com/mrsoundmind">Mr. Soundmind (@mrsoundmind)</a>
+  <br>
+  <sub>बोलके, just speak.</sub>
 </p>

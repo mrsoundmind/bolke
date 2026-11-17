@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 120 120" role="img" aria-label="Bolke app icon">
+<!-- Bolke app icon: the top bar with the app orb hanging from it. Source for the 1024 px icon. -->
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14245E"/><stop offset="1" stop-color="#060B1E"/></linearGradient>
+<radialGradient id="fill" gradientUnits="userSpaceOnUse" cx="0" cy="6.7" r="84"><stop offset="0" stop-color="#96CDFF" stop-opacity="0.95"/><stop offset="0.16" stop-color="#3F8CFF" stop-opacity="0.9"/><stop offset="0.42" stop-color="#1E46C8" stop-opacity="0.92"/><stop offset="0.74" stop-color="#0A1650"/></radialGradient>
+<radialGradient id="hi" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.6"/><stop offset="0.7" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<clipPath id="clip"><circle cx="0" cy="0" r="56"/></clipPath>
+<filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+<filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="16"/></filter>
+</defs>
+<rect x="0" y="0" width="120" height="120" rx="27" fill="url(#bg)"/>
+<path d="M26 40 H94" stroke="#F1F5FF" stroke-width="7" stroke-linecap="round"/>
+<g transform="translate(60 69) scale(0.46)">
+<circle r="56" fill="#2F6BFF" opacity="0.5" filter="url(#glow)"/>
+<circle r="56" fill="#070A14"/>
+<circle r="56" fill="url(#fill)"/>
+<g clip-path="url(#clip)">
+<circle r="56" fill="none" stroke="#82BEFF" stroke-opacity="0.4" stroke-width="18" filter="url(#blur)"/>
+<g fill="none" stroke-linecap="round" filter="url(#blur)">
+<path d="M-35 -22 C-15 -37 25 -33 37 -9" stroke="#96D2FF" stroke-opacity="0.6" stroke-width="7"/>
+<path d="M37 23 C21 43 -19 43 -33 19" stroke="#5A96FF" stroke-opacity="0.5" stroke-width="7"/>
+<path d="M-25 9 C-10 -7 13 -5 25 7" stroke="#B4DCFF" stroke-opacity="0.45" stroke-width="4"/>
+</g>
+</g>
+<ellipse cx="-13.4" cy="-35.3" rx="15.7" ry="8.4" fill="url(#hi)"/>
+</g>
+</svg>

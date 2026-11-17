@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="200" viewBox="0 0 560 200" role="img" aria-label="bolke">
+<!-- Bolke logo, option B: dark ink letters for light backgrounds. The "o" is the app orb. -->
+<defs>
+<radialGradient id="fill" gradientUnits="userSpaceOnUse" cx="0" cy="6.7" r="84"><stop offset="0" stop-color="#96CDFF" stop-opacity="0.95"/><stop offset="0.16" stop-color="#3F8CFF" stop-opacity="0.9"/><stop offset="0.42" stop-color="#1E46C8" stop-opacity="0.92"/><stop offset="0.74" stop-color="#0A1650"/></radialGradient>
+<radialGradient id="hi" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.6"/><stop offset="0.7" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<clipPath id="clip"><circle cx="0" cy="0" r="56"/></clipPath>
+<filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+</defs>
+<g fill="none" stroke="#0B1022" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+<path d="M40 16 V170"/><circle cx="93" cy="117" r="53"/>
+<path d="M296 16 V170"/>
+<path d="M326 16 V170"/><path d="M388 66 L328 120 L390 170"/>
+<path d="M409 117 H515 A53 53 0 1 0 499.5 154.5"/>
+<path d="M14 60 H546"/>
+</g>
+<g transform="translate(215 117)">
+<circle r="56" fill="#070A14"/>
+<circle r="56" fill="url(#fill)"/>
+<g clip-path="url(#clip)">
+<circle r="56" fill="none" stroke="#82BEFF" stroke-opacity="0.4" stroke-width="18" filter="url(#blur)"/>
+<g fill="none" stroke-linecap="round" filter="url(#blur)">
+<path d="M-35 -22 C-15 -37 25 -33 37 -9" stroke="#96D2FF" stroke-opacity="0.6" stroke-width="7"/>
+<path d="M37 23 C21 43 -19 43 -33 19" stroke="#5A96FF" stroke-opacity="0.5" stroke-width="7"/>
+<path d="M-25 9 C-10 -7 13 -5 25 7" stroke="#B4DCFF" stroke-opacity="0.45" stroke-width="4"/>
+</g>
+</g>
+<ellipse cx="-13.4" cy="-35.3" rx="15.7" ry="8.4" fill="url(#hi)"/>
+</g>
+</svg>
