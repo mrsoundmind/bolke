@@ -1,8 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use clap::Parser;
 use bolke_app_lib::CliArgs;
+use clap::Parser;
 
 fn main() {
     // Let users pick GTK's display backend even inside the AppImage, whose

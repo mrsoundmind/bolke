@@ -391,7 +391,8 @@ pub fn change_keyboard_implementation_setting(
     }
 
     // Initialize new implementation if needed (NativeKeys needs state)
-    if new_impl == KeyboardImplementation::NativeKeys && initialize_native_keys_with_rollback(&app)? {
+    if new_impl == KeyboardImplementation::NativeKeys && initialize_native_keys_with_rollback(&app)?
+    {
         // Shortcuts already registered during init.
         crate::secure_input::reconcile_fallback(&app);
         return Ok(ImplementationChangeResult {
