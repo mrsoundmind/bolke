@@ -25,7 +25,8 @@
     "more": "More",
     "onDeviceTitle": "100% on-device",
     "onDeviceBody": "Your voice never leaves this Mac. No account, no cloud.",
-    "notes": "Notes"
+    "notes": "Notes",
+    "meetings": "Meetings"
   },
   "onboarding": {
     "customModelDescription": "Oficiálně nepodporováno",
@@ -1165,6 +1166,14 @@
       "rename": "Change name",
       "copy": "Copy",
       "copyTheirs": "Copy their words"
-    }
+    },
+    "writeNoteHint": "Type it out, or speak into it with your dictation shortcut."
+  },
+  "meetings": {
+    "title": "Meetings",
+    "subtitle": "Every meeting written out, with who said what.",
+    "addRecording": "Add a recording",
+    "all": "All meetings",
+    "empty": "No meetings yet. Record one, or add a recording of one."
   }
 }

@@ -9,6 +9,7 @@ import {
   Lock,
   NotebookPen,
   Settings,
+  Users,
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
@@ -56,6 +57,13 @@ export const SECTIONS_CONFIG = {
   notes: {
     labelKey: "sidebar.notes",
     icon: NotebookPen,
+    group: "main",
+    component: null,
+    enabled: () => true,
+  },
+  meetings: {
+    labelKey: "sidebar.meetings",
+    icon: Users,
     group: "main",
     component: null,
     enabled: () => true,
@@ -180,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {meeting.recording && (
         <button
           type="button"
-          onClick={() => onSectionChange("notes")}
+          onClick={() => onSectionChange("meetings")}
           className="flex items-center gap-[10px] mb-2 px-4 py-[14px] rounded-[18px] bg-[rgba(255,95,87,0.08)] border border-[rgba(255,120,110,0.25)] text-[13px] text-[#ffc9c4] text-start cursor-pointer hover:border-[rgba(255,120,110,0.5)]"
         >
           <span

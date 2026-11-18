@@ -72,9 +72,9 @@ const NOTE_COLUMNS: &str = "id, project_id, kind, title, text, text_pending, sum
 pub enum NoteKind {
     /// A quick spoken idea.
     Idea,
-    /// A long recording of a meeting, call or lecture.
+    /// A meeting, call or lecture, recorded or added from a file.
     Meeting,
-    /// Typed by hand, or made from an audio file.
+    /// Typed by hand (older ones were made from an audio file).
     Note,
 }
 

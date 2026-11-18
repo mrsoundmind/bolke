@@ -25,7 +25,8 @@
     "more": "More",
     "onDeviceTitle": "100% on-device",
     "onDeviceBody": "Your voice never leaves this Mac. No account, no cloud.",
-    "notes": "Notes"
+    "notes": "Notes",
+    "meetings": "Meetings"
   },
   "onboarding": {
     "customModelDescription": "Not officially supported",
@@ -1035,7 +1036,7 @@
   },
   "notes": {
     "title": "Notes",
-    "subtitle": "Your ideas, meetings and notes, written out in full.",
+    "subtitle": "Your ideas and written notes.",
     "writeNote": "Write a note",
     "addAudio": "Add an audio file",
     "audioFiles": "Audio and video",
@@ -1044,7 +1045,7 @@
     "recordIdeaHint": "Or press <keys/> in any app. It's saved here, not typed.",
     "recordIdeaHintNoKeys": "Set a shortcut in Settings to record from any app. It's saved here, not typed.",
     "recordMeeting": "Record a meeting",
-    "recordMeetingHint": "Calls, classes, interviews. No time limit.",
+    "recordMeetingHint": "Calls and rooms, any number of people. Bolke writes it out and shows who said what.",
     "allNotes": "All notes",
     "noProject": "No project",
     "newProject": "New project",
@@ -1052,7 +1053,7 @@
     "renameProject": "Rename project",
     "deleteProject": "Delete project",
     "deleteProjectConfirm": "Delete the project “{{name}}”? Its notes are kept, outside any project.",
-    "empty": "No notes yet. Record an idea or a meeting, or write a note.",
+    "empty": "No notes yet. Record an idea or write a note.",
     "emptyProject": "Nothing here yet.",
     "untitled": "Untitled",
     "summaryTag": "✦ Summary",
@@ -1165,6 +1166,14 @@
       "rename": "Change name",
       "copy": "Copy",
       "copyTheirs": "Copy their words"
-    }
+    },
+    "writeNoteHint": "Type it out, or speak into it with your dictation shortcut."
+  },
+  "meetings": {
+    "title": "Meetings",
+    "subtitle": "Every meeting written out, with who said what.",
+    "addRecording": "Add a recording",
+    "all": "All meetings",
+    "empty": "No meetings yet. Record one, or add a recording of one."
   }
 }

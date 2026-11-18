@@ -185,3 +185,17 @@ export const downloadPercent = (
     done,
   };
 };
+
+/** One colour per person, in the order they first spoke. */
+const PERSON_COLORS = [
+  "#8FB4FF",
+  "#F2B36B",
+  "#7FE0B8",
+  "#E58FD8",
+  "#FF9C8A",
+  "#B8A6FF",
+  "#7FD4F0",
+  "#E8D27A",
+];
+export const colorOf = (id: number) =>
+  PERSON_COLORS[(id - 1) % PERSON_COLORS.length];

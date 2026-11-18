@@ -170,7 +170,7 @@ pub async fn import_audio_note(
     let duration_ms = wav_duration_ms(&history.get_audio_file_path(&entry.file_name));
     let note = app
         .state::<Arc<NotesManager>>()
-        .create_recorded_note(NoteKind::Note, &title, project_id, entry.id, duration_ms)
+        .create_recorded_note(NoteKind::Meeting, &title, project_id, entry.id, duration_ms)
         .await;
     jobs.start(entry.id);
     note.map_err(err)

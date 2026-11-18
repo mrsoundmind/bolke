@@ -6,20 +6,7 @@ import { commands, type Note, type SpeakerModels } from "@/bindings";
 import type { ActiveJobStatus } from "@/stores/transcriptionJobsStore";
 import { notify } from "@/stores/noticeStore";
 import { copyToClipboard } from "../settings/history/clipboard";
-import { formatBytes, formatDuration } from "./noteUtils";
-
-/** One colour per person, in the order they first spoke. */
-const COLORS = [
-  "#8FB4FF",
-  "#F2B36B",
-  "#7FE0B8",
-  "#E58FD8",
-  "#FF9C8A",
-  "#B8A6FF",
-  "#7FD4F0",
-  "#E8D27A",
-];
-const colorOf = (id: number) => COLORS[(id - 1) % COLORS.length];
+import { colorOf, formatBytes, formatDuration } from "./noteUtils";
 
 /** "03:12", or "1:03:12" past an hour. */
 const clock = (ms: number) => {

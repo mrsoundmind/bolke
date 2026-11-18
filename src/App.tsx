@@ -63,9 +63,11 @@ const renderSettingsContent = (
       />
     );
   }
-  if (section === "notes") {
+  if (section === "notes" || section === "meetings") {
     return (
       <NotesPage
+        key={section}
+        mode={section}
         onOpenPostProcess={() => onSectionChange("postProcessing")}
         onOpenSettings={() => onSectionChange("general")}
       />

@@ -259,7 +259,7 @@ export const NoteView: React.FC<NoteViewProps> = ({
           className="inline-flex items-center gap-[10px] min-h-11 px-5 rounded-full border border-edge bg-[rgba(20,30,64,0.6)] text-[14px] font-medium text-text cursor-pointer hover:border-[rgba(140,170,255,0.4)]"
         >
           <ArrowLeft size={16} aria-hidden="true" />
-          {t("notes.title")}
+          {note.kind === "meeting" ? t("meetings.title") : t("notes.title")}
         </button>
         <div className="flex gap-1">
           <button

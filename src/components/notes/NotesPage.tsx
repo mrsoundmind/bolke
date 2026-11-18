@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { commands, type Note, type Project } from "@/bindings";
 import { useTranscriptionJobsStore } from "@/stores/transcriptionJobsStore";
-import { NotesList } from "./NotesList";
+import { NotesList, type NotesMode } from "./NotesList";
 import { MeetingRecording } from "./MeetingRecording";
 import { NoteView } from "./NoteView";
 import { useMeetingStatus, useNotesChanged } from "./noteUtils";
@@ -11,12 +11,13 @@ type View =
   | { name: "recording" }
   | { name: "note"; id: number };
 
-/** Notes (design/wireframes/NotesList, NotesRecording, NoteOpen): ideas,
- * meetings and written notes, sorted into projects. */
+/** The Notes tab (ideas and written notes) or the Meetings tab, sorted
+ * into projects (design/wireframes/NotesTab, MeetingsTab, NoteOpen). */
 export const NotesPage: React.FC<{
+  mode: NotesMode;
   onOpenPostProcess: () => void;
   onOpenSettings: () => void;
-}> = ({ onOpenPostProcess, onOpenSettings }) => {
+}> = ({ mode, onOpenPostProcess, onOpenSettings }) => {
   const [view, setView] = useState<View>({ name: "list" });
   const [notes, setNotes] = useState<Note[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -29,10 +30,17 @@ export const NotesPage: React.FC<{
       commands.listNotes(null),
       commands.listProjects(),
     ]);
-    if (n.status === "ok") setNotes(n.data);
+    if (n.status === "ok")
+      setNotes(
+        n.data.filter((note) =>
+          mode === "meetings"
+            ? note.kind === "meeting"
+            : note.kind !== "meeting",
+        ),
+      );
     if (p.status === "ok") setProjects(p.data);
     setLoaded(true);
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     useTranscriptionJobsStore.getState().initialize();
@@ -46,9 +54,9 @@ export const NotesPage: React.FC<{
     if (loaded) reload();
   }, [jobCount]);
 
-  // A meeting still recording (after leaving Notes) opens its screen again.
+  // A meeting still recording (after leaving Meetings) opens its screen again.
   useEffect(() => {
-    if (meeting.recording && view.name === "list")
+    if (mode === "meetings" && meeting.recording && view.name === "list")
       setView({ name: "recording" });
   }, [meeting.recording]);
 
@@ -86,6 +94,7 @@ export const NotesPage: React.FC<{
   }
   return (
     <NotesList
+      mode={mode}
       notes={notes}
       projects={projects}
       jobs={jobs}

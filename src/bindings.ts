@@ -1680,11 +1680,11 @@ export type NoteKind =
  */
 "idea" | 
 /**
- * A long recording of a meeting, call or lecture.
+ * A meeting, call or lecture, recorded or added from a file.
  */
 "meeting" | 
 /**
- * Typed by hand, or made from an audio file.
+ * Typed by hand (older ones were made from an audio file).
  */
 "note"
 export type NoteLine = { start_ms: number; end_ms: number; person: number; text: string }

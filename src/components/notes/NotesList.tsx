@@ -16,7 +16,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useOsType } from "@/hooks/useOsType";
 import { notify } from "@/stores/noticeStore";
 import { Keycaps } from "../shared/Keycaps";
-import { KindIcon, formatDuration, formatNoteDate } from "./noteUtils";
+import { KindIcon, colorOf, formatDuration, formatNoteDate } from "./noteUtils";
 
 const MEDIA_EXTENSIONS = [
   "mp3",
@@ -38,7 +38,11 @@ const MEDIA_EXTENSIONS = [
 /** Which notes show: all, one project, or those in none. */
 type Filter = "all" | "none" | number;
 
+/** Which tab this list is: ideas and written notes, or meetings. */
+export type NotesMode = "notes" | "meetings";
+
 interface NotesListProps {
+  mode: NotesMode;
   notes: Note[];
   projects: Project[];
   jobs: Record<number, ActiveJobStatus>;
@@ -57,6 +61,7 @@ const tag =
   "inline-flex items-center min-h-6 px-[10px] rounded-full bg-[rgba(20,30,64,0.9)] border border-[rgba(140,170,255,0.16)] text-[12px] text-[#c3ceea]";
 
 export const NotesList: React.FC<NotesListProps> = ({
+  mode,
   notes,
   projects,
   jobs,
@@ -89,6 +94,9 @@ export const NotesList: React.FC<NotesListProps> = ({
   );
   const projectId = typeof filter === "number" ? filter : null;
   const unfiled = notes.filter((n) => n.project_id == null).length;
+  const countIn = (id: number) =>
+    notes.filter((n) => n.project_id === id).length;
+  const meetings = mode === "meetings";
 
   const writeNote = async () => {
     const result = await commands.createTextNote("", projectId);
@@ -186,99 +194,133 @@ export const NotesList: React.FC<NotesListProps> = ({
       <div className="flex justify-between items-end gap-4 flex-wrap">
         <div className="flex flex-col gap-[6px]">
           <h1 className="text-grad m-0 text-[36px] leading-[1.15] font-light tracking-[-0.02em]">
-            {t("notes.title")}
+            {meetings ? t("meetings.title") : t("notes.title")}
           </h1>
-          <p className="m-0 text-[14px] text-ink-2">{t("notes.subtitle")}</p>
+          <p className="m-0 text-[14px] text-ink-2">
+            {meetings ? t("meetings.subtitle") : t("notes.subtitle")}
+          </p>
         </div>
         <div className="flex gap-[10px] flex-wrap">
-          <button type="button" className={pillBtn} onClick={writeNote}>
-            <PenLine size={16} aria-hidden="true" />
-            {t("notes.writeNote")}
-          </button>
-          <button type="button" className={pillBtn} onClick={addAudio}>
-            <Upload size={16} aria-hidden="true" />
-            {t("notes.addAudio")}
-          </button>
+          {meetings ? (
+            <button type="button" className={pillBtn} onClick={addAudio}>
+              <Upload size={16} aria-hidden="true" />
+              {t("meetings.addRecording")}
+            </button>
+          ) : (
+            <button type="button" className={pillBtn} onClick={writeNote}>
+              <PenLine size={16} aria-hidden="true" />
+              {t("notes.writeNote")}
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
-        <div className="relative rounded-[24px] bg-linear-160 from-[#2e2266] to-[#15123a] border border-[rgba(167,139,255,0.35)] hover:border-[rgba(167,139,255,0.6)] text-[#f3efff]">
-          {/* The whole card starts an idea; the shortcut button sits on top. */}
+      {meetings ? (
+        <div className="grid grid-cols-1 gap-4">
           <button
             type="button"
-            aria-label={t("notes.recordIdea")}
-            onClick={() => commands.toggleIdeaRecording()}
-            className="absolute inset-0 rounded-[24px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#a78bff]"
-          />
-          <div className="relative flex items-center gap-[18px] p-[22px] pointer-events-none">
+            onClick={onRecordMeeting}
+            className="flex items-center gap-[18px] p-[22px] rounded-[24px] text-start cursor-pointer bg-linear-160 from-[#1d3fa8] to-[#10225e] border border-[rgba(140,170,255,0.25)] text-white hover:border-[rgba(140,170,255,0.5)] focus-visible:outline-2 focus-visible:outline-accent-soft"
+          >
             <span
               aria-hidden="true"
-              className="shrink-0 w-14 h-14 rounded-full inline-flex items-center justify-center bg-[rgba(167,139,255,0.2)] text-[#c4b5ff] shadow-[0_0_30px_rgba(140,110,255,0.3)]"
+              className="shrink-0 w-14 h-14 rounded-full inline-flex items-center justify-center bg-[rgba(5,10,30,0.35)] text-[#d6e1ff]"
             >
-              <Mic size={24} strokeWidth={1.8} />
+              <Users size={24} strokeWidth={1.8} />
             </span>
-            <span className="flex flex-col items-start gap-[6px] min-w-0">
-              <span aria-hidden="true" className="text-[17px] font-medium">
-                {t("notes.recordIdea")}
+            <span className="flex flex-col gap-[6px] min-w-0">
+              <span className="text-[17px] font-medium">
+                {t("notes.recordMeeting")}
               </span>
-              <span className="text-[13px] leading-[1.45] text-[#d8d0ff]">
-                {ideaBinding ? (
-                  <Trans
-                    i18nKey="notes.recordIdeaHint"
-                    components={{
-                      keys: (
-                        <Keycaps
-                          binding={ideaBinding}
-                          osType={osType}
-                          size="line"
-                        />
-                      ),
-                    }}
-                  />
-                ) : (
-                  t("notes.recordIdeaHintNoKeys")
-                )}
+              <span className="text-[13px] leading-[1.45] text-[#d6e1ff]">
+                {t("notes.recordMeetingHint")}
               </span>
-              <button
-                type="button"
-                onClick={onChangeShortcut}
-                className="pointer-events-auto mt-1 min-h-8 px-3 rounded-full text-[12px] font-medium text-[#d8d0ff] cursor-pointer bg-[rgba(5,10,30,0.35)] border border-[rgba(200,190,255,0.25)] hover:text-white hover:border-[rgba(200,190,255,0.5)] focus-visible:outline-2 focus-visible:outline-[#a78bff]"
-              >
-                {t("notes.changeShortcut")}
-              </button>
             </span>
-          </div>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onRecordMeeting}
-          className="flex items-center gap-[18px] p-[22px] rounded-[24px] text-start cursor-pointer bg-linear-160 from-[#1d3fa8] to-[#10225e] border border-[rgba(140,170,255,0.25)] text-white hover:border-[rgba(140,170,255,0.5)] focus-visible:outline-2 focus-visible:outline-accent-soft"
-        >
-          <span
-            aria-hidden="true"
-            className="shrink-0 w-14 h-14 rounded-full inline-flex items-center justify-center bg-[rgba(5,10,30,0.35)] text-[#d6e1ff]"
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
+          <div className="relative rounded-[24px] bg-linear-160 from-[#2e2266] to-[#15123a] border border-[rgba(167,139,255,0.35)] hover:border-[rgba(167,139,255,0.6)] text-[#f3efff]">
+            {/* The whole card starts an idea; the shortcut button sits on top. */}
+            <button
+              type="button"
+              aria-label={t("notes.recordIdea")}
+              onClick={() => commands.toggleIdeaRecording()}
+              className="absolute inset-0 rounded-[24px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#a78bff]"
+            />
+            <div className="relative flex items-center gap-[18px] p-[22px] pointer-events-none">
+              <span
+                aria-hidden="true"
+                className="shrink-0 w-14 h-14 rounded-full inline-flex items-center justify-center bg-[rgba(167,139,255,0.2)] text-[#c4b5ff] shadow-[0_0_30px_rgba(140,110,255,0.3)]"
+              >
+                <Mic size={24} strokeWidth={1.8} />
+              </span>
+              <span className="flex flex-col items-start gap-[6px] min-w-0">
+                <span aria-hidden="true" className="text-[17px] font-medium">
+                  {t("notes.recordIdea")}
+                </span>
+                <span className="text-[13px] leading-[1.45] text-[#d8d0ff]">
+                  {ideaBinding ? (
+                    <Trans
+                      i18nKey="notes.recordIdeaHint"
+                      components={{
+                        keys: (
+                          <Keycaps
+                            binding={ideaBinding}
+                            osType={osType}
+                            size="line"
+                          />
+                        ),
+                      }}
+                    />
+                  ) : (
+                    t("notes.recordIdeaHintNoKeys")
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={onChangeShortcut}
+                  className="pointer-events-auto mt-1 min-h-8 px-3 rounded-full text-[12px] font-medium text-[#d8d0ff] cursor-pointer bg-[rgba(5,10,30,0.35)] border border-[rgba(200,190,255,0.25)] hover:text-white hover:border-[rgba(200,190,255,0.5)] focus-visible:outline-2 focus-visible:outline-[#a78bff]"
+                >
+                  {t("notes.changeShortcut")}
+                </button>
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={writeNote}
+            className="flex items-center gap-[18px] p-[22px] rounded-[24px] text-start cursor-pointer bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.18)] text-white hover:border-[rgba(140,170,255,0.4)] focus-visible:outline-2 focus-visible:outline-accent-soft"
           >
-            <Users size={24} strokeWidth={1.8} />
-          </span>
-          <span className="flex flex-col gap-[6px] min-w-0">
-            <span className="text-[17px] font-medium">
-              {t("notes.recordMeeting")}
+            <span
+              aria-hidden="true"
+              className="shrink-0 w-14 h-14 rounded-full inline-flex items-center justify-center bg-[rgba(47,107,255,0.14)] text-[#8fb4ff]"
+            >
+              <PenLine size={24} strokeWidth={1.8} />
             </span>
-            <span className="text-[13px] leading-[1.45] text-[#d6e1ff]">
-              {t("notes.recordMeetingHint")}
+            <span className="flex flex-col gap-[6px] min-w-0">
+              <span className="text-[17px] font-medium">
+                {t("notes.writeNote")}
+              </span>
+              <span className="text-[13px] leading-[1.45] text-[#b7c3e0]">
+                {t("notes.writeNoteHint")}
+              </span>
             </span>
-          </span>
-        </button>
-      </div>
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-2 flex-wrap items-center">
-        {segButton("all", t("notes.allNotes"), notes.length)}
+        {segButton(
+          "all",
+          meetings ? t("meetings.all") : t("notes.allNotes"),
+          notes.length,
+        )}
         {projects.map((p) =>
           naming === p.id ? (
             <React.Fragment key={p.id}>{nameField}</React.Fragment>
           ) : (
-            segButton(p.id, p.name, p.note_count)
+            segButton(p.id, p.name, countIn(p.id))
           ),
         )}
         {unfiled > 0 &&
@@ -329,7 +371,11 @@ export const NotesList: React.FC<NotesListProps> = ({
       <div className="flex flex-col gap-[10px]">
         {loaded && shown.length === 0 && (
           <p className="m-0 px-5 py-4 rounded-[20px] bg-card border border-line text-[13px] text-ink-2">
-            {filter === "all" ? t("notes.empty") : t("notes.emptyProject")}
+            {filter !== "all"
+              ? t("notes.emptyProject")
+              : meetings
+                ? t("meetings.empty")
+                : t("notes.empty")}
           </p>
         )}
         {shown.map((note) => {
@@ -386,6 +432,23 @@ export const NotesList: React.FC<NotesListProps> = ({
                       {note.text}
                     </span>
                   )
+                )}
+                {note.people && note.people.people.length > 0 && (
+                  <span className="flex gap-[6px] flex-wrap">
+                    {note.people.people.map((p) => (
+                      <span
+                        key={p.id}
+                        className="inline-flex items-center gap-[6px] min-h-[26px] px-[10px] rounded-full bg-[rgba(20,30,64,0.7)] border border-[rgba(140,170,255,0.14)] text-[12px] text-[#c9d4f2]"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="w-[9px] h-[9px] rounded-full shrink-0"
+                          style={{ background: colorOf(p.id) }}
+                        />
+                        {p.name ?? t("notes.people.person", { number: p.id })}
+                      </span>
+                    ))}
+                  </span>
                 )}
                 <span className="text-[12px] text-ink-3">{meta}</span>
               </span>
