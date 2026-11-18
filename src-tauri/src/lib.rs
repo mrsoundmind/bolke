@@ -867,6 +867,7 @@ pub fn run(cli_args: CliArgs) {
             commands::notes::toggle_idea_recording,
             commands::notes::import_audio_note,
             commands::notes::summarize_note,
+            commands::notes::get_summary_source,
             commands::notes::get_meeting_status,
             commands::notes::start_meeting,
             commands::notes::update_meeting,

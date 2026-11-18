@@ -1158,6 +1158,12 @@ async summarizeNote(id: number) : Promise<Result<Note, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * What will write a summary, so the note can say so before the user asks.
+ */
+async getSummarySource() : Promise<SummarySource> {
+    return await TAURI_INVOKE("get_summary_source");
+},
 async getMeetingStatus() : Promise<MeetingStatus> {
     return await TAURI_INVOKE("get_meeting_status");
 },
@@ -1738,6 +1744,22 @@ export type StreamTextEvent = { committed: string; tentative: string }
  * Semantic kind of "working" phase, used to localize the spinner label.
  */
 export type StreamWorkKind = "transcribing" | "polishing"
+/**
+ * What writes a note's summary.
+ */
+export type SummarySource = 
+/**
+ * The AI service set up in Post Process settings.
+ */
+"service" | 
+/**
+ * Apple Intelligence, on this Mac, when no service is set up.
+ */
+"apple_intelligence" | 
+/**
+ * Nothing: the user has to set up a service.
+ */
+"none"
 /**
  * UI appearance mode. `System` follows the OS `prefers-color-scheme`; `Light`
  * and `Dark` force one of the two palettes Bolke already ships.

@@ -280,49 +280,149 @@ sentences, and a list of action points: things someone said they or others \
 will do. Each action point is one short sentence. If there are none, give an \
 empty list. Reply only with JSON: {\"summary\": \"...\", \"action_points\": [\"...\"]}";
 
-async fn summarize(settings: &AppSettings, text: &str) -> Result<NoteSummary> {
-    let provider = settings
-        .active_post_process_provider()
-        .cloned()
-        .ok_or_else(|| anyhow!("no_ai_provider"))?;
+/// What writes a note's summary.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum SummarySource {
+    /// The AI service set up in Post Process settings.
+    Service,
+    /// Apple Intelligence, on this Mac, when no service is set up.
+    AppleIntelligence,
+    /// Nothing: the user has to set up a service.
+    None,
+}
+
+/// The post-process provider and model, when the user has set one up.
+fn configured_service(
+    settings: &AppSettings,
+) -> Option<(crate::settings::PostProcessProvider, String)> {
+    let provider = settings.active_post_process_provider()?.clone();
     let model = settings
         .post_process_models
         .get(&provider.id)
         .cloned()
         .unwrap_or_default();
-    if model.trim().is_empty() {
-        return Err(anyhow!("no_ai_provider"));
+    (!model.trim().is_empty()).then_some((provider, model))
+}
+
+fn apple_intelligence_ready() -> bool {
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    return crate::apple_intelligence::check_apple_intelligence_availability();
+    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+    false
+}
+
+fn summary_source(settings: &AppSettings) -> SummarySource {
+    match configured_service(settings) {
+        // Apple Intelligence picked by hand counts as a service.
+        Some(_) => SummarySource::Service,
+        None if apple_intelligence_ready() => SummarySource::AppleIntelligence,
+        None => SummarySource::None,
     }
+}
+
+/// What will write a summary, so the note can say so before the user asks.
+#[tauri::command]
+#[specta::specta]
+pub fn get_summary_source(app: AppHandle) -> SummarySource {
+    summary_source(&get_settings(&app))
+}
+
+/// Apple's on-device model reads about 4,000 tokens, its reply included, so
+/// a longer note is summarized in parts of this many words.
+const ON_DEVICE_PART_WORDS: usize = 1_500;
+
+/// Writes the summary with Apple Intelligence, on this Mac. A long note is
+/// summarized part by part; the parts' summaries are then summarized again,
+/// and all the parts' action points are kept.
+async fn summarize_on_device(text: String, token_limit: i32) -> Result<NoteSummary> {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.len() <= ON_DEVICE_PART_WORDS {
+        return summarize_part_on_device(text, token_limit).await;
+    }
+    let parts: Vec<String> = words
+        .chunks(ON_DEVICE_PART_WORDS)
+        .map(|part| part.join(" "))
+        .collect();
+    debug!(
+        "Summarizing a long note on this Mac in {} parts",
+        parts.len()
+    );
+    let mut summaries = Vec::with_capacity(parts.len());
+    let mut action_points: Vec<ActionPoint> = Vec::new();
+    for part in parts {
+        let summary = summarize_part_on_device(part, token_limit).await?;
+        summaries.push(summary.summary);
+        for point in summary.action_points {
+            if !action_points.iter().any(|p| p.text == point.text) {
+                action_points.push(point);
+            }
+        }
+    }
+    let joined = summaries.join("\n\n");
+    let summary = if joined.split_whitespace().count() <= ON_DEVICE_PART_WORDS {
+        summarize_part_on_device(joined, token_limit).await?.summary
+    } else {
+        joined
+    };
+    Ok(NoteSummary {
+        summary,
+        action_points,
+    })
+}
+
+async fn summarize_part_on_device(text: String, token_limit: i32) -> Result<NoteSummary> {
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    {
+        if !crate::apple_intelligence::check_apple_intelligence_availability() {
+            return Err(anyhow!("Apple Intelligence isn't available on this Mac"));
+        }
+        let reply = tauri::async_runtime::spawn_blocking(move || {
+            crate::apple_intelligence::process_text_plain(SUMMARY_PROMPT, &text)
+        })
+        .await
+        .map_err(|e| anyhow!("{e}"))?
+        .map_err(|e| anyhow!("{e}"))?;
+        let mut summary = parse_summary_reply(&reply)?;
+        // A word limit set for Apple Intelligence in Post Process applies to
+        // the summary, not the action points.
+        if token_limit > 0 {
+            let limit = token_limit as usize;
+            let words: Vec<&str> = summary.summary.split_whitespace().collect();
+            if words.len() > limit {
+                summary.summary = words[..limit].join(" ");
+            }
+        }
+        Ok(summary)
+    }
+    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+    {
+        let _ = (text, token_limit);
+        Err(anyhow!("Apple Intelligence isn't available here"))
+    }
+}
+
+async fn summarize(settings: &AppSettings, text: &str) -> Result<NoteSummary> {
+    let text: String = text.chars().take(MAX_SUMMARY_INPUT).collect();
+    let Some((provider, model)) = configured_service(settings) else {
+        // Nothing set up: Apple Intelligence on the Mac needs no key.
+        if apple_intelligence_ready() {
+            debug!("Summarizing a note with Apple Intelligence (no service set up)");
+            return summarize_on_device(text, 0).await;
+        }
+        return Err(anyhow!("no_ai_provider"));
+    };
     let api_key = settings
         .post_process_api_keys
         .get(&provider.id)
         .cloned()
         .unwrap_or_default();
-    let text: String = text.chars().take(MAX_SUMMARY_INPUT).collect();
     let disable_reasoning = matches!(provider.id.as_str(), "custom" | "openrouter");
     debug!("Summarizing a note with provider '{}'", provider.id);
 
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
-        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-        {
-            if !crate::apple_intelligence::check_apple_intelligence_availability() {
-                return Err(anyhow!("Apple Intelligence isn't available on this Mac"));
-            }
-            let token_limit = model.trim().parse::<i32>().unwrap_or(0);
-            let reply = tauri::async_runtime::spawn_blocking(move || {
-                crate::apple_intelligence::process_text_with_system_prompt(
-                    SUMMARY_PROMPT,
-                    &text,
-                    token_limit,
-                )
-            })
-            .await
-            .map_err(|e| anyhow!("{e}"))?
-            .map_err(|e| anyhow!("{e}"))?;
-            return parse_summary_reply(&reply);
-        }
-        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
-        return Err(anyhow!("Apple Intelligence isn't available here"));
+        let token_limit = model.trim().parse::<i32>().unwrap_or(0);
+        return summarize_on_device(text, token_limit).await;
     }
 
     let reply = if provider.supports_structured_output {

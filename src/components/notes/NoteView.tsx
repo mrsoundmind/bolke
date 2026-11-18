@@ -10,7 +10,12 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { commands, type Note, type Project } from "@/bindings";
+import {
+  commands,
+  type Note,
+  type Project,
+  type SummarySource,
+} from "@/bindings";
 import type { ActiveJobStatus } from "@/stores/transcriptionJobsStore";
 import { useOsType } from "@/hooks/useOsType";
 import { AudioPlayer } from "../ui/AudioPlayer";
@@ -60,6 +65,9 @@ export const NoteView: React.FC<NoteViewProps> = ({
   const [copied, setCopied] = useState(false);
   const [summaryState, setSummaryState] = useState<SummaryState>("idle");
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summarySource, setSummarySource] = useState<SummarySource | null>(
+    null,
+  );
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const dirty = useRef(false);
   const textRef = useRef("");
@@ -73,6 +81,13 @@ export const NoteView: React.FC<NoteViewProps> = ({
     // Don't overwrite what's being typed.
     if (!dirty.current) setText(result.data.text);
   }, [id]);
+
+  useEffect(() => {
+    commands
+      .getSummarySource()
+      .then(setSummarySource)
+      .catch(() => setSummarySource(null));
+  }, []);
 
   useEffect(() => {
     load();
@@ -348,18 +363,35 @@ export const NoteView: React.FC<NoteViewProps> = ({
         ) : (
           <div className="flex flex-col gap-3 items-start">
             <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
-              {note.text_pending ? t("notes.ai.notReady") : t("notes.ai.intro")}
+              {note.text_pending
+                ? t("notes.ai.notReady")
+                : summarySource === "apple_intelligence"
+                  ? t("notes.ai.introOnDevice")
+                  : summarySource === "none"
+                    ? osType === "macos"
+                      ? t("notes.ai.introNoneMac")
+                      : t("notes.ai.introNone")
+                    : t("notes.ai.intro")}
             </p>
-            {!note.text_pending && (
-              <button
-                type="button"
-                className={lightBtn}
-                onClick={summarize}
-                disabled={!text.trim()}
-              >
-                {t("notes.ai.write")}
-              </button>
-            )}
+            {!note.text_pending &&
+              (summarySource === "none" ? (
+                <button
+                  type="button"
+                  className={lightBtn}
+                  onClick={onOpenPostProcess}
+                >
+                  {t("notes.ai.openSettings")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={lightBtn}
+                  onClick={summarize}
+                  disabled={!text.trim()}
+                >
+                  {t("notes.ai.write")}
+                </button>
+              ))}
           </div>
         )}
 

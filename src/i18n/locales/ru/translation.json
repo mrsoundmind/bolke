@@ -1092,6 +1092,9 @@
     "ai": {
       "title": "AI summary",
       "intro": "Get a short summary and the action points from this note. Bolke sends the text to the AI service you set up in Post Process settings.",
+      "introOnDevice": "Get a short summary and the action points from this note. Apple Intelligence writes it on this Mac, so the text never leaves it.",
+      "introNoneMac": "Get a short summary and the action points from this note. Turn on Apple Intelligence in your Mac's System Settings, or set up an AI service in Post Process settings.",
+      "introNone": "Get a short summary and the action points from this note. Set up an AI service in Post Process settings first.",
       "notReady": "You can get a summary once the text is written out.",
       "write": "Write a summary",
       "again": "Write again",

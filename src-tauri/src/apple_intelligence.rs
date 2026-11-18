@@ -20,12 +20,16 @@ pub fn check_apple_intelligence_availability() -> bool {
     unsafe { is_apple_intelligence_available() == 1 }
 }
 
-// Link to the Swift function for system prompt support
+// Link to the Swift functions for system prompt support
 extern "C" {
     pub fn process_text_with_system_prompt_apple(
         system_prompt: *const c_char,
         user_content: *const c_char,
         max_tokens: i32,
+    ) -> *mut AppleLLMResponse;
+    pub fn process_text_plain_apple(
+        system_prompt: *const c_char,
+        user_content: *const c_char,
     ) -> *mut AppleLLMResponse;
 }
 
@@ -41,7 +45,22 @@ pub fn process_text_with_system_prompt(
     let response_ptr = unsafe {
         process_text_with_system_prompt_apple(system_cstr.as_ptr(), user_cstr.as_ptr(), max_tokens)
     };
+    take_response(response_ptr)
+}
 
+/// Like `process_text_with_system_prompt`, but the reply is plain text, not
+/// a cleaned transcript: for replies with their own shape, like a summary.
+pub fn process_text_plain(system_prompt: &str, user_content: &str) -> Result<String, String> {
+    let system_cstr = CString::new(system_prompt).map_err(|e| e.to_string())?;
+    let user_cstr = CString::new(user_content).map_err(|e| e.to_string())?;
+
+    let response_ptr =
+        unsafe { process_text_plain_apple(system_cstr.as_ptr(), user_cstr.as_ptr()) };
+    take_response(response_ptr)
+}
+
+/// Reads the reply out of the Swift response, then frees it.
+fn take_response(response_ptr: *mut AppleLLMResponse) -> Result<String, String> {
     if response_ptr.is_null() {
         return Err("Null response from Apple LLM".to_string());
     }

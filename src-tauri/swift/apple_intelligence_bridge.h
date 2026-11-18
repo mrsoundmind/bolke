@@ -19,6 +19,9 @@ int is_apple_intelligence_available(void);
 // Process text using Apple's on-device LLM with separate system prompt and user content
 AppleLLMResponse* process_text_with_system_prompt_apple(const char* system_prompt, const char* user_content, int max_tokens);
 
+// Process text with the on-device LLM, replying in plain text (no cleaned-transcript format)
+AppleLLMResponse* process_text_plain_apple(const char* system_prompt, const char* user_content);
+
 // Free memory allocated by the Apple LLM response
 void free_apple_llm_response(AppleLLMResponse* response);
 

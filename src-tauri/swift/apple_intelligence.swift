@@ -56,8 +56,35 @@ public func processTextWithSystemPrompt(
     _ userContent: UnsafePointer<CChar>,
     maxTokens: Int32
 ) -> UnsafeMutablePointer<AppleLLMResponse> {
-    let swiftSystemPrompt = String(cString: systemPrompt)
-    let swiftUserContent = String(cString: userContent)
+    return respondOnDevice(
+        systemPrompt: String(cString: systemPrompt),
+        userContent: String(cString: userContent),
+        cleanedTranscript: true,
+        tokenLimit: max(0, Int(maxTokens))
+    )
+}
+
+/// Plain text in, plain text out: no transcript-cleaning format, for replies
+/// with a shape of their own, such as a note's summary.
+@_cdecl("process_text_plain_apple")
+public func processTextPlain(
+    _ systemPrompt: UnsafePointer<CChar>,
+    _ userContent: UnsafePointer<CChar>
+) -> UnsafeMutablePointer<AppleLLMResponse> {
+    return respondOnDevice(
+        systemPrompt: String(cString: systemPrompt),
+        userContent: String(cString: userContent),
+        cleanedTranscript: false,
+        tokenLimit: 0
+    )
+}
+
+private func respondOnDevice(
+    systemPrompt swiftSystemPrompt: String,
+    userContent swiftUserContent: String,
+    cleanedTranscript: Bool,
+    tokenLimit: Int
+) -> UnsafeMutablePointer<AppleLLMResponse> {
     let responsePtr = ResponsePointer.allocate(capacity: 1)
     responsePtr.initialize(to: AppleLLMResponse(response: nil, success: 0, error_message: nil))
 
@@ -76,7 +103,6 @@ public func processTextWithSystemPrompt(
         return responsePtr
     }
 
-    let tokenLimit = max(0, Int(maxTokens))
     let semaphore = DispatchSemaphore(value: 0)
 
     // Thread-safe container to pass results from async task back to calling thread
@@ -95,15 +121,20 @@ public func processTextWithSystemPrompt(
             )
             var output: String
 
-            do {
-                let structured = try await session.respond(
-                    to: swiftUserContent,
-                    generating: CleanedTranscript.self
-                )
-                output = structured.content.cleanedText
-            } catch {
-                let fallbackGeneration = try await session.respond(to: swiftUserContent)
-                output = fallbackGeneration.content
+            if cleanedTranscript {
+                do {
+                    let structured = try await session.respond(
+                        to: swiftUserContent,
+                        generating: CleanedTranscript.self
+                    )
+                    output = structured.content.cleanedText
+                } catch {
+                    let fallbackGeneration = try await session.respond(to: swiftUserContent)
+                    output = fallbackGeneration.content
+                }
+            } else {
+                let generation = try await session.respond(to: swiftUserContent)
+                output = generation.content
             }
 
             if tokenLimit > 0 {
