@@ -77,6 +77,7 @@ const IDLE: MeetingStatus = {
   title: "",
   project_id: null,
   elapsed_ms: 0,
+  call: false,
 };
 
 /** The meeting recording under way, checked every second. */

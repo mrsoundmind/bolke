@@ -13,6 +13,16 @@ import { notify } from "@/stores/noticeStore";
 import BolkeOrb from "../icons/BolkeOrb";
 
 const BARS = 9;
+/** Remembers whether the last meeting was a call. */
+const CALL_KEY = "bolke.meetingIsCall";
+
+const readCallChoice = () => {
+  try {
+    return localStorage.getItem(CALL_KEY) !== "false";
+  } catch {
+    return true;
+  }
+};
 
 interface MeetingRecordingProps {
   projects: Project[];
@@ -45,6 +55,9 @@ export const MeetingRecording: React.FC<MeetingRecordingProps> = ({
   const [now, setNow] = useState(Date.now());
   const [levels, setLevels] = useState<number[]>(Array(BARS).fill(0));
   const [busy, setBusy] = useState(false);
+  // The others on a video call, from what the computer plays.
+  const [canCall, setCanCall] = useState(false);
+  const [call, setCall] = useState(readCallChoice);
   const started = useRef(false);
 
   // Start, or pick up the recording already under way.
@@ -53,7 +66,10 @@ export const MeetingRecording: React.FC<MeetingRecordingProps> = ({
     started.current = true;
     (async () => {
       const current = await commands.getMeetingStatus();
+      const callable = await commands.canRecordCalls().catch(() => false);
+      setCanCall(callable);
       if (current.recording) {
+        setCall(current.call);
         setTitle(current.title);
         setProjectId(current.project_id);
         setStartedAt(Date.now() - current.elapsed_ms);
@@ -65,9 +81,13 @@ export const MeetingRecording: React.FC<MeetingRecordingProps> = ({
       }).format(new Date());
       const firstTitle = t("notes.recording.defaultTitle", { date });
       setTitle(firstTitle);
-      const result = await commands.startMeeting(firstTitle, null);
+      const wantCall = readCallChoice();
+      const result = await commands.startMeeting(firstTitle, null, callable);
       if (result.status === "ok") {
         setStartedAt(Date.now());
+        // Recorded all along, so turning it on later keeps it in time.
+        if (callable && !wantCall) commands.setMeetingCall(false);
+        if (callable && !result.data.call) setCanCall(false);
       } else {
         notify({
           title: t("notes.recording.startFailed"),
@@ -95,6 +115,17 @@ export const MeetingRecording: React.FC<MeetingRecordingProps> = ({
     const id = setTimeout(() => commands.updateMeeting(title, projectId), 400);
     return () => clearTimeout(id);
   }, [title, projectId, startedAt]);
+
+  const toggleCall = () => {
+    const on = !call;
+    setCall(on);
+    commands.setMeetingCall(on);
+    try {
+      localStorage.setItem(CALL_KEY, String(on));
+    } catch {
+      // Only the default for next time is lost.
+    }
+  };
 
   const stop = async () => {
     setBusy(true);
@@ -147,6 +178,37 @@ export const MeetingRecording: React.FC<MeetingRecordingProps> = ({
           />
         ))}
       </div>
+
+      {canCall && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={call}
+          onClick={toggleCall}
+          className="flex items-center gap-[14px] w-full max-w-[520px] px-4 py-3 rounded-[18px] border border-[rgba(140,170,255,0.18)] bg-[rgba(12,18,40,0.6)] text-start cursor-pointer hover:border-[rgba(140,170,255,0.4)] focus-visible:outline-2 focus-visible:outline-accent-soft"
+        >
+          <span className="flex flex-col gap-[2px] flex-1">
+            <span className="text-[14px] font-medium text-text">
+              {t("notes.recording.call.title")}
+            </span>
+            <span className="text-[13px] leading-[1.45] text-ink-2">
+              {t("notes.recording.call.body")}
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${
+              call ? "bg-[#2a5ff0]" : "bg-[#2a3352]"
+            }`}
+          >
+            <span
+              className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white transition-[left] ${
+                call ? "left-[19px]" : "left-[3px]"
+              }`}
+            />
+          </span>
+        </button>
+      )}
 
       <div className="grid grid-cols-2 gap-[14px] w-full max-w-[520px] text-start">
         <div className="flex flex-col gap-[6px]">

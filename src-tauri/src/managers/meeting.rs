@@ -20,6 +20,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Instant;
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::call_audio::{self, CallCapture};
 use crate::managers::history::HistoryManager;
 use crate::settings::get_settings;
 
@@ -37,6 +38,9 @@ pub struct PendingMeeting {
     pub file_name: String,
     pub title: String,
     pub project_id: Option<i64>,
+    /// The call's sound, recorded beside it until it's mixed in.
+    #[serde(default)]
+    pub call_file: Option<String>,
 }
 
 /// The recording under way, for the app's screens.
@@ -46,6 +50,8 @@ pub struct MeetingStatus {
     pub title: String,
     pub project_id: Option<i64>,
     pub elapsed_ms: u64,
+    /// The call's sound is being recorded too.
+    pub call: bool,
 }
 
 /// A finished recording, ready to become a note.
@@ -114,6 +120,7 @@ struct Active {
     pending: PendingMeeting,
     written: Arc<AtomicU64>,
     started: Instant,
+    call: Option<CallCapture>,
 }
 
 pub struct MeetingRecorder {
@@ -149,13 +156,21 @@ impl MeetingRecorder {
                 title: active.pending.title.clone(),
                 project_id: active.pending.project_id,
                 elapsed_ms: active.started.elapsed().as_millis() as u64,
+                call: active.call.as_ref().is_some_and(CallCapture::is_on),
             },
             None => MeetingStatus::default(),
         }
     }
 
-    /// Opens the microphone chosen in Settings and starts writing.
-    pub fn start(&self, title: String, project_id: Option<i64>) -> Result<MeetingStatus> {
+    /// Opens the microphone chosen in Settings and starts writing. With
+    /// `call`, the computer's sound (the others on a video call) is recorded
+    /// too, when this computer can.
+    pub fn start(
+        &self,
+        title: String,
+        project_id: Option<i64>,
+        call: bool,
+    ) -> Result<MeetingStatus> {
         let mut active = self.lock();
         if active.is_some() {
             return Err(anyhow!("A recording is already under way"));
@@ -168,10 +183,12 @@ impl MeetingRecorder {
             chrono::Utc::now().timestamp_millis()
         );
         let path = dir.join(&file_name);
-        let pending = PendingMeeting {
+        let call_file = call.then(|| file_name.replace(".wav", ".call.wav"));
+        let mut pending = PendingMeeting {
             file_name,
             title,
             project_id,
+            call_file,
         };
         write_pending(&dir, &pending)?;
 
@@ -214,16 +231,38 @@ impl MeetingRecorder {
             }
         };
 
+        let started = Instant::now();
+        let call = match pending.call_file.as_ref() {
+            Some(call_file) => match CallCapture::start(&dir.join(call_file)) {
+                Ok(capture) => Some(capture),
+                Err(e) => {
+                    // The meeting goes on with the microphone alone.
+                    warn!("Couldn't record the call's sound: {e}");
+                    pending.call_file = None;
+                    write_pending(&dir, &pending)?;
+                    None
+                }
+            },
+            None => None,
+        };
         info!("Meeting recording started: {}", pending.file_name);
         *active = Some(Active {
             recorder,
             pending,
             written,
-            started: Instant::now(),
+            started,
+            call,
         });
         drop(active);
         crate::tray::update_tray_menu(&self.app);
         Ok(self.status())
+    }
+
+    /// Turns the call's sound on or off while recording.
+    pub fn set_call(&self, on: bool) {
+        if let Some(capture) = self.lock().as_ref().and_then(|a| a.call.as_ref()) {
+            capture.set_on(on);
+        }
     }
 
     /// Changes the title or project while recording.
@@ -244,6 +283,11 @@ impl MeetingRecorder {
             return Ok(None);
         };
         crate::tray::update_tray_menu(&self.app);
+        let call = active.call.map(|capture| {
+            let delay_ms = capture.started.duration_since(active.started).as_millis() as i64;
+            capture.stop();
+            delay_ms
+        });
         let stopped = active.recorder.stop();
         let written = active.written.load(Ordering::Relaxed);
         match stopped {
@@ -267,9 +311,17 @@ impl MeetingRecorder {
             active.pending.file_name,
             written / SAMPLE_RATE as u64
         );
+        let dir = self.recordings_dir();
+        let wav = dir.join(&active.pending.file_name);
+        if let (Some(call_file), Some(delay_ms)) = (active.pending.call_file.as_ref(), call) {
+            if let Err(e) = call_audio::mix_into(&wav, &dir.join(call_file), delay_ms) {
+                error!("Couldn't mix in the call's sound: {e}");
+            }
+        }
         Ok(Some(SavedMeeting {
+            duration_ms: wav_duration_ms(&wav)
+                .unwrap_or((written * 1000 / SAMPLE_RATE as u64) as i64),
             pending: active.pending,
-            duration_ms: (written * 1000 / SAMPLE_RATE as u64) as i64,
         }))
     }
 
@@ -278,6 +330,9 @@ impl MeetingRecorder {
         if let Some(saved) = self.stop()? {
             let dir = self.recordings_dir();
             remove_quietly(&dir.join(&saved.pending.file_name));
+            if let Some(call_file) = &saved.pending.call_file {
+                remove_quietly(&dir.join(call_file));
+            }
             self.forget(&saved.pending);
         }
         Ok(())
@@ -313,6 +368,14 @@ impl MeetingRecorder {
                 continue;
             };
             let wav = dir.join(&pending.file_name);
+            if let Some(call_file) = &pending.call_file {
+                let call = dir.join(call_file);
+                if call.exists() && wav.exists() {
+                    if let Err(e) = call_audio::mix_into(&wav, &call, 0) {
+                        error!("Couldn't mix in a rescued call's sound: {e}");
+                    }
+                }
+            }
             match wav_duration_ms(&wav) {
                 Some(duration_ms) if duration_ms > 0 => found.push(SavedMeeting {
                     pending,

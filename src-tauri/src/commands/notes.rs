@@ -190,8 +190,23 @@ pub fn start_meeting(
     meeting: State<'_, Arc<MeetingRecorder>>,
     title: String,
     project_id: Option<i64>,
+    call: bool,
 ) -> Result<MeetingStatus, String> {
-    meeting.start(title, project_id).map_err(err)
+    meeting.start(title, project_id, call).map_err(err)
+}
+
+/// Turns the call's sound on or off during a meeting.
+#[tauri::command]
+#[specta::specta]
+pub fn set_meeting_call(meeting: State<'_, Arc<MeetingRecorder>>, on: bool) {
+    meeting.set_call(on);
+}
+
+/// Whether a meeting can record the call's sound on this computer.
+#[tauri::command]
+#[specta::specta]
+pub fn can_record_calls() -> bool {
+    crate::call_audio::available()
 }
 
 #[tauri::command]

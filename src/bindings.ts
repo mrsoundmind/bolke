@@ -1164,6 +1164,18 @@ async summarizeNote(id: number) : Promise<Result<Note, string>> {
 async getSummarySource() : Promise<SummarySource> {
     return await TAURI_INVOKE("get_summary_source");
 },
+/**
+ * Whether a meeting can record the call's sound on this computer.
+ */
+async canRecordCalls() : Promise<boolean> {
+    return await TAURI_INVOKE("can_record_calls");
+},
+/**
+ * Turns the call's sound on or off during a meeting.
+ */
+async setMeetingCall(on: boolean) : Promise<void> {
+    await TAURI_INVOKE("set_meeting_call", { on });
+},
 async getSpeakerModels() : Promise<SpeakerModels> {
     return await TAURI_INVOKE("get_speaker_models");
 },
@@ -1264,9 +1276,9 @@ async selectSummaryModel(id: string) : Promise<Result<null, string>> {
 async getMeetingStatus() : Promise<MeetingStatus> {
     return await TAURI_INVOKE("get_meeting_status");
 },
-async startMeeting(title: string, projectId: number | null) : Promise<Result<MeetingStatus, string>> {
+async startMeeting(title: string, projectId: number | null, call: boolean) : Promise<Result<MeetingStatus, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("start_meeting", { title, projectId }) };
+    return { status: "ok", data: await TAURI_INVOKE("start_meeting", { title, projectId, call }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -1601,7 +1613,11 @@ export type MacPermission = "accessibility" | "microphone"
 /**
  * The recording under way, for the app's screens.
  */
-export type MeetingStatus = { recording: boolean; title: string; project_id: number | null; elapsed_ms: number }
+export type MeetingStatus = { recording: boolean; title: string; project_id: number | null; elapsed_ms: number; 
+/**
+ * The call's sound is being recorded too.
+ */
+call: boolean }
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**

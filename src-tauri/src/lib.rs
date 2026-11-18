@@ -4,6 +4,7 @@ mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
 mod autostart;
+mod call_audio;
 mod catalog;
 mod chinese_script;
 pub mod cli;
@@ -880,6 +881,8 @@ pub fn run(cli_args: CliArgs) {
             commands::notes::import_audio_note,
             commands::notes::summarize_note,
             commands::notes::get_summary_source,
+            commands::notes::can_record_calls,
+            commands::notes::set_meeting_call,
             commands::notes::get_speaker_models,
             commands::notes::download_speaker_models,
             commands::notes::cancel_speaker_models_download,
