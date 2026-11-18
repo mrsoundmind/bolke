@@ -7,10 +7,12 @@ import {
   Home,
   Info,
   Lock,
+  NotebookPen,
   Settings,
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
+import { useMeetingStatus } from "./notes/noteUtils";
 import BolkeWordmark from "./icons/BolkeWordmark";
 import { useSettings } from "../hooks/useSettings";
 import {
@@ -47,6 +49,13 @@ export const SECTIONS_CONFIG = {
   home: {
     labelKey: "sidebar.home",
     icon: Home,
+    group: "main",
+    component: null,
+    enabled: () => true,
+  },
+  notes: {
+    labelKey: "sidebar.notes",
+    icon: NotebookPen,
     group: "main",
     component: null,
     enabled: () => true,
@@ -113,6 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const meeting = useMeetingStatus();
 
   const availableSections = Object.entries(SECTIONS_CONFIG)
     .filter(([_, config]) => config.enabled(settings))
@@ -167,6 +177,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </p>
       {more.map(navButton)}
       <div className="grow min-h-6" />
+      {meeting.recording && (
+        <button
+          type="button"
+          onClick={() => onSectionChange("notes")}
+          className="flex items-center gap-[10px] mb-2 px-4 py-[14px] rounded-[18px] bg-[rgba(255,95,87,0.08)] border border-[rgba(255,120,110,0.25)] text-[13px] text-[#ffc9c4] text-start cursor-pointer hover:border-[rgba(255,120,110,0.5)]"
+        >
+          <span
+            aria-hidden="true"
+            className="w-[9px] h-[9px] rounded-full bg-[#ff6b61] shadow-[0_0_10px_#ff6b61] animate-pulse"
+          />
+          {t("notes.recording.sidebar")}
+        </button>
+      )}
       <div className="flex flex-col gap-[10px] p-4 rounded-[18px] bg-[rgba(20,30,64,0.55)] border border-[rgba(140,170,255,0.12)]">
         <div className="flex items-center gap-2 text-[13px] font-semibold">
           <Lock

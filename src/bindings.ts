@@ -1037,6 +1037,166 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
     else return { status: "error", error: e  as any };
 }
 },
+async listProjects() : Promise<Result<Project[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_projects") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async createProject(name: string) : Promise<Result<Project, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_project", { name }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async renameProject(id: number, name: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rename_project", { id, name }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteProject(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_project", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async listNotes(projectId: number | null) : Promise<Result<Note[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_notes", { projectId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getNote(id: number) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_note", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async createTextNote(title: string, projectId: number | null) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_text_note", { title, projectId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateNote(id: number, changes: NoteChanges) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_note", { id, changes }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async moveNote(id: number, projectId: number | null) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("move_note", { id, projectId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Deletes the note and its recording.
+ */
+async deleteNote(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_note", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setActionPointDone(id: number, index: number, done: boolean) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_action_point_done", { id, index, done }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Starts or stops recording an idea, like pressing the idea shortcut.
+ */
+async toggleIdeaRecording() : Promise<void> {
+    await TAURI_INVOKE("toggle_idea_recording");
+},
+/**
+ * Makes a note from an audio or video file; its text is written out in the
+ * background.
+ */
+async importAudioNote(path: string, projectId: number | null) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("import_audio_note", { path, projectId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Writes the note's summary and action points with the AI provider set up
+ * for post-processing.
+ */
+async summarizeNote(id: number) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("summarize_note", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getMeetingStatus() : Promise<MeetingStatus> {
+    return await TAURI_INVOKE("get_meeting_status");
+},
+async startMeeting(title: string, projectId: number | null) : Promise<Result<MeetingStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_meeting", { title, projectId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateMeeting(title: string, projectId: number | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_meeting", { title, projectId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Stops and saves the recording as a note; its text is written out in the
+ * background. `None` if nothing was recording.
+ */
+async stopMeeting() : Promise<Result<Note | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_meeting") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async discardMeeting() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discard_meeting") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
  * Checks if the Mac is a laptop by detecting battery presence
  * 
@@ -1096,6 +1256,11 @@ transcriptionJob: "transcription-job"
 
 /** user-defined types **/
 
+export type ActionPoint = { text: string; 
+/**
+ * Ticked off by the user.
+ */
+done?: boolean }
 /**
  * The container-level `serde(default)` (backed by the `Default` impl below)
  * guarantees every field — including ones added in the future — falls back to
@@ -1321,6 +1486,10 @@ export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
  * A macOS privacy permission Bolke asks for during onboarding.
  */
 export type MacPermission = "accessibility" | "microphone"
+/**
+ * The recording under way, for the app's screens.
+ */
+export type MeetingStatus = { recording: boolean; title: string; project_id: number | null; elapsed_ms: number }
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**
@@ -1348,6 +1517,52 @@ sha256: string | null } } |
  */
 "Local"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
+export type Note = { id: number; project_id: number | null; kind: NoteKind; title: string; 
+/**
+ * The full text. Empty while `text_pending`.
+ */
+text: string; 
+/**
+ * The recording is still waiting for its transcript.
+ */
+text_pending: boolean; summary: NoteSummary | null; 
+/**
+ * The History entry holding the recording.
+ */
+entry_id: number | null; 
+/**
+ * The recording's file name in the recordings folder, when it has one.
+ */
+audio_file: string | null; duration_ms: number | null; 
+/**
+ * Seconds since the Unix epoch.
+ */
+created_at: number; updated_at: number }
+/**
+ * What a note change sets; `None` leaves a field as it is.
+ */
+export type NoteChanges = { title: string | null; text: string | null; kind: NoteKind | null }
+export type NoteKind = 
+/**
+ * A quick spoken idea.
+ */
+"idea" | 
+/**
+ * A long recording of a meeting, call or lecture.
+ */
+"meeting" | 
+/**
+ * Typed by hand, or made from an audio file.
+ */
+"note"
+/**
+ * The AI summary of a note.
+ */
+export type NoteSummary = { summary: string; 
+/**
+ * Things someone has to do; empty when there are none.
+ */
+action_points?: ActionPoint[] }
 export type Notice = { code: NoticeCode; level: NoticeLevel; source: NoticeSource; 
 /**
  * What only Rust knows, such as a model name or a raw error.
@@ -1356,7 +1571,7 @@ detail: string | null }
 /**
  * The frontend maps each code to its text in `src/lib/notices.ts`.
  */
-export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "PasteBlockedElevated" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed"
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "PasteBlockedElevated" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed" | "IdeaSaveFailed"
 export type NoticeLevel = 
 /**
  * Nothing came out, or Bolke can't do its job.
@@ -1406,6 +1621,11 @@ export type PostProcessApiFormat =
  */
 "anthropic"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean; api_format?: PostProcessApiFormat }
+export type Project = { id: number; name: string; created_at: number; 
+/**
+ * How many notes it holds.
+ */
+note_count: number }
 /**
  * Recording phase events for windows that follow along (onboarding's Try it).
  */
@@ -1564,7 +1784,11 @@ export type TranscriptionOutcome =
 /**
  * Transcribing or pasting failed.
  */
-"failed"
+"failed" | 
+/**
+ * The text was saved to Notes as an idea, not typed.
+ */
+"saved"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type VadBackend = "silero" | "earshot"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }

@@ -22,7 +22,14 @@ type OverlayState =
   | "transcribing"
   | "processing"
   | "notice"
-  | "live_notice";
+  | "live_notice"
+  // Recording an idea for Notes: the compact pill, in violet.
+  | "idea_recording"
+  | "idea_transcribing"
+  | "idea_processing"
+  | "idea_saved";
+
+const isIdeaState = (state: OverlayState) => state.startsWith("idea_");
 
 const isNoticeState = (state: OverlayState) =>
   state === "notice" || state === "live_notice";
@@ -106,7 +113,11 @@ const RecordingOverlay: React.FC = () => {
         // Reset synchronously before settings I/O. A fast microphone can emit
         // recording-ready while the awaits below are in flight; resetting after
         // them would overwrite that event and leave the overlay stuck arming.
-        if (overlayState === "recording" || overlayState === "streaming") {
+        if (
+          overlayState === "recording" ||
+          overlayState === "streaming" ||
+          overlayState === "idea_recording"
+        ) {
           setCaptureReady(false);
           smoothedLevelsRef.current = Array(16).fill(0);
           setLevels(Array(WAVE_BARS).fill(0));
@@ -127,6 +138,7 @@ const RecordingOverlay: React.FC = () => {
           // Keep the previous/default placement if settings can't be read.
         }
         setState(overlayState);
+        if (overlayState === "idea_recording") setElapsed(0);
         if (overlayState === "streaming") {
           setPhase("listening");
           setWorkKind("transcribing");
@@ -222,7 +234,8 @@ const RecordingOverlay: React.FC = () => {
 
   // Elapsed capture timer starts only once microphone samples are flowing.
   useEffect(() => {
-    if (state !== "streaming" || !isVisible || !captureReady) return;
+    if (state !== "streaming" && state !== "idea_recording") return;
+    if (!isVisible || !captureReady) return;
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
   }, [state, isVisible, captureReady]);
@@ -424,6 +437,62 @@ const RecordingOverlay: React.FC = () => {
                   true,
                 )
               : listeningRow(open, true)}
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Idea bubble: the compact pill in violet, with a label, saving to
+  // Notes instead of typing. A notice still shows as the normal pill.
+  if (isIdeaState(state) && !shownNotice) {
+    const ideaWorking =
+      state === "idea_transcribing" || state === "idea_processing";
+    const saved = state === "idea_saved";
+    return (
+      <div
+        dir={direction}
+        className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
+      >
+        <div
+          className={`scard compact idea ${ideaWorking ? "iworking" : ""} ${
+            saved ? "isaved" : ""
+          }`}
+        >
+          {saved ? (
+            <div className="sbase sidea-done">
+              <span className="sidea-tick" aria-hidden="true">
+                <svg viewBox="0 0 16 16">
+                  <path
+                    d="M3.5 8.5 6.5 11.5 12.5 5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <span className="sidea-label">{t("overlay.ideaSaved")}</span>
+            </div>
+          ) : ideaWorking ? (
+            workingRow(
+              modelLoading
+                ? t("overlay.loadingModel")
+                : t("overlay.ideaWriting"),
+              true,
+            )
+          ) : (
+            <div className="sbase sidea">
+              <span
+                className={`sdot ${captureReady ? "ready" : "arming"}`}
+                aria-hidden="true"
+              />
+              {waveform}
+              <span className="sidea-label">{t("overlay.ideaListening")}</span>
+              <span className="stimer sidea-timer">{fmtTime(elapsed)}</span>
+              {cancelBtn}
+            </div>
+          )}
         </div>
       </div>
     );

@@ -160,6 +160,24 @@ impl TranscriptionJobManager {
         Ok(entry)
     }
 
+    /// Adds a recording already in the recordings folder (16 kHz mono WAV,
+    /// such as a note) to History and queues it, like a file but without
+    /// decoding a copy.
+    pub fn transcribe_recording(
+        &self,
+        file_name: String,
+        source_name: String,
+    ) -> Result<HistoryEntry> {
+        let hm = self.app.state::<Arc<HistoryManager>>();
+        let entry = hm.save_file_entry(file_name, source_name)?;
+        info!(
+            "Queued recording transcription for history entry {}",
+            entry.id
+        );
+        self.queue(entry.id, false);
+        Ok(entry)
+    }
+
     /// Queues the entry to be transcribed again from its recording, ahead
     /// of any file.
     pub fn retry(&self, entry_id: i64) {

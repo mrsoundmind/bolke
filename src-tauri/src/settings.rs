@@ -997,6 +997,27 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+    // ⌥ ⇧ Space is post-processing's, so ideas take I.
+    #[cfg(target_os = "windows")]
+    let default_idea_shortcut = "alt+shift+i";
+    #[cfg(target_os = "macos")]
+    let default_idea_shortcut = "option+shift+i";
+    #[cfg(target_os = "linux")]
+    let default_idea_shortcut = "ctrl+alt+i";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_idea_shortcut = "alt+shift+i";
+
+    bindings.insert(
+        "record_idea".to_string(),
+        ShortcutBinding {
+            id: "record_idea".to_string(),
+            name: "Record an Idea".to_string(),
+            description: "Records an idea and saves its text to Notes instead of typing it."
+                .to_string(),
+            default_binding: default_idea_shortcut.to_string(),
+            current_binding: default_idea_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {

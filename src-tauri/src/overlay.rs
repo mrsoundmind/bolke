@@ -55,6 +55,13 @@ const OVERLAY_HEIGHT: f64 = 50.0;
 const OVERLAY_STREAM_WIDTH: f64 = 400.0;
 const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
+// Idea bubble (`idea_*` states): the compact pill with its label, "Listening
+// to your idea", so it needs more width. Actual is up to 320 wide.
+const OVERLAY_IDEA_WIDTH: f64 = 340.0;
+
+/// How long "Saved to Notes" shows before the bubble fades.
+const IDEA_SAVED_HOLD: Duration = Duration::from_millis(1400);
+
 const NOTICE_STATE: &str = "notice";
 const LIVE_NOTICE_STATE: &str = "live_notice";
 
@@ -79,6 +86,8 @@ fn notice_state(session_is_live: bool) -> &'static str {
 fn overlay_dimensions(state: &str) -> (f64, f64) {
     if is_live_state(state) {
         (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
+    } else if state.starts_with("idea_") {
+        (OVERLAY_IDEA_WIDTH, OVERLAY_HEIGHT)
     } else {
         (OVERLAY_WIDTH, OVERLAY_HEIGHT)
     }
@@ -531,8 +540,15 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     if settings.overlay_style == OverlayStyle::None {
         return;
     }
+    // An idea session shows the same states in its own bubble.
+    let state = match state {
+        "recording" | "transcribing" | "processing" if IDEA_SESSION.load(Ordering::SeqCst) => {
+            format!("idea_{state}")
+        }
+        _ => state.to_string(),
+    };
     OVERLAY_SESSION_SHOWING.store(true, Ordering::SeqCst);
-    OVERLAY_SESSION_LIVE.store(is_live_state(state), Ordering::SeqCst);
+    OVERLAY_SESSION_LIVE.store(is_live_state(&state), Ordering::SeqCst);
 
     // The rest queries monitors and the cursor and mutates window geometry. On
     // Linux the monitor/cursor lookups hit GDK/Xlib on the process's shared X11
@@ -543,8 +559,34 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     // NSScreen access main-thread-correct). run_on_main_thread runs the closure
     // inline when already on the main thread, so this never deadlocks.
     let handle = app_handle.clone();
-    let state = state.to_string();
     let _ = app_handle.run_on_main_thread(move || show_overlay_state_on_main(&handle, &state));
+}
+
+/// Whether the session starting now records an idea for Notes rather than
+/// dictation, which changes the bubble it shows.
+pub fn set_idea_session(idea: bool) {
+    IDEA_SESSION.store(idea, Ordering::SeqCst);
+}
+
+/// Shows "Saved to Notes" for a moment, then fades the bubble, unless a new
+/// session takes the overlay first.
+pub fn show_idea_saved_overlay(app_handle: &AppHandle) {
+    if settings::get_settings(app_handle).overlay_style == OverlayStyle::None {
+        return;
+    }
+    OVERLAY_SESSION_SHOWING.store(true, Ordering::SeqCst);
+    OVERLAY_SESSION_LIVE.store(false, Ordering::SeqCst);
+    let handle = app_handle.clone();
+    let _ = app_handle.run_on_main_thread(move || {
+        show_overlay_state_on_main(&handle, "idea_saved");
+        let shown = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+        std::thread::spawn(move || {
+            std::thread::sleep(IDEA_SAVED_HOLD);
+            if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) == shown {
+                hide_recording_overlay(&handle);
+            }
+        });
+    });
 }
 
 fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
@@ -776,6 +818,9 @@ static OVERLAY_SESSION_SHOWING: AtomicBool = AtomicBool::new(false);
 /// Whether the overlay's current session uses the Live window. The style alone
 /// can't say: a model that doesn't stream gets the compact pill under Live too.
 static OVERLAY_SESSION_LIVE: AtomicBool = AtomicBool::new(false);
+
+/// The current session records an idea; see `set_idea_session`.
+static IDEA_SESSION: AtomicBool = AtomicBool::new(false);
 
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {

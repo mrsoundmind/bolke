@@ -24,7 +24,8 @@
     "settings": "Settings",
     "more": "More",
     "onDeviceTitle": "100% on-device",
-    "onDeviceBody": "Your voice never leaves this Mac. No account, no cloud."
+    "onDeviceBody": "Your voice never leaves this Mac. No account, no cloud.",
+    "notes": "Notes"
   },
   "onboarding": {
     "customModelDescription": "Stöds inte officiellt",
@@ -353,6 +354,10 @@
           "transcribe_with_post_process": {
             "name": "Snabbkommando för efterbearbetning",
             "description": "Valfritt: En dedikerad snabbknapp som alltid tillämpar AI-efterbearbetning på din transkription."
+          },
+          "record_idea": {
+            "name": "Record an Idea",
+            "description": "Records an idea and saves its text to Notes instead of typing it."
           }
         },
         "errors": {
@@ -952,7 +957,8 @@
     "filePostProcessFailedTitle": "Transkriberat utan efterbearbetning",
     "filePostProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen sparades som den är.",
     "fileTranscriptionFailedTitle": "Transkriptionen av filen misslyckades",
-    "transcriptionFailedTitle": "Transkriptionen misslyckades"
+    "transcriptionFailedTitle": "Transkriptionen misslyckades",
+    "ideaSaveFailedTitle": "Couldn't Save Your Idea"
   },
   "notices": {
     "errorOne": "{{n}} fel",
@@ -977,7 +983,10 @@
   "overlay": {
     "transcribing": "Transkriberar...",
     "processing": "Bearbetar...",
-    "loadingModel": "Laddar modell..."
+    "loadingModel": "Laddar modell...",
+    "ideaListening": "Listening to your idea",
+    "ideaWriting": "Writing…",
+    "ideaSaved": "Saved to Notes"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} kanske blockerar 1 kortkommando",
@@ -1018,5 +1027,82 @@
     "historyTitle": "History",
     "historySubtitle": "Everything you've said, stored only on this Mac.",
     "shortcutGroup": "Shortcut"
+  },
+  "notes": {
+    "title": "Notes",
+    "subtitle": "Your ideas, meetings and notes, written out in full.",
+    "writeNote": "Write a note",
+    "addAudio": "Add an audio file",
+    "audioFiles": "Audio and video",
+    "importFailed": "Couldn't read that file",
+    "recordIdea": "Record an idea",
+    "recordIdeaHint": "Or press <keys/> in any app. It's saved here, not typed.",
+    "recordIdeaHintNoKeys": "Set a shortcut in Settings to record from any app. It's saved here, not typed.",
+    "recordMeeting": "Record a meeting",
+    "recordMeetingHint": "Calls, classes, interviews. No time limit.",
+    "allNotes": "All notes",
+    "noProject": "No project",
+    "newProject": "New project",
+    "projectNamePlaceholder": "Project name",
+    "renameProject": "Rename project",
+    "deleteProject": "Delete project",
+    "deleteProjectConfirm": "Delete the project “{{name}}”? Its notes are kept, outside any project.",
+    "empty": "No notes yet. Record an idea or a meeting, or write a note.",
+    "emptyProject": "Nothing here yet.",
+    "untitled": "Untitled",
+    "summaryTag": "✦ Summary",
+    "writing": "Writing it out… {{percent}}%",
+    "waiting": "Waiting to be written out…",
+    "durationSeconds": "{{count}} s",
+    "durationMinutes": "{{count}} min",
+    "words_one": "{{count}} word",
+    "words_other": "{{count}} words",
+    "kind": {
+      "idea": "Idea",
+      "meeting": "Meeting",
+      "note": "Note"
+    },
+    "recording": {
+      "badge": "Recording a meeting",
+      "defaultTitle": "Meeting, {{date}}",
+      "titleLabel": "Title",
+      "projectLabel": "Project",
+      "discard": "Discard",
+      "discardConfirm": "Discard this recording? It can't be brought back.",
+      "stop": "Stop and save",
+      "hint": "You can switch to other apps. Bolke keeps recording. When you stop, it writes everything out in the background.",
+      "startFailed": "Couldn't start recording",
+      "saveFailed": "Couldn't save the recording",
+      "sidebar": "Recording a meeting"
+    },
+    "note": {
+      "copy": "Copy text",
+      "copied": "Copied",
+      "showFile": "Show recordings folder",
+      "delete": "Delete note",
+      "deleteConfirm": "Delete this note and its recording? This can't be undone.",
+      "moveTo": "Project",
+      "fullText": "Full text",
+      "saved": "Saved · you can edit it",
+      "saving": "Saving…",
+      "textPlaceholder": "Write here…",
+      "notWritten": "This recording hasn't been written out.",
+      "tryAgain": "Try again"
+    },
+    "ai": {
+      "title": "AI summary",
+      "intro": "Get a short summary and the action points from this note. Bolke sends the text to the AI service you set up in Post Process settings.",
+      "notReady": "You can get a summary once the text is written out.",
+      "write": "Write a summary",
+      "again": "Write again",
+      "writing": "Writing the summary…",
+      "summary": "Summary",
+      "actions": "Action points",
+      "noActions": "No action points.",
+      "noProvider": "Set up an AI service in Post Process settings first.",
+      "openSettings": "Open Post Process settings",
+      "failed": "Couldn't write the summary: {{error}}"
+    },
+    "changeShortcut": "Change shortcut"
   }
 }

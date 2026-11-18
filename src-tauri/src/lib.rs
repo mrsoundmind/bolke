@@ -48,7 +48,9 @@ pub use utils::{disable_gamescope_wsi_layer, gamescope_wsi_disabled_by_bolke};
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
+use managers::meeting::MeetingRecorder;
 use managers::model::ModelManager;
+use managers::notes::NotesManager;
 use managers::transcription::TranscriptionManager;
 use managers::transcription_jobs::TranscriptionJobManager;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
@@ -255,6 +257,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(history_manager.clone());
     app_handle.manage(tray::TrayState::new());
     app_handle.manage(TranscriptionJobManager::new(app_handle));
+    app_handle.manage(Arc::new(
+        NotesManager::new(app_handle).expect("Failed to initialize notes manager"),
+    ));
+    app_handle.manage(Arc::new(MeetingRecorder::new(app_handle)));
+    tauri::async_runtime::spawn(commands::notes::rescue_meetings(app_handle.clone()));
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -846,6 +853,25 @@ pub fn run(cli_args: CliArgs) {
             commands::history::transcribe_file,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
+            commands::notes::list_projects,
+            commands::notes::create_project,
+            commands::notes::rename_project,
+            commands::notes::delete_project,
+            commands::notes::list_notes,
+            commands::notes::get_note,
+            commands::notes::create_text_note,
+            commands::notes::update_note,
+            commands::notes::move_note,
+            commands::notes::delete_note,
+            commands::notes::set_action_point_done,
+            commands::notes::toggle_idea_recording,
+            commands::notes::import_audio_note,
+            commands::notes::summarize_note,
+            commands::notes::get_meeting_status,
+            commands::notes::start_meeting,
+            commands::notes::update_meeting,
+            commands::notes::stop_meeting,
+            commands::notes::discard_meeting,
             helpers::clamshell::is_laptop,
             notices::get_active_notices,
             notices::dismiss_notice,

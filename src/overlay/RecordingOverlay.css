@@ -577,3 +577,107 @@
     animation: none !important;
   }
 }
+
+/* ============================================================
+   Idea bubble (design/wireframes/IdeaBubble.dc.html): the same pill and
+   speaking animation in violet, with "Listening to your idea". It saves to
+   Notes instead of typing. overlay.rs sizes its window from these widths.
+   ============================================================ */
+.scard.idea {
+  --s-surface: rgba(20, 16, 46, 0.94);
+  --s-border: rgba(167, 139, 255, 0.6);
+  --s-accent: #c4b5ff;
+  --s-accent-soft: rgba(160, 110, 255, 0.45);
+  --bolke-orb: radial-gradient(
+    circle at 50% 56%,
+    rgba(225, 205, 255, 0.95) 0%,
+    rgba(165, 120, 255, 0.9) 16%,
+    rgba(98, 58, 212, 0.92) 42%,
+    #1c0e4e 74%
+  );
+  box-shadow: inset 0 0 18px rgba(140, 110, 255, 0.2);
+}
+.scard.compact.idea {
+  width: 320px;
+}
+.scard.compact.idea.iworking,
+.scard.compact.idea.isaved {
+  width: 200px;
+}
+.scard.idea .sdot,
+.scard.idea .sspinner {
+  box-shadow:
+    0 0 10px rgba(140, 95, 255, 0.55),
+    inset 0 0 5px rgba(205, 175, 255, 0.35);
+}
+.scard.idea .sdot.ready {
+  box-shadow:
+    0 0 14px rgba(160, 110, 255, 0.9),
+    0 0 5px rgba(215, 185, 255, 0.7),
+    inset 0 0 5px rgba(225, 205, 255, 0.5);
+}
+.scard.idea .sdot.arming {
+  box-shadow: 0 0 6px rgba(140, 95, 255, 0.25);
+}
+.scard.idea .sdot::before,
+.scard.idea .sspinner::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(215, 185, 255, 0.6),
+    transparent 35%,
+    rgba(160, 115, 255, 0.45),
+    transparent 72%
+  );
+}
+.scard.idea .swork-label {
+  background-image: linear-gradient(
+    90deg,
+    #a99be0 0%,
+    #ffffff 50%,
+    #a99be0 100%
+  );
+}
+.sbase.sidea,
+.sbase.sidea-done {
+  display: flex;
+  gap: 10px;
+  padding: 0 10px 0 12px;
+}
+.sbase.sidea .swave {
+  padding-right: 0;
+}
+.sbase.sidea-done {
+  justify-content: center;
+}
+.sidea-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e8e2ff;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sbase.sidea .sidea-label {
+  flex: 1 1 auto;
+}
+.stimer.sidea-timer {
+  opacity: 1;
+  color: #b9a6ff;
+}
+.sidea-tick {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #a78bff;
+  color: #170f33;
+}
+.sidea-tick svg {
+  width: 13px;
+  height: 13px;
+}

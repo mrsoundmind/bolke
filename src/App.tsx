@@ -30,6 +30,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { FileDropOverlay } from "./components/FileDropOverlay";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { HomePage } from "./components/home/HomePage";
+import { NotesPage } from "./components/notes/NotesPage";
 import { PageHeader } from "./components/shared/PageHeader";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
@@ -59,6 +60,14 @@ const renderSettingsContent = (
       <HomePage
         onOpenSettings={() => onSectionChange("general")}
         onOpenHistory={() => onSectionChange("history")}
+      />
+    );
+  }
+  if (section === "notes") {
+    return (
+      <NotesPage
+        onOpenPostProcess={() => onSectionChange("postProcessing")}
+        onOpenSettings={() => onSectionChange("general")}
       />
     );
   }

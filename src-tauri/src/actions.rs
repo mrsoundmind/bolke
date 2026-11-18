@@ -2,9 +2,11 @@
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::audio_toolkit::VadPolicy;
+use crate::language_detection::LanguageDecision;
 use crate::managers::audio::{recording_notice_code, AudioRecordingManager};
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
+use crate::managers::notes::NotesManager;
 use crate::managers::transcription::policy::{live_decode, LiveDecode, ModelTraits};
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::{Transcription, TranscriptionManager};
@@ -16,7 +18,7 @@ use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
 use crate::TranscriptionCoordinator;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -40,6 +42,8 @@ pub enum TranscriptionOutcome {
     Silent,
     /// Transcribing or pasting failed.
     Failed,
+    /// The text was saved to Notes as an idea, not typed.
+    Saved,
 }
 
 /// Emitted when a dictation finishes (not on cancel); onboarding uses it to measure speed.
@@ -134,6 +138,75 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
+    /// Records an idea: the text is saved to Notes instead of typed.
+    to_notes: bool,
+}
+
+/// The recording's sample rate, for an idea's length.
+const IDEA_SAMPLE_RATE: i64 = 16_000;
+
+/// Saves an idea's text as a note, with its recording when there is one, and
+/// shows "Saved to Notes" in the bubble.
+#[allow(clippy::too_many_arguments)]
+async fn save_idea(
+    app: &AppHandle,
+    recording: Option<String>,
+    transcription: String,
+    processed: ProcessedTranscription,
+    language: Option<LanguageDecision>,
+    input_silent: bool,
+    sample_count: usize,
+    stop_time: Instant,
+) {
+    let text = processed.final_text.trim().to_string();
+    if text.is_empty() {
+        finish_without_text(app, input_silent, sample_count, stop_time);
+        return;
+    }
+    let hm = app.state::<Arc<HistoryManager>>();
+    // Kept as a file entry, which History's clean-up never deletes, so the
+    // note keeps its audio.
+    let entry_id = recording.and_then(|file_name| {
+        let entry = hm
+            .save_file_entry(file_name, "Idea".to_string())
+            .map_err(|e| error!("Failed to save the idea's recording: {e}"))
+            .ok()?;
+        if let Err(e) = hm.update_transcription(
+            entry.id,
+            transcription,
+            processed.post_processed_text,
+            processed.post_process_prompt,
+            language,
+        ) {
+            error!("Failed to save the idea's transcript to History: {e}");
+        }
+        Some(entry.id)
+    });
+    let duration_ms = Some(sample_count as i64 * 1000 / IDEA_SAMPLE_RATE);
+    let outcome = match app
+        .state::<Arc<NotesManager>>()
+        .create_idea(&text, entry_id, duration_ms)
+        .await
+    {
+        Ok(note) => {
+            info!("Saved idea as note {}", note.id);
+            notices::clear(app, NoticeSource::Dictation);
+            crate::overlay::show_idea_saved_overlay(app);
+            crate::commands::notes::emit_notes_changed(app);
+            TranscriptionOutcome::Saved
+        }
+        Err(e) => {
+            error!("Failed to save the idea: {e}");
+            notices::raise(
+                app,
+                Notice::new(NoticeCode::IdeaSaveFailed, NoticeSource::Dictation)
+                    .with_detail(e.to_string()),
+            );
+            TranscriptionOutcome::Failed
+        }
+    };
+    set_tray_state(app, TrayIconState::Idle);
+    emit_transcription_complete(app, outcome, sample_count, stop_time);
 }
 
 /// Field name for structured output JSON schema
@@ -557,6 +630,7 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string();
         RECORDING_SESSION.fetch_add(1, Ordering::SeqCst);
+        crate::overlay::set_idea_session(self.to_notes);
         let tray_started = Instant::now();
         set_tray_state(app, TrayIconState::Recording);
         let tray_elapsed = tray_started.elapsed();
@@ -601,7 +675,10 @@ impl ShortcutAction for TranscribeAction {
         // pill instead of an oversized transparent live window.
         let overlay_started = Instant::now();
         match settings.overlay_style {
-            OverlayStyle::Live if model_supports_streaming => utils::show_streaming_overlay(app),
+            // An idea always gets its compact bubble.
+            OverlayStyle::Live if model_supports_streaming && !self.to_notes => {
+                utils::show_streaming_overlay(app)
+            }
             OverlayStyle::Live | OverlayStyle::Minimal => show_recording_overlay(app),
             OverlayStyle::None => {} // show_overlay_state no-ops on None anyway
         }
@@ -722,7 +799,8 @@ impl ShortcutAction for TranscribeAction {
         let style = get_settings(app).overlay_style;
         // Capture this before finalizing the stream so every later working state
         // targets the same overlay that was shown for this transcription.
-        let use_streaming_overlay = should_use_streaming_overlay(style, tm.is_streaming());
+        let use_streaming_overlay =
+            !self.to_notes && should_use_streaming_overlay(style, tm.is_streaming());
         if use_streaming_overlay {
             tm.emit_stream_working(StreamWorkKind::Transcribing);
         } else {
@@ -737,6 +815,7 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
+        let to_notes = self.to_notes;
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
@@ -854,6 +933,21 @@ impl ShortcutAction for TranscribeAction {
                                 debug!("Transcription operation cancelled before paste");
                                 utils::hide_recording_overlay(&ah);
                                 set_tray_state(&ah, TrayIconState::Idle);
+                                return;
+                            }
+
+                            if to_notes {
+                                save_idea(
+                                    &ah,
+                                    wav_saved.then_some(file_name),
+                                    transcription,
+                                    processed,
+                                    language,
+                                    input_silent,
+                                    sample_count,
+                                    stop_time,
+                                )
+                                .await;
                                 return;
                             }
 
@@ -1093,11 +1187,22 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
+            to_notes: false,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_process: true,
+            to_notes: false,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "record_idea".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+            to_notes: true,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
