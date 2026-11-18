@@ -203,20 +203,23 @@ export const NotesList: React.FC<NotesListProps> = ({
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
-        <div className="relative flex rounded-[24px] bg-linear-160 from-[#2e2266] to-[#15123a] border border-[rgba(167,139,255,0.35)] hover:border-[rgba(167,139,255,0.6)]">
+        <div className="relative rounded-[24px] bg-linear-160 from-[#2e2266] to-[#15123a] border border-[rgba(167,139,255,0.35)] hover:border-[rgba(167,139,255,0.6)] text-[#f3efff]">
+          {/* The whole card starts an idea; the shortcut button sits on top. */}
           <button
             type="button"
+            aria-label={t("notes.recordIdea")}
             onClick={() => commands.toggleIdeaRecording()}
-            className="flex-1 flex items-center gap-[18px] p-[22px] pe-[120px] rounded-[24px] text-start cursor-pointer text-[#f3efff] focus-visible:outline-2 focus-visible:outline-[#a78bff]"
-          >
+            className="absolute inset-0 rounded-[24px] cursor-pointer focus-visible:outline-2 focus-visible:outline-[#a78bff]"
+          />
+          <div className="relative flex items-center gap-[18px] p-[22px] pointer-events-none">
             <span
               aria-hidden="true"
               className="shrink-0 w-14 h-14 rounded-full inline-flex items-center justify-center bg-[rgba(167,139,255,0.2)] text-[#c4b5ff] shadow-[0_0_30px_rgba(140,110,255,0.3)]"
             >
               <Mic size={24} strokeWidth={1.8} />
             </span>
-            <span className="flex flex-col gap-[6px] min-w-0">
-              <span className="text-[17px] font-medium">
+            <span className="flex flex-col items-start gap-[6px] min-w-0">
+              <span aria-hidden="true" className="text-[17px] font-medium">
                 {t("notes.recordIdea")}
               </span>
               <span className="text-[13px] leading-[1.45] text-[#d8d0ff]">
@@ -237,15 +240,15 @@ export const NotesList: React.FC<NotesListProps> = ({
                   t("notes.recordIdeaHintNoKeys")
                 )}
               </span>
+              <button
+                type="button"
+                onClick={onChangeShortcut}
+                className="pointer-events-auto mt-1 min-h-8 px-3 rounded-full text-[12px] font-medium text-[#d8d0ff] cursor-pointer bg-[rgba(5,10,30,0.35)] border border-[rgba(200,190,255,0.25)] hover:text-white hover:border-[rgba(200,190,255,0.5)] focus-visible:outline-2 focus-visible:outline-[#a78bff]"
+              >
+                {t("notes.changeShortcut")}
+              </button>
             </span>
-          </button>
-          <button
-            type="button"
-            onClick={onChangeShortcut}
-            className="absolute top-3 end-3 min-h-8 px-3 rounded-full text-[12px] font-medium text-[#d8d0ff] cursor-pointer bg-[rgba(5,10,30,0.35)] border border-[rgba(200,190,255,0.25)] hover:text-white hover:border-[rgba(200,190,255,0.5)] focus-visible:outline-2 focus-visible:outline-[#a78bff]"
-          >
-            {t("notes.changeShortcut")}
-          </button>
+          </div>
         </div>
         <button
           type="button"
@@ -361,16 +364,20 @@ export const NotesList: React.FC<NotesListProps> = ({
                 </span>
                 {note.text_pending ? (
                   <span className="flex items-center gap-3">
-                    <span className="flex-[0_1_220px] h-[6px] rounded-[3px] bg-[#1a2244] overflow-hidden">
-                      <span
-                        className="block h-full rounded-[3px] bg-linear-to-r from-[#3a78ff] to-[#8fc2ff] transition-[width]"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </span>
+                    {job && (
+                      <span className="flex-[0_1_220px] h-[6px] rounded-[3px] bg-[#1a2244] overflow-hidden">
+                        <span
+                          className="block h-full rounded-[3px] bg-linear-to-r from-[#3a78ff] to-[#8fc2ff] transition-[width]"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </span>
+                    )}
                     <span className="text-[13px] text-ink-2">
                       {job?.state === "running"
                         ? t("notes.writing", { percent })
-                        : t("notes.waiting")}
+                        : job
+                          ? t("notes.waiting")
+                          : t("notes.note.notWritten")}
                     </span>
                   </span>
                 ) : (

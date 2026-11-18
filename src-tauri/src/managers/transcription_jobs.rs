@@ -19,10 +19,14 @@ use tauri_specta::Event;
 use crate::actions::process_transcription_output;
 use crate::audio_toolkit::{decode_audio_file, read_wav_samples, save_wav_file};
 use crate::managers::history::{HistoryEntry, HistoryManager};
+use crate::managers::notes::NotesManager;
 use crate::managers::transcription::{
     panic_payload_message, ChunkControl, Transcription, TranscriptionManager,
 };
 use crate::notices::{self, Notice, NoticeCode, NoticeSource};
+
+/// Why a recording with nothing said in it has no transcript.
+const NO_SPEECH: &str = "Recording contains no speech";
 
 /// How often a waiting chunk checks whether dictation has finished.
 const DICTATION_POLL: Duration = Duration::from_millis(200);
@@ -288,11 +292,16 @@ impl TranscriptionJobManager {
             let status = match result {
                 Err(e) if !cancelled.load(Ordering::Acquire) => {
                     warn!("Transcription of history entry {} failed: {}", entry_id, e);
-                    notices::raise(
-                        &self.app,
-                        Notice::new(NoticeCode::FileTranscriptionFailed, NoticeSource::File)
-                            .with_detail(e.to_string()),
-                    );
+                    if e.to_string() == NO_SPEECH && self.note_heard_nothing(entry_id) {
+                        // A meeting with nothing said in it: its note stops
+                        // waiting, and there is no file to warn about.
+                    } else {
+                        notices::raise(
+                            &self.app,
+                            Notice::new(NoticeCode::FileTranscriptionFailed, NoticeSource::File)
+                                .with_detail(e.to_string()),
+                        );
+                    }
                     TranscriptionJobStatus::Failed {
                         error: e.to_string(),
                     }
@@ -313,6 +322,28 @@ impl TranscriptionJobManager {
                 _ => TranscriptionJobStatus::Finished,
             };
             self.emit(entry_id, status);
+        }
+    }
+
+    /// Tells Notes that a recording held no speech; true if a note was
+    /// waiting on it.
+    fn note_heard_nothing(&self, entry_id: i64) -> bool {
+        let Some(notes) = self.app.try_state::<Arc<NotesManager>>() else {
+            return false;
+        };
+        match notes.stop_waiting(entry_id) {
+            Ok(true) => {
+                crate::commands::notes::emit_notes_changed(&self.app);
+                true
+            }
+            Ok(false) => false,
+            Err(e) => {
+                error!(
+                    "Couldn't update the note for history entry {}: {}",
+                    entry_id, e
+                );
+                false
+            }
         }
     }
 
@@ -338,7 +369,7 @@ impl TranscriptionJobManager {
             return Ok(JobEnd::Cancelled);
         };
         if text.is_empty() {
-            return Err(anyhow!("Recording contains no speech"));
+            return Err(anyhow!(NO_SPEECH));
         }
         if cancelled.load(Ordering::Acquire) {
             return Ok(JobEnd::Cancelled);

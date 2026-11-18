@@ -423,6 +423,17 @@ impl NotesManager {
         conn.execute("DELETE FROM notes WHERE id = ?1", params![id])?;
         Ok(entry_id)
     }
+
+    /// A recording with no speech in it has nothing to wait for: its note
+    /// stops waiting and keeps an empty text the user can type into. Returns
+    /// whether a note was waiting on this History entry.
+    pub fn stop_waiting(&self, entry_id: i64) -> Result<bool> {
+        let changed = self.connection()?.execute(
+            "UPDATE notes SET text_pending = 0 WHERE entry_id = ?1 AND text_pending = 1",
+            params![entry_id],
+        )?;
+        Ok(changed > 0)
+    }
 }
 
 /// The first few words of an idea, as its title.

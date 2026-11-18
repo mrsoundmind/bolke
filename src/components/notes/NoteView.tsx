@@ -399,12 +399,14 @@ export const NoteView: React.FC<NoteViewProps> = ({
         {note.text_pending ? (
           <div className="flex flex-col gap-3 items-start px-5 py-4 rounded-[20px] bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.12)]">
             <div className="flex items-center gap-3 w-full">
-              <span className="flex-[0_1_260px] h-[6px] rounded-[3px] bg-[#1a2244] overflow-hidden">
-                <span
-                  className="block h-full rounded-[3px] bg-linear-to-r from-[#3a78ff] to-[#8fc2ff] transition-[width]"
-                  style={{ width: `${percent}%` }}
-                />
-              </span>
+              {job && (
+                <span className="flex-[0_1_260px] h-[6px] rounded-[3px] bg-[#1a2244] overflow-hidden">
+                  <span
+                    className="block h-full rounded-[3px] bg-linear-to-r from-[#3a78ff] to-[#8fc2ff] transition-[width]"
+                    style={{ width: `${percent}%` }}
+                  />
+                </span>
+              )}
               <span className="text-[13px] text-ink-2">
                 {job?.state === "running"
                   ? t("notes.writing", { percent })
