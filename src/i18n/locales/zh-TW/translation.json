@@ -1135,6 +1135,32 @@
         "qwen3-4b-instruct-2507": "Better summaries of long meetings, in more languages. Needs 8 GB of memory.",
         "qwen3-1.7b": "Good summaries and action points. Fast on most computers."
       }
+    },
+    "people": {
+      "title": "Who said what",
+      "intro": "Bolke can tell the voices in this meeting apart and label each line with who said it, however many people there are. It all happens on this computer.",
+      "download": "Get voice models · {{size}}",
+      "downloading": "Downloading the voice models",
+      "downloadProgress": "{{percent}}%",
+      "downloadFailed": "Couldn't download the voice models",
+      "find": "Find who said what",
+      "finding": "Finding who said what… {{percent}}%",
+      "couldNot": "Bolke couldn't tell the voices apart in this recording.",
+      "failed": "Couldn't find who said what",
+      "person": "Person {{number}}",
+      "everyone": "Everyone",
+      "who": "Who?",
+      "notThem": "Not them?",
+      "whoIs": "Who is {{name}}?",
+      "firstWords": "Their first words:",
+      "someoneElse": "Type a name",
+      "save": "Save",
+      "sameNameHint": "Bolke remembers their voice for next time. Picking a name someone else already has joins them into one person.",
+      "everythingSaid_one": "Everything {{name}} said · {{count}} time",
+      "everythingSaid_other": "Everything {{name}} said · {{count}} times",
+      "rename": "Change name",
+      "copy": "Copy",
+      "copyTheirs": "Copy their words"
     }
   }
 }

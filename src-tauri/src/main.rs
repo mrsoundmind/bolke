@@ -35,6 +35,11 @@ fn main() {
         std::process::exit(bolke_app_lib::engine_supervisor::run_worker());
     }
 
+    // Voice separator for meetings: runs on its own, like the worker above.
+    if bolke_app_lib::speakers::is_worker_invocation() {
+        std::process::exit(bolke_app_lib::speakers::run_worker());
+    }
+
     let cli_args = CliArgs::parse();
     bolke_app_lib::run(cli_args)
 }

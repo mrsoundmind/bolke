@@ -12,7 +12,10 @@ use super::{
 };
 use crate::audio_toolkit::chunking::Chunker;
 use crate::engine_supervisor::EngineError;
+use crate::language_detection::LanguageDecision;
 use crate::managers::audio::create_detector;
+use crate::speakers::Turn;
+use transcribe_cpp::RunOptions;
 
 /// Tries per chunk when a dictation's cancel interrupts it.
 const MAX_CHUNK_ATTEMPTS: usize = 3;
@@ -21,6 +24,19 @@ const MAX_CHUNK_ATTEMPTS: usize = 3;
 /// without scoring the whole file first. Cuts match the whole-file plan (a
 /// rare short blip at a feed boundary can nudge one within its pause).
 const FEED_SAMPLES: usize = 60 * 16_000;
+
+/// Longest stretch of one person transcribed in one go; a longer one is cut
+/// at its pauses, like any background transcription.
+const MAX_PIECE_SAMPLES: usize = 40 * 16_000;
+
+/// One stretch of a meeting: who said it and what.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SpokenLine {
+    pub start_ms: i64,
+    pub end_ms: i64,
+    pub person: u32,
+    pub text: String,
+}
 
 /// What a background transcription asks of whoever runs it.
 pub trait ChunkControl {
@@ -78,22 +94,10 @@ impl TranscriptionManager {
             };
             for chunk in chunks {
                 let len = chunk.len();
-                let mut attempts = 0;
-                let transcript = loop {
-                    if !control.proceed() {
-                        return Ok(None);
-                    }
-                    attempts += 1;
-                    // A fresh mark per chunk: a dictation's cancel stops only
-                    // the chunk it caught, which is then tried again.
-                    let mark = self.engine.cancel_mark();
-                    match self.run_batch(mark, chunk.clone(), &setup.run_options, &active_model) {
-                        Ok(transcript) => break transcript,
-                        Err(EngineError::Cancelled) if attempts < MAX_CHUNK_ATTEMPTS => {
-                            warn!("A background chunk was cancelled; trying it again");
-                        }
-                        Err(e) => return Err(engine_error(e)),
-                    }
+                let Some(transcript) =
+                    self.run_chunk(chunk, &setup.run_options, &active_model, control)?
+                else {
+                    return Ok(None);
                 };
                 transcripts.push(transcript);
                 done += len;
@@ -134,5 +138,116 @@ impl TranscriptionManager {
             text: paragraphs.join("\n\n"),
             language: Some(language),
         }))
+    }
+
+    /// Runs one chunk, trying again when a dictation's cancel caught it.
+    /// `None` if `control` stopped it.
+    fn run_chunk(
+        &self,
+        chunk: Vec<f32>,
+        run_options: &RunOptions,
+        active_model: &str,
+        control: &dyn ChunkControl,
+    ) -> Result<Option<Transcript>> {
+        let mut attempts = 0;
+        loop {
+            if !control.proceed() {
+                return Ok(None);
+            }
+            attempts += 1;
+            // A fresh mark per chunk: a dictation's cancel stops only the
+            // chunk it caught, which is then tried again.
+            let mark = self.engine.cancel_mark();
+            match self.run_batch(mark, chunk.clone(), run_options, active_model) {
+                Ok(transcript) => return Ok(Some(transcript)),
+                Err(EngineError::Cancelled) if attempts < MAX_CHUNK_ATTEMPTS => {
+                    warn!("A background chunk was cancelled; trying it again");
+                }
+                Err(e) => return Err(engine_error(e)),
+            }
+        }
+    }
+
+    /// Transcribes a meeting one speaker turn at a time, so each line has
+    /// its speaker whatever the model. `None` if `control` stopped it.
+    pub fn transcribe_turns(
+        &self,
+        audio: &[f32],
+        turns: &[Turn],
+        control: &dyn ChunkControl,
+    ) -> Result<Option<(Vec<SpokenLine>, LanguageDecision)>> {
+        let started = Instant::now();
+        self.touch_activity();
+        self.initiate_model_load(false);
+        let BatchContext {
+            settings,
+            active_model,
+            setup,
+            ..
+        } = self.batch_context(audio)?;
+        let total = audio.len();
+        let mut done = 0;
+        control.progress(done, total);
+        let mut lines: Vec<SpokenLine> = Vec::new();
+        let mut transcripts: Vec<Transcript> = Vec::new();
+        for turn in turns {
+            let from = ((turn.start_ms.max(0) as usize) * 16).min(total);
+            let to = ((turn.end_ms.max(0) as usize) * 16).min(total);
+            if to <= from {
+                continue;
+            }
+            let piece = &audio[from..to];
+            let chunks = if piece.len() <= MAX_PIECE_SAMPLES {
+                vec![piece.to_vec()]
+            } else {
+                let backend = settings.vad_backend;
+                let app_handle = self.app_handle.clone();
+                let mut chunker =
+                    Chunker::new(Box::new(move || create_detector(backend, &app_handle)));
+                let mut chunks = chunker.push(piece.to_vec());
+                chunks.extend(chunker.finish());
+                chunks
+            };
+            let mut offset = from;
+            for chunk in chunks {
+                let len = chunk.len();
+                let Some(mut transcript) =
+                    self.run_chunk(chunk, &setup.run_options, &active_model, control)?
+                else {
+                    return Ok(None);
+                };
+                let output_language = setup.output_language(&settings, transcript.language.clone());
+                let text = post_process_transcription_text(
+                    std::mem::take(&mut transcript.text),
+                    &settings,
+                    setup.custom_words_prompted(),
+                    &output_language,
+                    &setup.languages,
+                );
+                let text = text.trim();
+                if !text.is_empty() {
+                    let (start_ms, end_ms) = ((offset / 16) as i64, ((offset + len) / 16) as i64);
+                    // A long turn cut at its pauses reads as paragraphs.
+                    lines.push(SpokenLine {
+                        start_ms,
+                        end_ms,
+                        person: turn.person,
+                        text: text.to_string(),
+                    });
+                }
+                transcripts.push(transcript);
+                offset += len;
+                done += len;
+                control.progress(done, total);
+            }
+        }
+        let language = setup.spoken_language(agreed_language(&transcripts).as_deref());
+        info!(
+            "Transcribed {:.1}s of audio in {} speaker turns in {:.1}s",
+            total as f64 / 16_000.0,
+            turns.len(),
+            started.elapsed().as_secs_f64()
+        );
+        Ok(Some((lines, language)))
     }
 }

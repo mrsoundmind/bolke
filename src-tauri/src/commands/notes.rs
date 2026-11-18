@@ -4,6 +4,7 @@ use crate::managers::{
     history::HistoryManager,
     meeting::{wav_duration_ms, MeetingRecorder, MeetingStatus, SavedMeeting},
     notes::{ActionPoint, Note, NoteChanges, NoteKind, NoteSummary, NotesManager, Project},
+    speaker_models::{SpeakerModelManager, SpeakerModels},
     summary_model::{SummaryModel, SummaryModelManager},
     transcription_jobs::TranscriptionJobManager,
 };
@@ -160,16 +161,19 @@ pub async fn import_audio_note(
         .map(|s| s.to_string_lossy().into_owned())
         .unwrap_or_default();
     let jobs = Arc::clone(&app.state::<Arc<TranscriptionJobManager>>());
-    let entry = tauri::async_runtime::spawn_blocking(move || jobs.transcribe_file(path))
+    let adding = Arc::clone(&jobs);
+    let entry = tauri::async_runtime::spawn_blocking(move || adding.add_file(path))
         .await
         .map_err(|e| format!("Failed to read the file: {}", e))?
         .map_err(err)?;
     let history = app.state::<Arc<HistoryManager>>();
     let duration_ms = wav_duration_ms(&history.get_audio_file_path(&entry.file_name));
-    app.state::<Arc<NotesManager>>()
+    let note = app
+        .state::<Arc<NotesManager>>()
         .create_recorded_note(NoteKind::Note, &title, project_id, entry.id, duration_ms)
-        .await
-        .map_err(err)
+        .await;
+    jobs.start(entry.id);
+    note.map_err(err)
 }
 
 // ----- Meeting recording -----
@@ -225,7 +229,8 @@ async fn save_meeting(app: &AppHandle, saved: SavedMeeting) -> Result<Note> {
         duration_ms,
     } = saved;
     let jobs = app.state::<Arc<TranscriptionJobManager>>();
-    let entry = jobs.transcribe_recording(pending.file_name.clone(), pending.title.clone())?;
+    let entry = jobs.add_recording(pending.file_name.clone(), pending.title.clone())?;
+    // The note comes first, so the job knows it's a meeting.
     let note = app
         .state::<Arc<NotesManager>>()
         .create_recorded_note(
@@ -235,7 +240,9 @@ async fn save_meeting(app: &AppHandle, saved: SavedMeeting) -> Result<Note> {
             entry.id,
             Some(duration_ms),
         )
-        .await?;
+        .await;
+    jobs.start(entry.id);
+    let note = note?;
     app.state::<Arc<MeetingRecorder>>().forget(&pending);
     emit_notes_changed(app);
     Ok(note)
@@ -582,6 +589,70 @@ async fn summarize_part_on_device(text: String, token_limit: i32) -> Result<Note
         let _ = (text, token_limit);
         Err(anyhow!("Apple Intelligence isn't available here"))
     }
+}
+
+// ----- Who said what -----
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_speaker_models(app: AppHandle) -> SpeakerModels {
+    app.state::<Arc<SpeakerModelManager>>().status()
+}
+
+/// Downloads the voice models; returns whether they're ready (false when
+/// cancelled). Progress goes out as "speaker-models-progress".
+#[tauri::command]
+#[specta::specta]
+pub async fn download_speaker_models(app: AppHandle) -> Result<bool, String> {
+    let models = Arc::clone(&app.state::<Arc<SpeakerModelManager>>());
+    models.download().await.map_err(err)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_speaker_models_download(app: AppHandle) {
+    app.state::<Arc<SpeakerModelManager>>().cancel_download();
+}
+
+/// Finds who said what in a recorded note, in the background.
+#[tauri::command]
+#[specta::specta]
+pub async fn find_note_people(app: AppHandle, id: i64) -> Result<Note, String> {
+    if app.state::<Arc<SpeakerModelManager>>().ready().is_none() {
+        return Err("The voice models aren't downloaded".into());
+    }
+    let notes = Arc::clone(&app.state::<Arc<NotesManager>>());
+    let note = notes.get_note(id).await.map_err(err)?;
+    let entry_id = note
+        .entry_id
+        .ok_or_else(|| "This note has no recording".to_string())?;
+    notes
+        .set_people_state(id, Some(crate::managers::notes::PeopleState::Working))
+        .map_err(err)?;
+    app.state::<Arc<TranscriptionJobManager>>()
+        .find_people(entry_id);
+    notes.get_note(id).await.map_err(err)
+}
+
+/// Names a person in a meeting (the same name twice makes them one person);
+/// Bolke remembers the voice for the next meeting.
+#[tauri::command]
+#[specta::specta]
+pub async fn name_note_person(
+    app: AppHandle,
+    id: i64,
+    person: u32,
+    name: String,
+) -> Result<Note, String> {
+    let notes = Arc::clone(&app.state::<Arc<NotesManager>>());
+    notes.name_person(id, person, &name).await.map_err(err)
+}
+
+/// Everyone Bolke knows by voice, most recent first.
+#[tauri::command]
+#[specta::specta]
+pub fn get_voice_names(app: AppHandle) -> Result<Vec<String>, String> {
+    app.state::<Arc<NotesManager>>().voice_names().map_err(err)
 }
 
 // ----- Summary models -----

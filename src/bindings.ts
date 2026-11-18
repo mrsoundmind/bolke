@@ -1164,6 +1164,58 @@ async summarizeNote(id: number) : Promise<Result<Note, string>> {
 async getSummarySource() : Promise<SummarySource> {
     return await TAURI_INVOKE("get_summary_source");
 },
+async getSpeakerModels() : Promise<SpeakerModels> {
+    return await TAURI_INVOKE("get_speaker_models");
+},
+/**
+ * Downloads the voice models; returns whether they're ready (false when
+ * cancelled). Progress goes out as "speaker-models-progress".
+ */
+async downloadSpeakerModels() : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("download_speaker_models") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async cancelSpeakerModelsDownload() : Promise<void> {
+    await TAURI_INVOKE("cancel_speaker_models_download");
+},
+/**
+ * Finds who said what in a recorded note, in the background.
+ */
+async findNotePeople(id: number) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("find_note_people", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Names a person in a meeting (the same name twice makes them one person);
+ * Bolke remembers the voice for the next meeting.
+ */
+async nameNotePerson(id: number, person: number, name: string) : Promise<Result<Note, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("name_note_person", { id, person, name }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Everyone Bolke knows by voice, most recent first.
+ */
+async getVoiceNames() : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_voice_names") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getSummaryModels() : Promise<SummaryModel[]> {
     return await TAURI_INVOKE("get_summary_models");
 },
@@ -1597,7 +1649,11 @@ audio_file: string | null; duration_ms: number | null;
 /**
  * Seconds since the Unix epoch.
  */
-created_at: number; updated_at: number }
+created_at: number; updated_at: number; 
+/**
+ * Who said what, once found.
+ */
+people: NotePeople | null; people_state: PeopleState | null }
 /**
  * What a note change sets; `None` leaves a field as it is.
  */
@@ -1615,6 +1671,11 @@ export type NoteKind =
  * Typed by hand, or made from an audio file.
  */
 "note"
+export type NoteLine = { start_ms: number; end_ms: number; person: number; text: string }
+/**
+ * Who spoke in a meeting, and each of their lines in order.
+ */
+export type NotePeople = { people: Person[]; lines: NoteLine[] }
 /**
  * The AI summary of a note.
  */
@@ -1666,7 +1727,28 @@ export type OverlayPosition = "top" | "bottom"
 export type OverlayStyle = "none" | "minimal" | "live"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
+/**
+ * Finding who said what.
+ */
+export type PeopleState = "working" | "failed"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
+export type Person = { 
+/**
+ * 1-based, in the order people first spoke.
+ */
+id: number; 
+/**
+ * `None` until Bolke knows their voice or the user names them.
+ */
+name: string | null; 
+/**
+ * How long they talked.
+ */
+talk_ms: number; 
+/**
+ * Named because the voice matched one Bolke knows, not by the user.
+ */
+guessed?: boolean }
 /**
  * Request format a post-processing endpoint speaks. Built-in providers have a
  * fixed format; only the custom provider lets the user change it.
@@ -1766,6 +1848,14 @@ export type ShortcutActivation =
 "hold_or_toggle"
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
+/**
+ * The voice models as the app shows them.
+ */
+export type SpeakerModels = { 
+/**
+ * This system can tell voices apart at all.
+ */
+available: boolean; downloaded: boolean; downloading: boolean; size_bytes: number }
 /**
  * Phase of the streaming overlay card, emitted to drive its UI state.
  */

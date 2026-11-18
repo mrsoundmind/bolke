@@ -5,6 +5,7 @@ pub mod meeting;
 pub mod model;
 pub mod model_capabilities;
 pub mod notes;
+pub mod speaker_models;
 pub mod summary_model;
 pub mod transcription;
 pub mod transcription_jobs;

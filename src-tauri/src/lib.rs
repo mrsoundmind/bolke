@@ -27,6 +27,7 @@ mod secure_input;
 mod settings;
 mod shortcut;
 mod signal_handle;
+pub mod speakers;
 mod system_languages;
 mod transcription_coordinator;
 mod transcription_hook;
@@ -266,6 +267,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             .expect("Failed to initialize summary models"),
     );
     app_handle.manage(summary_models.clone());
+    app_handle.manage(Arc::new(
+        managers::speaker_models::SpeakerModelManager::new(app_handle)
+            .expect("Failed to initialize the voice models"),
+    ));
     // A summary model queued in setup carries on after a quit.
     summary_models.start_queued();
     tauri::async_runtime::spawn(commands::notes::rescue_meetings(app_handle.clone()));
@@ -875,6 +880,12 @@ pub fn run(cli_args: CliArgs) {
             commands::notes::import_audio_note,
             commands::notes::summarize_note,
             commands::notes::get_summary_source,
+            commands::notes::get_speaker_models,
+            commands::notes::download_speaker_models,
+            commands::notes::cancel_speaker_models_download,
+            commands::notes::find_note_people,
+            commands::notes::name_note_person,
+            commands::notes::get_voice_names,
             commands::notes::get_summary_models,
             commands::notes::download_summary_model,
             commands::notes::queue_summary_model_download,

@@ -28,9 +28,11 @@ import {
   formatDuration,
   formatNoteDate,
   recordingUrl,
+  useNotesChanged,
   useSummaryModels,
   wordCount,
 } from "./noteUtils";
+import { NotePeople } from "./NotePeople";
 import { listen } from "@tauri-apps/api/event";
 
 /** Typing pauses this long before the text is saved. */
@@ -121,6 +123,8 @@ export const NoteView: React.FC<NoteViewProps> = ({
   useEffect(() => {
     load();
   }, [load]);
+  // Who said what is saved by Rust when it's found.
+  useNotesChanged(load);
 
   // The transcript arrives when its job ends.
   const job = note?.entry_id != null ? jobs[note.entry_id] : undefined;
@@ -330,6 +334,8 @@ export const NoteView: React.FC<NoteViewProps> = ({
           />
         </div>
       )}
+
+      <NotePeople note={note} job={job} onNote={setNote} />
 
       <section
         aria-labelledby="note-summary"

@@ -19,11 +19,13 @@ use tauri_specta::Event;
 use crate::actions::process_transcription_output;
 use crate::audio_toolkit::{decode_audio_file, read_wav_samples, save_wav_file};
 use crate::managers::history::{HistoryEntry, HistoryManager};
-use crate::managers::notes::NotesManager;
+use crate::managers::notes::{NoteKind, NoteLine, NotePeople, NotesManager, PeopleState, Person};
+use crate::managers::speaker_models::SpeakerModelManager;
 use crate::managers::transcription::{
     panic_payload_message, ChunkControl, Transcription, TranscriptionManager,
 };
 use crate::notices::{self, Notice, NoticeCode, NoticeSource};
+use crate::speakers::{self, SeparatorModels};
 
 /// Why a recording with nothing said in it has no transcript.
 const NO_SPEECH: &str = "Recording contains no speech";
@@ -66,6 +68,8 @@ struct Jobs {
     retries: VecDeque<i64>,
     /// Entry ids of files waiting to be transcribed.
     files: VecDeque<i64>,
+    /// Entry ids of meetings waiting to find who said what.
+    people: VecDeque<i64>,
     running: Option<Running>,
 }
 
@@ -76,18 +80,23 @@ impl Jobs {
             .is_some_and(|r| r.entry_id == entry_id)
             || self.retries.contains(&entry_id)
             || self.files.contains(&entry_id)
+            || self.people.contains(&entry_id)
     }
 
     fn is_idle(&self) -> bool {
-        self.running.is_none() && self.retries.is_empty() && self.files.is_empty()
+        self.running.is_none()
+            && self.retries.is_empty()
+            && self.files.is_empty()
+            && self.people.is_empty()
     }
 
     /// Drops the entry from the queues; whether it was in one.
     fn unqueue(&mut self, entry_id: i64) -> bool {
-        let before = self.retries.len() + self.files.len();
+        let before = self.retries.len() + self.files.len() + self.people.len();
         self.retries.retain(|&id| id != entry_id);
         self.files.retain(|&id| id != entry_id);
-        self.retries.len() + self.files.len() != before
+        self.people.retain(|&id| id != entry_id);
+        self.retries.len() + self.files.len() + self.people.len() != before
     }
 }
 
@@ -122,6 +131,14 @@ impl TranscriptionJobManager {
     /// Decodes `path` into a recording, then adds it to History and queues
     /// it. The recording exists first, so no entry is ever without audio.
     pub fn transcribe_file(&self, path: PathBuf) -> Result<HistoryEntry> {
+        let entry = self.add_file(path)?;
+        self.queue(entry.id, Queue::File);
+        Ok(entry)
+    }
+
+    /// Like `transcribe_file`, but not queued yet: the caller makes its note
+    /// first, then calls `start`, so the job knows the note.
+    pub fn add_file(&self, path: PathBuf) -> Result<HistoryEntry> {
         // A malformed file may panic the decoder.
         let samples = catch_unwind(AssertUnwindSafe(|| decode_audio_file(&path))).unwrap_or_else(
             |payload| {
@@ -159,47 +176,49 @@ impl TranscriptionJobManager {
                 return Err(e);
             }
         };
-        info!("Queued file transcription for history entry {}", entry.id);
-        self.queue(entry.id, false);
+        info!("Added file for history entry {}", entry.id);
         Ok(entry)
+    }
+
+    /// Queues an entry added with `add_file` or `add_recording`.
+    pub fn start(&self, entry_id: i64) {
+        self.queue(entry_id, Queue::File);
     }
 
     /// Adds a recording already in the recordings folder (16 kHz mono WAV,
     /// such as a note) to History and queues it, like a file but without
     /// decoding a copy.
-    pub fn transcribe_recording(
-        &self,
-        file_name: String,
-        source_name: String,
-    ) -> Result<HistoryEntry> {
+    /// Not queued yet; see `add_file`.
+    pub fn add_recording(&self, file_name: String, source_name: String) -> Result<HistoryEntry> {
         let hm = self.app.state::<Arc<HistoryManager>>();
         let entry = hm.save_file_entry(file_name, source_name)?;
-        info!(
-            "Queued recording transcription for history entry {}",
-            entry.id
-        );
-        self.queue(entry.id, false);
+        info!("Added recording for history entry {}", entry.id);
         Ok(entry)
     }
 
     /// Queues the entry to be transcribed again from its recording, ahead
     /// of any file.
     pub fn retry(&self, entry_id: i64) {
-        self.queue(entry_id, true);
+        self.queue(entry_id, Queue::Retry);
+    }
+
+    /// Queues a meeting already transcribed to find who said what in it.
+    pub fn find_people(&self, entry_id: i64) {
+        self.queue(entry_id, Queue::People);
     }
 
     /// Queues the entry to be transcribed from its recording, unless it
     /// already is.
-    fn queue(&self, entry_id: i64, retry: bool) {
+    fn queue(&self, entry_id: i64, queue: Queue) {
         {
             let mut jobs = self.lock();
             if jobs.has(entry_id) {
                 return;
             }
-            if retry {
-                jobs.retries.push_back(entry_id);
-            } else {
-                jobs.files.push_back(entry_id);
+            match queue {
+                Queue::Retry => jobs.retries.push_back(entry_id),
+                Queue::File => jobs.files.push_back(entry_id),
+                Queue::People => jobs.people.push_back(entry_id),
             }
             self.sync_job_active(&jobs);
         }
@@ -248,13 +267,17 @@ impl TranscriptionJobManager {
 
     fn run_jobs(&self) {
         loop {
-            let (entry_id, cancelled) = {
+            let (entry_id, people_only, cancelled) = {
                 let mut jobs = self.lock();
-                let entry_id = loop {
-                    if let Some(entry_id) =
-                        jobs.retries.pop_front().or_else(|| jobs.files.pop_front())
-                    {
-                        break entry_id;
+                let (entry_id, people_only) = loop {
+                    if let Some(entry_id) = jobs.retries.pop_front() {
+                        break (entry_id, false);
+                    }
+                    if let Some(entry_id) = jobs.people.pop_front() {
+                        break (entry_id, true);
+                    }
+                    if let Some(entry_id) = jobs.files.pop_front() {
+                        break (entry_id, false);
                     }
                     jobs = self
                         .wake
@@ -266,14 +289,20 @@ impl TranscriptionJobManager {
                     entry_id,
                     cancelled: Arc::clone(&cancelled),
                 });
-                (entry_id, cancelled)
+                (entry_id, people_only, cancelled)
             };
             self.emit(entry_id, TranscriptionJobStatus::Running { percent: 0 });
 
             // A panic fails only this job; the rest of the loop still has to
             // run, or the model would stay held and the queue stuck.
-            let result = catch_unwind(AssertUnwindSafe(|| self.run_job(entry_id, &cancelled)))
-                .unwrap_or_else(|payload| Err(crashed(payload.as_ref())));
+            let result = catch_unwind(AssertUnwindSafe(|| {
+                if people_only {
+                    self.run_people_job(entry_id, &cancelled)
+                } else {
+                    self.run_job(entry_id, &cancelled)
+                }
+            }))
+            .unwrap_or_else(|payload| Err(crashed(payload.as_ref())));
 
             let idle = {
                 let mut jobs = self.lock();
@@ -364,8 +393,33 @@ impl TranscriptionJobManager {
             cancelled,
             percent: Cell::new(0),
         };
-        let Some(Transcription { text, language }) = tm.transcribe_in_chunks(samples, &control)?
-        else {
+        // A meeting waiting for its text gets who said what in the same pass.
+        let mut found = None;
+        if let (Some((note_id, NoteKind::Meeting, true)), Some(models)) =
+            (self.note_of(entry.id), self.separator_models())
+        {
+            let wav = hm.get_audio_file_path(&entry.file_name);
+            match self.find_people_in(note_id, &wav, &samples, &models, &control, cancelled)? {
+                PeopleEnd::Found(people) => found = Some((note_id, people)),
+                PeopleEnd::Cancelled => return Ok(JobEnd::Cancelled),
+                // Transcribed the usual way below, without people.
+                PeopleEnd::NotFound => {}
+            }
+        }
+        let transcription = match &found {
+            Some((_, people)) => Some(Transcription {
+                text: people
+                    .people
+                    .lines
+                    .iter()
+                    .map(|l| l.text.as_str())
+                    .collect::<Vec<_>>()
+                    .join("\n\n"),
+                language: Some(people.language.clone()),
+            }),
+            None => tm.transcribe_in_chunks(samples, &control)?,
+        };
+        let Some(Transcription { text, language }) = transcription else {
             return Ok(JobEnd::Cancelled);
         };
         if text.is_empty() {
@@ -385,6 +439,9 @@ impl TranscriptionJobManager {
             return Ok(JobEnd::Cancelled);
         }
         let post_process_failed = processed.post_process_failed;
+        if let Some((note_id, people)) = found {
+            self.save_people(note_id, people)?;
+        }
         hm.update_transcription(
             entry.id,
             text,
@@ -395,6 +452,196 @@ impl TranscriptionJobManager {
         Ok(JobEnd::Finished {
             post_process_failed,
         })
+    }
+
+    /// Finds who said what in a meeting that already has its text; the
+    /// text the user may have edited stays as it is.
+    fn run_people_job(&self, entry_id: i64, cancelled: &AtomicBool) -> Result<JobEnd> {
+        let hm = Arc::clone(&self.app.state::<Arc<HistoryManager>>());
+        let entry = tauri::async_runtime::block_on(hm.get_entry_by_id(entry_id))?
+            .ok_or_else(|| anyhow!("History entry {} not found", entry_id))?;
+        let (note_id, _, _) = self
+            .note_of(entry_id)
+            .ok_or_else(|| anyhow!("No note holds history entry {}", entry_id))?;
+        let models = self
+            .separator_models()
+            .ok_or_else(|| anyhow!("The voice models aren't downloaded"))?;
+        let wav = hm.get_audio_file_path(&entry.file_name);
+        let samples = read_wav_samples(&wav).map_err(|e| anyhow!("Failed to load audio: {}", e))?;
+        let control = Control {
+            manager: self,
+            entry_id,
+            cancelled,
+            percent: Cell::new(0),
+        };
+        match self.find_people_in(note_id, &wav, &samples, &models, &control, cancelled)? {
+            PeopleEnd::Found(people) => {
+                self.save_people(note_id, people)?;
+                Ok(JobEnd::Finished {
+                    post_process_failed: false,
+                })
+            }
+            PeopleEnd::Cancelled => Ok(JobEnd::Cancelled),
+            PeopleEnd::NotFound => Err(anyhow!("Couldn't tell the voices apart")),
+        }
+    }
+
+    fn note_of(&self, entry_id: i64) -> Option<(i64, NoteKind, bool)> {
+        let notes = self.app.try_state::<Arc<NotesManager>>()?;
+        notes.note_for_entry(entry_id).ok().flatten()
+    }
+
+    fn separator_models(&self) -> Option<SeparatorModels> {
+        self.app.try_state::<Arc<SpeakerModelManager>>()?.ready()
+    }
+
+    fn set_people_state(&self, note_id: i64, state: Option<PeopleState>) {
+        if let Some(notes) = self.app.try_state::<Arc<NotesManager>>() {
+            if let Err(e) = notes.set_people_state(note_id, state) {
+                error!("Couldn't update note {}: {}", note_id, e);
+            }
+            crate::commands::notes::emit_notes_changed(&self.app);
+        }
+    }
+
+    fn save_people(&self, note_id: i64, found: FoundPeople) -> Result<()> {
+        let notes = self.app.state::<Arc<NotesManager>>();
+        notes.set_people(note_id, found.people, &found.fingerprints)?;
+        crate::commands::notes::emit_notes_changed(&self.app);
+        Ok(())
+    }
+
+    /// Separates the voices, then transcribes one speaker turn at a time.
+    /// The first sixth of the progress is the separating.
+    fn find_people_in(
+        &self,
+        note_id: i64,
+        wav: &Path,
+        samples: &[f32],
+        models: &SeparatorModels,
+        control: &Control,
+        cancelled: &AtomicBool,
+    ) -> Result<PeopleEnd> {
+        const SEPARATING: f32 = 1.0 / 6.0;
+        let total = samples.len();
+        self.set_people_state(note_id, Some(PeopleState::Working));
+        let separation = speakers::separate(
+            models,
+            wav,
+            &|p| control.progress((total as f32 * SEPARATING * p) as usize, total),
+            &|| cancelled.load(Ordering::Acquire),
+        );
+        let separation = match separation {
+            Ok(Some(separation)) => separation,
+            Ok(None) => {
+                self.set_people_state(note_id, None);
+                return Ok(PeopleEnd::Cancelled);
+            }
+            Err(e) => {
+                warn!(
+                    "Couldn't tell the voices apart in note {}: {:#}",
+                    note_id, e
+                );
+                self.set_people_state(note_id, Some(PeopleState::Failed));
+                return Ok(PeopleEnd::NotFound);
+            }
+        };
+        let total_ms = (total / 16) as i64;
+        let (turns, voices) = speakers::turns(&separation.segments, total_ms);
+        if turns.is_empty() {
+            self.set_people_state(note_id, Some(PeopleState::Failed));
+            return Ok(PeopleEnd::NotFound);
+        }
+        let tm = Arc::clone(&self.app.state::<Arc<TranscriptionManager>>());
+        let rest = Scaled {
+            inner: control,
+            from: SEPARATING,
+        };
+        let Some((lines, language)) = tm.transcribe_turns(samples, &turns, &rest)? else {
+            self.set_people_state(note_id, None);
+            return Ok(PeopleEnd::Cancelled);
+        };
+        let people = voices
+            .iter()
+            .enumerate()
+            .map(|(i, voice)| Person {
+                id: i as u32 + 1,
+                name: None,
+                talk_ms: separation
+                    .segments
+                    .iter()
+                    .filter(|s| s.voice == *voice)
+                    .map(|s| s.end_ms - s.start_ms)
+                    .sum(),
+                guessed: false,
+            })
+            .filter(|p| lines.iter().any(|l| l.person == p.id))
+            .collect();
+        let fingerprints = voices
+            .iter()
+            .enumerate()
+            .filter_map(|(i, voice)| {
+                separation
+                    .voices
+                    .iter()
+                    .find(|v| v.voice == *voice)
+                    .map(|v| (i as u32 + 1, v.fingerprint.clone()))
+            })
+            .collect();
+        Ok(PeopleEnd::Found(FoundPeople {
+            people: NotePeople {
+                people,
+                lines: lines
+                    .into_iter()
+                    .map(|l| NoteLine {
+                        start_ms: l.start_ms,
+                        end_ms: l.end_ms,
+                        person: l.person,
+                        text: l.text,
+                    })
+                    .collect(),
+            },
+            fingerprints,
+            language,
+        }))
+    }
+}
+
+enum Queue {
+    Retry,
+    File,
+    People,
+}
+
+struct FoundPeople {
+    people: NotePeople,
+    fingerprints: Vec<(u32, Vec<f32>)>,
+    language: crate::language_detection::LanguageDecision,
+}
+
+enum PeopleEnd {
+    Found(FoundPeople),
+    Cancelled,
+    /// The voices couldn't be told apart; the meeting is transcribed the
+    /// usual way.
+    NotFound,
+}
+
+/// Reports progress from `from` to the end of the job.
+struct Scaled<'a> {
+    inner: &'a dyn ChunkControl,
+    from: f32,
+}
+
+impl ChunkControl for Scaled<'_> {
+    fn proceed(&self) -> bool {
+        self.inner.proceed()
+    }
+
+    fn progress(&self, done: usize, total: usize) {
+        let part = done as f32 / total.max(1) as f32;
+        let at = (self.from + (1.0 - self.from) * part) * total as f32;
+        self.inner.progress(at as usize, total);
     }
 }
 

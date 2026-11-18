@@ -103,6 +103,12 @@ hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downl
   "tokio",
 ] }
 
+# Tells the voices in a meeting apart (speaker fingerprints). Its Windows
+# libraries use the static C runtime, which clashes with Bolke's, so Windows
+# goes without it for now (see src/speakers).
+[target.'cfg(not(windows))'.dependencies]
+sherpa-onnx = "2.0.1"
+
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
 

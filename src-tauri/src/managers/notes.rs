@@ -19,8 +19,9 @@ use tauri::{AppHandle, Manager};
 
 use crate::managers::history::HistoryManager;
 
-static MIGRATIONS: &[M] = &[M::up(
-    "CREATE TABLE IF NOT EXISTS projects (
+static MIGRATIONS: &[M] = &[
+    M::up(
+        "CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         created_at INTEGER NOT NULL
@@ -39,10 +40,32 @@ static MIGRATIONS: &[M] = &[M::up(
         updated_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS notes_project ON notes(project_id);",
-)];
+    ),
+    // Who said what in a meeting, and the voices Bolke knows by name.
+    M::up(
+        "ALTER TABLE notes ADD COLUMN people TEXT;
+    ALTER TABLE notes ADD COLUMN people_state TEXT;
+    CREATE TABLE IF NOT EXISTS note_voices (
+        note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+        person INTEGER NOT NULL,
+        fingerprint BLOB NOT NULL,
+        PRIMARY KEY (note_id, person)
+    );
+    CREATE TABLE IF NOT EXISTS voices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        fingerprint BLOB NOT NULL,
+        heard INTEGER NOT NULL DEFAULT 1,
+        updated_at INTEGER NOT NULL
+    );",
+    ),
+];
+
+/// A known voice this alike is taken to be that person.
+const KNOWN_VOICE: f32 = 0.6;
 
 const NOTE_COLUMNS: &str = "id, project_id, kind, title, text, text_pending, summary, entry_id, \
-    duration_ms, created_at, updated_at";
+    duration_ms, created_at, updated_at, people, people_state";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
@@ -99,6 +122,59 @@ pub struct ActionPoint {
     pub done: bool,
 }
 
+/// Who spoke in a meeting, and each of their lines in order.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, Type)]
+pub struct NotePeople {
+    pub people: Vec<Person>,
+    pub lines: Vec<NoteLine>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Type)]
+pub struct Person {
+    /// 1-based, in the order people first spoke.
+    pub id: u32,
+    /// `None` until Bolke knows their voice or the user names them.
+    pub name: Option<String>,
+    /// How long they talked.
+    pub talk_ms: i64,
+    /// Named because the voice matched one Bolke knows, not by the user.
+    #[serde(default)]
+    pub guessed: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Type)]
+pub struct NoteLine {
+    pub start_ms: i64,
+    pub end_ms: i64,
+    pub person: u32,
+    pub text: String,
+}
+
+/// Finding who said what.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum PeopleState {
+    Working,
+    Failed,
+}
+
+impl PeopleState {
+    fn as_str(self) -> &'static str {
+        match self {
+            PeopleState::Working => "working",
+            PeopleState::Failed => "failed",
+        }
+    }
+
+    fn parse(s: &str) -> Option<PeopleState> {
+        match s {
+            "working" => Some(PeopleState::Working),
+            "failed" => Some(PeopleState::Failed),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct Note {
     pub id: i64,
@@ -118,6 +194,9 @@ pub struct Note {
     /// Seconds since the Unix epoch.
     pub created_at: i64,
     pub updated_at: i64,
+    /// Who said what, once found.
+    pub people: Option<NotePeople>,
+    pub people_state: Option<PeopleState>,
 }
 
 /// What a note change sets; `None` leaves a field as it is.
@@ -436,6 +515,172 @@ impl NotesManager {
     }
 }
 
+impl NotesManager {
+    /// The note made from History entry `entry_id`: its id, kind and
+    /// whether it's still waiting for its text.
+    pub fn note_for_entry(&self, entry_id: i64) -> Result<Option<(i64, NoteKind, bool)>> {
+        Ok(self
+            .connection()?
+            .query_row(
+                "SELECT id, kind, text_pending FROM notes WHERE entry_id = ?1",
+                [entry_id],
+                |row| {
+                    Ok((
+                        row.get::<_, i64>(0)?,
+                        NoteKind::parse(&row.get::<_, String>(1)?),
+                        row.get::<_, bool>(2)?,
+                    ))
+                },
+            )
+            .optional()?)
+    }
+
+    pub fn set_people_state(&self, id: i64, state: Option<PeopleState>) -> Result<()> {
+        self.connection()?.execute(
+            "UPDATE notes SET people_state = ?1 WHERE id = ?2",
+            params![state.map(PeopleState::as_str), id],
+        )?;
+        Ok(())
+    }
+
+    /// Saves who said what, naming people whose voices Bolke knows.
+    pub fn set_people(
+        &self,
+        id: i64,
+        mut people: NotePeople,
+        fingerprints: &[(u32, Vec<f32>)],
+    ) -> Result<()> {
+        let mut conn = self.connection()?;
+        let known = Self::known_voices(&conn)?;
+        name_known_voices(&mut people.people, fingerprints, &known);
+        let tx = conn.transaction()?;
+        tx.execute("DELETE FROM note_voices WHERE note_id = ?1", [id])?;
+        for (person, fingerprint) in fingerprints {
+            tx.execute(
+                "INSERT INTO note_voices (note_id, person, fingerprint) VALUES (?1, ?2, ?3)",
+                params![id, person, to_blob(fingerprint)],
+            )?;
+        }
+        tx.execute(
+            "UPDATE notes SET people = ?1, people_state = NULL WHERE id = ?2",
+            params![serde_json::to_string(&people)?, id],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    fn known_voices(conn: &Connection) -> Result<Vec<(String, Vec<f32>)>> {
+        let mut stmt = conn.prepare("SELECT name, fingerprint FROM voices")?;
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                from_blob(&row.get::<_, Vec<u8>>(1)?),
+            ))
+        })?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+
+    /// Names everyone Bolke has been told about, for picking a name.
+    pub fn voice_names(&self) -> Result<Vec<String>> {
+        let conn = self.connection()?;
+        let mut stmt = conn.prepare("SELECT name FROM voices ORDER BY updated_at DESC")?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+
+    /// Names a person in a meeting, and remembers their voice for the next
+    /// one. Giving two people the same name makes them one person. An empty
+    /// name forgets the name.
+    pub async fn name_person(&self, id: i64, person: u32, name: &str) -> Result<Note> {
+        let note = self.get_note(id).await?;
+        let mut people = note
+            .people
+            .ok_or_else(|| anyhow!("Note {id} has no people"))?;
+        let name: String = name.trim().chars().take(60).collect();
+        let name = (!name.is_empty()).then_some(name);
+        let same = name.as_ref().and_then(|n| {
+            people
+                .people
+                .iter()
+                .find(|p| {
+                    p.id != person && p.name.as_ref().is_some_and(|m| m.eq_ignore_ascii_case(n))
+                })
+                .map(|p| p.id)
+        });
+        let conn = self.connection()?;
+        if let Some(keep) = same {
+            // The same person, heard as two: their lines and talk join up.
+            let talk: i64 = people
+                .people
+                .iter()
+                .filter(|p| p.id == person)
+                .map(|p| p.talk_ms)
+                .sum();
+            people.people.retain(|p| p.id != person);
+            if let Some(p) = people.people.iter_mut().find(|p| p.id == keep) {
+                p.talk_ms += talk;
+                p.guessed = false;
+            }
+            for line in people.lines.iter_mut().filter(|l| l.person == person) {
+                line.person = keep;
+            }
+        } else if let Some(p) = people.people.iter_mut().find(|p| p.id == person) {
+            p.name = name.clone();
+            p.guessed = false;
+        }
+        conn.execute(
+            "UPDATE notes SET people = ?1, updated_at = ?2 WHERE id = ?3",
+            params![serde_json::to_string(&people)?, Self::now(), id],
+        )?;
+
+        if let Some(name) = &name {
+            let fingerprint: Option<Vec<u8>> = conn
+                .query_row(
+                    "SELECT fingerprint FROM note_voices WHERE note_id = ?1 AND person = ?2",
+                    params![id, person],
+                    |row| row.get(0),
+                )
+                .optional()?;
+            if let Some(fingerprint) = fingerprint.map(|b| from_blob(&b)) {
+                self.remember_voice(&conn, name, &fingerprint)?;
+            }
+        }
+        self.get_note(id).await
+    }
+
+    /// Adds a voice to what Bolke knows of `name`, averaging it in.
+    fn remember_voice(&self, conn: &Connection, name: &str, fingerprint: &[f32]) -> Result<()> {
+        let known: Option<(Vec<u8>, i64)> = conn
+            .query_row(
+                "SELECT fingerprint, heard FROM voices WHERE name = ?1",
+                [name],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .optional()?;
+        let (voice, heard) = match known {
+            Some((blob, heard)) => {
+                let old = from_blob(&blob);
+                let w = heard as f32;
+                let mut mixed: Vec<f32> = old
+                    .iter()
+                    .zip(fingerprint)
+                    .map(|(a, b)| (a * w + b) / (w + 1.0))
+                    .collect();
+                let n = mixed.iter().map(|x| x * x).sum::<f32>().sqrt().max(1e-9);
+                mixed.iter_mut().for_each(|x| *x /= n);
+                (mixed, heard + 1)
+            }
+            None => (fingerprint.to_vec(), 1),
+        };
+        conn.execute(
+            "INSERT INTO voices (name, fingerprint, heard, updated_at) VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(name) DO UPDATE SET fingerprint = ?2, heard = ?3, updated_at = ?4",
+            params![name, to_blob(&voice), heard, Self::now()],
+        )?;
+        Ok(())
+    }
+}
+
 /// The first few words of an idea, as its title.
 fn title_from_text(text: &str) -> String {
     const MAX_WORDS: usize = 8;
@@ -487,7 +732,59 @@ fn map_note(row: &Row) -> rusqlite::Result<Note> {
         duration_ms: row.get(8)?,
         created_at: row.get(9)?,
         updated_at: row.get(10)?,
+        people: row
+            .get::<_, Option<String>>(11)?
+            .and_then(|json| serde_json::from_str(&json).ok()),
+        people_state: row
+            .get::<_, Option<String>>(12)?
+            .as_deref()
+            .and_then(PeopleState::parse),
     })
+}
+
+fn to_blob(fingerprint: &[f32]) -> Vec<u8> {
+    fingerprint.iter().flat_map(|x| x.to_le_bytes()).collect()
+}
+
+fn from_blob(blob: &[u8]) -> Vec<f32> {
+    blob.chunks_exact(4)
+        .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+        .collect()
+}
+
+/// Gives people the names of known voices they match, each name once, the
+/// closest matches first.
+fn name_known_voices(
+    people: &mut [Person],
+    fingerprints: &[(u32, Vec<f32>)],
+    known: &[(String, Vec<f32>)],
+) {
+    let mut pairs: Vec<(f32, u32, usize)> = Vec::new();
+    for (person, fingerprint) in fingerprints {
+        for (k, (_, voice)) in known.iter().enumerate() {
+            let s = crate::speakers::similarity(fingerprint, voice);
+            if s >= KNOWN_VOICE {
+                pairs.push((s, *person, k));
+            }
+        }
+    }
+    pairs.sort_by(|a, b| b.0.total_cmp(&a.0));
+    let mut used_people = Vec::new();
+    let mut used_voices = Vec::new();
+    for (_, person, k) in pairs {
+        if used_people.contains(&person) || used_voices.contains(&k) {
+            continue;
+        }
+        if let Some(p) = people
+            .iter_mut()
+            .find(|p| p.id == person && p.name.is_none())
+        {
+            p.name = Some(known[k].0.clone());
+            p.guessed = true;
+        }
+        used_people.push(person);
+        used_voices.push(k);
+    }
 }
 
 #[cfg(test)]
