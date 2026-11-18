@@ -45,3 +45,7 @@ result
 
 # Python bytecode (scripts/)
 __pycache__/
+
+# llama.cpp source and builds for the summary helper (scripts/build-llama-server.sh)
+.llama-cpp/
+src-tauri/binaries/bolke-llama-server-*

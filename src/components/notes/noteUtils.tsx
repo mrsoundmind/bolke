@@ -4,8 +4,15 @@ import { FileText, Lightbulb, Users } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { listen } from "@tauri-apps/api/event";
-import { useEffect, useState } from "react";
-import { commands, type MeetingStatus, type NoteKind } from "@/bindings";
+import { useCallback, useEffect, useState } from "react";
+import {
+  commands,
+  type MeetingStatus,
+  type NoteKind,
+  type SummaryModel,
+} from "@/bindings";
+import { BYTES_PER_MB, formatModelSize } from "@/lib/utils/format";
+import { notify } from "@/stores/noticeStore";
 import type { OSType } from "@/lib/utils/keyboard";
 
 /** "18 min", or "45 s" under a minute. */
@@ -100,4 +107,80 @@ export const useNotesChanged = (onChange: () => void) => {
       off.then((fn) => fn());
     };
   }, [onChange]);
+};
+
+/** "2.3 GB", counted like the speech models' sizes. */
+export const formatBytes = (bytes: number) =>
+  formatModelSize(bytes / BYTES_PER_MB);
+
+export interface SummaryDownload {
+  downloaded: number;
+  total: number;
+}
+
+/** The free summary models, kept current as they download or change. */
+export const useSummaryModels = () => {
+  const [models, setModels] = useState<SummaryModel[]>([]);
+  const [progress, setProgress] = useState<Record<string, SummaryDownload>>({});
+  const reload = useCallback(
+    () =>
+      commands
+        .getSummaryModels()
+        .then(setModels)
+        .catch(() => {}),
+    [],
+  );
+  useEffect(() => {
+    reload();
+    const offs = [
+      listen("summary-models-changed", () => reload()),
+      listen<SummaryDownload & { id: string }>(
+        "summary-model-progress",
+        ({ payload }) =>
+          setProgress((p) => ({
+            ...p,
+            [payload.id]: {
+              downloaded: payload.downloaded,
+              total: payload.total,
+            },
+          })),
+      ),
+    ];
+    return () => {
+      offs.forEach((off) => off.then((fn) => fn()));
+    };
+  }, [reload]);
+  const recommended = models.find((m) => m.recommended) ?? models[0];
+  // A model queued in setup shows as downloading, waiting its turn.
+  const downloading = models.find((m) => m.downloading || m.queued);
+  return { models, progress, recommended, downloading, reload };
+};
+
+/** Starts a summary model download; a failure shows as a notice. */
+export const downloadSummaryModel = async (
+  id: string,
+  t: TFunction,
+): Promise<void> => {
+  const result = await commands.downloadSummaryModel(id);
+  if (result.status === "error") {
+    notify({
+      title: t("notes.summaryModel.downloadFailed"),
+      detail: result.error,
+      level: "error",
+    });
+  }
+};
+
+/** A summary model download's percent, from its events or what's on disk. */
+export const downloadPercent = (
+  model: SummaryModel,
+  progress: Record<string, SummaryDownload>,
+) => {
+  const p = progress[model.id];
+  const done = p?.downloaded ?? model.partial_bytes;
+  const total = p?.total || model.size_bytes;
+  return {
+    percent: total > 0 ? Math.min(100, Math.floor((done / total) * 100)) : 0,
+    done,
+  };
 };

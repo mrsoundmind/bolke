@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Check,
   Copy,
+  Download,
   FolderOpen,
   RotateCcw,
   Sparkles,
@@ -21,11 +22,16 @@ import { useOsType } from "@/hooks/useOsType";
 import { AudioPlayer } from "../ui/AudioPlayer";
 import { copyToClipboard } from "../settings/history/clipboard";
 import {
+  downloadPercent,
+  downloadSummaryModel,
+  formatBytes,
   formatDuration,
   formatNoteDate,
   recordingUrl,
+  useSummaryModels,
   wordCount,
 } from "./noteUtils";
+import { listen } from "@tauri-apps/api/event";
 
 /** Typing pauses this long before the text is saved. */
 const SAVE_DELAY_MS = 700;
@@ -43,6 +49,8 @@ interface NoteViewProps {
 
 const iconBtn =
   "w-9 h-9 rounded-full inline-flex items-center justify-center bg-[rgba(255,255,255,0.06)] text-[#c3ceea] cursor-pointer hover:bg-[rgba(255,255,255,0.14)] hover:text-white focus-visible:outline-2 focus-visible:outline-accent-soft";
+const primaryBtn =
+  "inline-flex items-center gap-2 min-h-11 px-5 rounded-full bg-linear-to-b from-[#3a78ff] to-[#2a5ff0] text-[14px] font-medium text-white cursor-pointer shadow-[0_6px_24px_rgba(47,107,255,0.35)] hover:brightness-110";
 const lightBtn =
   "inline-flex items-center gap-2 min-h-10 px-5 rounded-full bg-[rgba(5,10,30,0.4)] border border-[rgba(200,215,255,0.3)] text-[13px] font-medium text-white cursor-pointer hover:border-[rgba(200,215,255,0.6)] disabled:opacity-50";
 
@@ -82,12 +90,33 @@ export const NoteView: React.FC<NoteViewProps> = ({
     if (!dirty.current) setText(result.data.text);
   }, [id]);
 
+  const summaryModels = useSummaryModels();
+  const [summaryPart, setSummaryPart] = useState<{
+    part: number;
+    parts: number;
+  } | null>(null);
+
+  // What writes the summary changes when a summary model arrives or goes.
   useEffect(() => {
     commands
       .getSummarySource()
       .then(setSummarySource)
       .catch(() => setSummarySource(null));
-  }, []);
+  }, [summaryModels.models]);
+
+  // "Part 2 of 4" while a long note is summarized.
+  useEffect(() => {
+    const off = listen<{ note_id: number; part: number; parts: number }>(
+      "summary-progress",
+      ({ payload }) => {
+        if (payload.note_id === id)
+          setSummaryPart({ part: payload.part, parts: payload.parts });
+      },
+    );
+    return () => {
+      off.then((fn) => fn());
+    };
+  }, [id]);
 
   useEffect(() => {
     load();
@@ -181,6 +210,7 @@ export const NoteView: React.FC<NoteViewProps> = ({
     }
     setSummaryState("writing");
     setSummaryError(null);
+    setSummaryPart(null);
     const result = await commands.summarizeNote(id);
     if (result.status === "ok") {
       setNote(result.data);
@@ -208,6 +238,10 @@ export const NoteView: React.FC<NoteViewProps> = ({
     .join(" · ");
   const percent = job?.state === "running" ? job.percent : 0;
   const noProvider = summaryError === "no_ai_provider";
+  const { recommended, downloading } = summaryModels;
+  const download = downloading
+    ? downloadPercent(downloading, summaryModels.progress)
+    : { percent: 0, done: 0 };
   const summary = note.summary;
   const tag =
     "inline-flex items-center min-h-[30px] px-3 rounded-full bg-[rgba(20,30,64,0.9)] border border-[rgba(140,170,255,0.16)] text-[12px] font-medium text-[#c3ceea]";
@@ -317,9 +351,18 @@ export const NoteView: React.FC<NoteViewProps> = ({
         </div>
 
         {summaryState === "writing" ? (
-          <p className="m-0 text-[14px] text-[#d6e1ff] animate-pulse">
-            {t("notes.ai.writing")}
-          </p>
+          <div className="flex flex-col gap-1">
+            <p className="m-0 text-[14px] text-[#d6e1ff] animate-pulse">
+              {summaryPart
+                ? t("notes.ai.writingPart", summaryPart)
+                : t("notes.ai.writing")}
+            </p>
+            {summaryPart && (
+              <p className="m-0 text-[13px] text-[#a9bdeb]">
+                {t("notes.ai.slowHint")}
+              </p>
+            )}
+          </div>
         ) : summary ? (
           <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[22px]">
             <div className="flex flex-col gap-2">
@@ -360,58 +403,101 @@ export const NoteView: React.FC<NoteViewProps> = ({
               )}
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col gap-3 items-start">
+        ) : note.text_pending ? (
+          <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
+            {t("notes.ai.notReady")}
+          </p>
+        ) : downloading ? (
+          <div className="flex flex-col gap-3">
             <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
-              {note.text_pending
-                ? t("notes.ai.notReady")
-                : summarySource === "apple_intelligence"
-                  ? t("notes.ai.introOnDevice")
-                  : summarySource === "none"
-                    ? osType === "macos"
-                      ? t("notes.ai.introNoneMac")
-                      : t("notes.ai.introNone")
-                    : t("notes.ai.intro")}
+              {t(
+                downloading.queued ? "notes.ai.queued" : "notes.ai.downloading",
+              )}
             </p>
-            {!note.text_pending &&
-              (summarySource === "none" ? (
-                <button
-                  type="button"
-                  className={lightBtn}
-                  onClick={onOpenPostProcess}
-                >
-                  {t("notes.ai.openSettings")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={lightBtn}
-                  onClick={summarize}
-                  disabled={!text.trim()}
-                >
-                  {t("notes.ai.write")}
-                </button>
-              ))}
-          </div>
-        )}
-
-        {summaryState === "failed" && (
-          <div className="flex flex-col gap-2 items-start">
-            <p role="alert" className="m-0 text-[13px] text-[#ffd4cf]">
-              {noProvider
-                ? t("notes.ai.noProvider")
-                : t("notes.ai.failed", { error: summaryError })}
-            </p>
-            {noProvider && (
+            <div className="flex items-center gap-[14px] flex-wrap">
+              <div
+                role="progressbar"
+                aria-label={t("notes.ai.downloadLabel")}
+                aria-valuenow={download.percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                className="flex-[1_1_200px] h-[6px] rounded-[3px] bg-[rgba(5,10,30,0.45)] overflow-hidden"
+              >
+                <span
+                  className="block h-full rounded-[3px] bg-linear-to-r from-[#8fc2ff] to-white transition-[width]"
+                  style={{ width: `${download.percent}%` }}
+                />
+              </div>
+              <span className="text-[13px] text-[#c3d2f5] tabular-nums whitespace-nowrap">
+                {t("notes.ai.downloadProgress", {
+                  percent: download.percent,
+                  done: formatBytes(download.done),
+                  total: formatBytes(downloading.size_bytes),
+                })}
+              </span>
               <button
                 type="button"
                 className={lightBtn}
-                onClick={onOpenPostProcess}
+                onClick={() =>
+                  commands.cancelSummaryModelDownload(downloading.id)
+                }
               >
-                {t("notes.ai.openSettings")}
+                {t("notes.ai.cancel")}
               </button>
-            )}
+            </div>
           </div>
+        ) : summarySource === "none" && recommended ? (
+          <div className="flex flex-col gap-3 items-start">
+            <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
+              {t("notes.ai.introDownload", {
+                size: formatBytes(recommended.size_bytes),
+              })}
+            </p>
+            <div className="flex items-center gap-4 flex-wrap">
+              <button
+                type="button"
+                className={primaryBtn}
+                onClick={() => downloadSummaryModel(recommended.id, t)}
+              >
+                <Download size={16} aria-hidden="true" />
+                {t("notes.ai.download", {
+                  size: formatBytes(recommended.size_bytes),
+                })}
+              </button>
+              <button
+                type="button"
+                onClick={onOpenPostProcess}
+                className="text-[13px] font-medium text-[#bfd2ff] underline underline-offset-[3px] cursor-pointer hover:text-white"
+              >
+                {t("notes.ai.useService")}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 items-start">
+            <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
+              {summarySource === "local_model"
+                ? t("notes.ai.introLocal")
+                : summarySource === "apple_intelligence"
+                  ? t("notes.ai.introOnDevice")
+                  : t("notes.ai.intro")}
+            </p>
+            <button
+              type="button"
+              className={lightBtn}
+              onClick={summarize}
+              disabled={!text.trim()}
+            >
+              {t("notes.ai.write")}
+            </button>
+          </div>
+        )}
+
+        {/* With nothing to write it, the card above offers the download. */}
+        {summaryState === "failed" && !noProvider && (
+          <p role="alert" className="m-0 text-[13px] text-[#ffd4cf]">
+            {t("notes.ai.failed", { error: summaryError })}
+          </p>
         )}
       </section>
 

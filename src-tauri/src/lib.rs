@@ -261,6 +261,13 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         NotesManager::new(app_handle).expect("Failed to initialize notes manager"),
     ));
     app_handle.manage(Arc::new(MeetingRecorder::new(app_handle)));
+    let summary_models = Arc::new(
+        managers::summary_model::SummaryModelManager::new(app_handle)
+            .expect("Failed to initialize summary models"),
+    );
+    app_handle.manage(summary_models.clone());
+    // A summary model queued in setup carries on after a quit.
+    summary_models.start_queued();
     tauri::async_runtime::spawn(commands::notes::rescue_meetings(app_handle.clone()));
 
     // Note: Shortcuts are NOT initialized here.
@@ -868,6 +875,12 @@ pub fn run(cli_args: CliArgs) {
             commands::notes::import_audio_note,
             commands::notes::summarize_note,
             commands::notes::get_summary_source,
+            commands::notes::get_summary_models,
+            commands::notes::download_summary_model,
+            commands::notes::queue_summary_model_download,
+            commands::notes::cancel_summary_model_download,
+            commands::notes::delete_summary_model,
+            commands::notes::select_summary_model,
             commands::notes::get_meeting_status,
             commands::notes::start_meeting,
             commands::notes::update_meeting,
@@ -1252,8 +1265,6 @@ pub fn run(cli_args: CliArgs) {
     #[cfg(target_os = "macos")]
     apply_startup_activation_policy(&mut app, headless_mode);
 
-    // `app` is only used by the macOS arm.
-    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
     app.run(|app, event| match &event {
         #[cfg(target_os = "macos")]
         tauri::RunEvent::Reopen { .. } => {
@@ -1271,6 +1282,15 @@ pub fn run(cli_args: CliArgs) {
                 tray::recreate_tray_icon(app);
             }
             show_main_window(app);
+        }
+        // The summary helper is a separate program holding gigabytes of
+        // memory; it doesn't notice Bolke quitting by itself.
+        tauri::RunEvent::Exit => {
+            if let Some(models) =
+                app.try_state::<Arc<managers::summary_model::SummaryModelManager>>()
+            {
+                models.stop();
+            }
         }
         // No transcription teardown on exit: transcribe.cpp runs only in the
         // worker process, which exits by itself as soon as this process's end

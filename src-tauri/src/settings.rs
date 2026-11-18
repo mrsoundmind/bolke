@@ -497,6 +497,13 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    /// The downloaded summary model notes use (see managers::summary_model).
+    #[serde(default)]
+    pub summary_model: Option<String>,
+    /// A summary model to download once the speech model is done (setup's
+    /// "Also get free AI summaries").
+    #[serde(default)]
+    pub summary_model_queued: Option<String>,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -1071,6 +1078,8 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        summary_model: None,
+        summary_model_queued: None,
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),

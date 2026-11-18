@@ -213,6 +213,35 @@ impl ModelManager {
         .await
     }
 
+    /// The resumable downloader for files that aren't speech models (the
+    /// summary models): progress goes to `on_progress` instead of the speech
+    /// models' events. Returns false when cancelled (the partial is kept).
+    pub(crate) async fn download_file_resumable(
+        id: &str,
+        url: &str,
+        partial_path: &Path,
+        expected_size: u64,
+        expected_sha256: &str,
+        cancel_token: &CancellationToken,
+        on_progress: &(dyn Fn(&DownloadProgress) + Send + Sync),
+    ) -> Result<bool> {
+        let outcome = Self::download_http_resumable_with_events(
+            id,
+            url,
+            partial_path,
+            Some(expected_size),
+            Some(expected_sha256),
+            cancel_token,
+            &|event| {
+                if let HttpDownloadEvent::Progress(progress) = event {
+                    on_progress(progress);
+                }
+            },
+        )
+        .await?;
+        Ok(matches!(outcome, HttpDownloadOutcome::Completed))
+    }
+
     /// The one resumable HTTP downloader, shared by the mirror fallback and
     /// URL-sourced models: fetch `url` into `partial_path`, resuming what's
     /// already there, and leave verified bytes in `partial_path` on success —

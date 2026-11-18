@@ -31,7 +31,9 @@ import {
   ModelTableRow,
   ROLE_KEYS as PICK_ROLE_KEYS,
 } from "../../shared/modelTable/ModelTableRow";
-import { formatModelSize } from "@/lib/utils/format";
+import { BYTES_PER_MB, formatModelSize } from "@/lib/utils/format";
+import { commands } from "@/bindings";
+import { formatBytes, useSummaryModels } from "@/components/notes/noteUtils";
 import { OnboardingShell, ScreenHeader, ScreenMain } from "../OnboardingShell";
 import { useOnboardingStore } from "../onboardingStore";
 import { useDownloadWords } from "../DownloadStatus";
@@ -84,7 +86,9 @@ export const Model: React.FC<ModelProps> = ({
   const { t, i18n } = useTranslation();
   const words = useDownloadWords();
   const speedWords = useSpeedWords();
-  const { modelId, extraModelId, downloadId, set } = useOnboardingStore();
+  const { modelId, extraModelId, downloadId, wantSummaries, preview, set } =
+    useOnboardingStore();
+  const summaries = useSummaryModels();
   const [showAll, setShowAll] = useState(false);
   const { filters, setFilters, matches } = useModelFilters();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -483,17 +487,87 @@ export const Model: React.FC<ModelProps> = ({
     loading && loading.id !== selectedId && loadingState.state === "downloading"
       ? { name: loading.name, percent: words.percent(loadingState) }
       : null;
+  // "Also get free AI summaries": offered until a summary model is on disk.
+  const summaryOffer = summaries.models.some((m) => m.downloaded)
+    ? undefined
+    : summaries.recommended;
+  const addsSummaries =
+    !!summaryOffer && wantSummaries && !summaryOffer.downloading;
+  const speechMb = Number(models.infoFor(selected)?.size_mb ?? 0);
+  const totalSize = addsSummaries
+    ? formatModelSize(speechMb + summaryOffer.size_bytes / BYTES_PER_MB)
+    : sizeOf(selected);
+  /** Queued, so it downloads after the speech model (or unqueued). */
+  const chooseSummaries = () => {
+    if (preview || !summaryOffer) return;
+    if (wantSummaries) commands.queueSummaryModelDownload(summaryOffer.id);
+    else if (summaryOffer.queued)
+      commands.cancelSummaryModelDownload(summaryOffer.id);
+  };
   const primary = (
-    <Button variant="primary" size="lg" onClick={() => onChoose(selectedId)}>
+    <Button
+      variant="primary"
+      size="lg"
+      onClick={() => {
+        chooseSummaries();
+        onChoose(selectedId);
+      }}
+    >
       {continuing
         ? t("onboarding.shell.continue")
         : t(
             switching
               ? "onboarding.model.downloadInstead"
               : "onboarding.model.download",
-            { size: sizeOf(selected) },
+            { size: totalSize },
           )}
     </Button>
+  );
+  const summaryTick = summaryOffer && (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={wantSummaries}
+      onClick={() => set({ wantSummaries: !wantSummaries })}
+      className="mt-[10px] flex flex-none cursor-pointer items-start gap-[12px] self-stretch rounded-card border-[1.5px] border-line bg-background px-[20px] py-[10px] text-start text-small text-text hover:border-ink-3 hover:bg-wash"
+    >
+      <span
+        aria-hidden="true"
+        className={`mt-[1px] grid size-[18px] shrink-0 place-items-center rounded-[5px] border-[1.5px] text-white ${
+          wantSummaries
+            ? "border-background-ui bg-background-ui"
+            : "border-line-strong"
+        }`}
+      >
+        {wantSummaries && (
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+          </svg>
+        )}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+        <span className="font-semibold">
+          {t("onboarding.model.summaries.title")}
+        </span>
+        <span className="text-ink-3">
+          {t("onboarding.model.summaries.body")}
+        </span>
+      </span>
+      <span className="shrink-0 text-label text-ink-3 tabular-nums">
+        {t("onboarding.model.summaries.size", {
+          size: formatBytes(summaryOffer.size_bytes),
+        })}
+      </span>
+    </button>
   );
   const hint = switching ? (
     <div className="text-start leading-[1.35]">
@@ -557,6 +631,7 @@ export const Model: React.FC<ModelProps> = ({
             {t("onboarding.model.showAll", { count: models.offered.length })}
             <Chevron />
           </button>
+          {summaryTick}
         </ScreenMain>
       </OnboardingShell>
     );

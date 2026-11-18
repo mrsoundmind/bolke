@@ -1147,8 +1147,8 @@ async importAudioNote(path: string, projectId: number | null) : Promise<Result<N
 }
 },
 /**
- * Writes the note's summary and action points with the AI provider set up
- * for post-processing.
+ * Writes the note's summary and action points (see [`SummarySource`] for
+ * what writes them).
  */
 async summarizeNote(id: number) : Promise<Result<Note, string>> {
     try {
@@ -1163,6 +1163,51 @@ async summarizeNote(id: number) : Promise<Result<Note, string>> {
  */
 async getSummarySource() : Promise<SummarySource> {
     return await TAURI_INVOKE("get_summary_source");
+},
+async getSummaryModels() : Promise<SummaryModel[]> {
+    return await TAURI_INVOKE("get_summary_models");
+},
+/**
+ * Downloads a summary model; returns when it's done or cancelled.
+ */
+async downloadSummaryModel(id: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("download_summary_model", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Setup's "Also get free AI summaries": downloads the model once the speech
+ * model is done.
+ */
+async queueSummaryModelDownload(id: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("queue_summary_model_download", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async cancelSummaryModelDownload(id: string) : Promise<void> {
+    await TAURI_INVOKE("cancel_summary_model_download", { id });
+},
+async deleteSummaryModel(id: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_summary_model", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async selectSummaryModel(id: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("select_summary_model", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 },
 async getMeetingStatus() : Promise<MeetingStatus> {
     return await TAURI_INVOKE("get_meeting_status");
@@ -1312,7 +1357,16 @@ selected_channel?: number | null; clamshell_microphone?: string | null; selected
  * Every language the person dictates in (codes, e.g. ["en", "zh"]),
  * picked during onboarding. Empty until then.
  */
-spoken_languages?: string[]; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; 
+spoken_languages?: string[]; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; 
+/**
+ * The downloaded summary model notes use (see managers::summary_model).
+ */
+summary_model?: string | null; 
+/**
+ * A summary model to download once the speech model is done (setup's
+ * "Also get free AI summaries").
+ */
+summary_model_queued?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; theme?: Theme; experimental_enabled?: boolean; lazy_stream_close?: boolean; 
 /**
  * Experimental, macOS only: move a Bluetooth headset (AirPods) to this
  * Mac while recording, so its microphone does not return silence while
@@ -1745,7 +1799,23 @@ export type StreamTextEvent = { committed: string; tentative: string }
  */
 export type StreamWorkKind = "transcribing" | "polishing"
 /**
- * What writes a note's summary.
+ * A summary model as the app shows it.
+ */
+export type SummaryModel = { id: string; name: string; size_bytes: number; recommended: boolean; downloaded: boolean; downloading: boolean; 
+/**
+ * Waiting for the speech model to finish downloading first (setup).
+ */
+queued: boolean; 
+/**
+ * Bytes of an unfinished download already on disk.
+ */
+partial_bytes: number; 
+/**
+ * The one Bolke uses (the chosen one, else the first downloaded).
+ */
+active: boolean }
+/**
+ * What writes a note's summary, in the order Bolke tries them.
  */
 export type SummarySource = 
 /**
@@ -1753,11 +1823,15 @@ export type SummarySource =
  */
 "service" | 
 /**
- * Apple Intelligence, on this Mac, when no service is set up.
+ * A free summary model downloaded to this computer.
+ */
+"local_model" | 
+/**
+ * Apple Intelligence, on this Mac, when neither of those is there.
  */
 "apple_intelligence" | 
 /**
- * Nothing: the user has to set up a service.
+ * Nothing yet: the note offers to download a summary model.
  */
 "none"
 /**

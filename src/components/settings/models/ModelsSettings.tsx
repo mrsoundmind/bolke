@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { SummaryModels } from "./SummaryModels";
 import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -165,13 +166,17 @@ export const ModelsSettings: React.FC<ModelsSettingsProps> = ({
         renderRow={(e) => <ModelRow key={e.id} entry={e} />}
         actionsHead={<Legend tier={facts.tier} />}
         footer={
-          !searching &&
-          lists.untested.length > 0 && (
-            <Note>
-              {t("settings.models.untestedHidden", {
-                count: lists.untested.length,
-              })}
-            </Note>
+          !searching && (
+            <>
+              {lists.untested.length > 0 && (
+                <Note>
+                  {t("settings.models.untestedHidden", {
+                    count: lists.untested.length,
+                  })}
+                </Note>
+              )}
+              <SummaryModels />
+            </>
           )
         }
         thinEdge

@@ -891,6 +891,11 @@ impl ModelManager {
         Ok(manager)
     }
 
+    /// Whether any speech model is downloading right now.
+    pub fn is_downloading_any(&self) -> bool {
+        !self.cancel_flags.lock().unwrap().is_empty()
+    }
+
     pub fn get_available_models(&self) -> Vec<ModelInfo> {
         let mut list: Vec<ModelInfo> = {
             let models = self.available_models.lock().unwrap();

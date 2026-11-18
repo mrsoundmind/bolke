@@ -154,7 +154,12 @@
       "downloadInstead": "تنزيل {{size}} بدلًا من ذلك",
       "pauses": "يتوقف {{name}} مؤقتًا عند {{percent}}%",
       "resumeLater": "اخترْه مرة أخرى ليكمل من حيث توقف",
-      "hint": "يُنزَّل أثناء إكمالك للإعداد"
+      "hint": "يُنزَّل أثناء إكمالك للإعداد",
+      "summaries": {
+        "title": "Also get free AI summaries for your notes",
+        "body": "A summary model that runs on this computer. It downloads after the speech model, so you can start right away.",
+        "size": "+{{size}}"
+      }
     },
     "demo": {
       "title": "تحدّث في أي تطبيق باختصار واحد",
@@ -1093,8 +1098,17 @@
       "title": "AI summary",
       "intro": "Get a short summary and the action points from this note. Bolke sends the text to the AI service you set up in Post Process settings.",
       "introOnDevice": "Get a short summary and the action points from this note. Apple Intelligence writes it on this Mac, so the text never leaves it.",
-      "introNoneMac": "Get a short summary and the action points from this note. Turn on Apple Intelligence in your Mac's System Settings, or set up an AI service in Post Process settings.",
-      "introNone": "Get a short summary and the action points from this note. Set up an AI service in Post Process settings first.",
+      "introLocal": "Get a short summary and the action points from this note. Written on this computer, so the text never leaves it.",
+      "introDownload": "Get a short summary and the action points. Bolke writes them on this computer with a free AI model: a one-time {{size}} download, then it works offline.",
+      "download": "Download the summary model · {{size}}",
+      "useService": "Use an AI service instead",
+      "downloading": "Downloading the summary model. You can keep working; the summary button turns on when it's done.",
+      "queued": "The summary model downloads after the speech model. The summary button turns on when it's done.",
+      "downloadLabel": "Summary model download",
+      "downloadProgress": "{{percent}}% · {{done}} of {{total}}",
+      "cancel": "Cancel",
+      "writingPart": "Writing the summary… part {{part}} of {{parts}}",
+      "slowHint": "Long meetings take a minute or two on slower computers.",
       "notReady": "You can get a summary once the text is written out.",
       "write": "Write a summary",
       "again": "Write again",
@@ -1102,10 +1116,25 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "noProvider": "Set up an AI service in Post Process settings first.",
-      "openSettings": "Open Post Process settings",
       "failed": "Couldn't write the summary: {{error}}"
     },
-    "changeShortcut": "Change shortcut"
+    "changeShortcut": "Change shortcut",
+    "summaryModel": {
+      "title": "Summary model",
+      "intro": "Writes note summaries and action points on this computer. Free, works offline. If you set up an AI service in Post Process settings, Bolke uses that instead.",
+      "recommended": "Recommended",
+      "better": "Better summaries",
+      "waiting": "After the speech model",
+      "inUse": "In use",
+      "use": "Use",
+      "download": "Download",
+      "delete": "Delete",
+      "deleteConfirm": "Delete {{name}}? You can download it again later.",
+      "downloadFailed": "Couldn't download the summary model",
+      "descriptions": {
+        "qwen3-4b-instruct-2507": "Better summaries of long meetings, in more languages. Needs 8 GB of memory.",
+        "qwen3-1.7b": "Good summaries and action points. Fast on most computers."
+      }
+    }
   }
 }

@@ -446,6 +446,13 @@ jobs:
           chmod +x "$tools_dir/linuxdeploy-${arch}.AppImage"
           "$tools_dir/linuxdeploy-${arch}.AppImage" --appimage-extract-and-run --version
 
+      # The free summary model's helper (llama.cpp's llama-server), built for
+      # this target and shipped beside Bolke via tauri.summary-helper.conf.json.
+      # It's its own program: Bolke's speech engine links its own ggml.
+      - name: Build the summary helper
+        shell: bash
+        run: ./scripts/build-llama-server.sh ${{ inputs.target }}
+
       - name: Build with Tauri (signed)
         if: inputs.sign-binaries
         uses: tauri-apps/tauri-action@v0
@@ -478,7 +485,7 @@ jobs:
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseId: ${{ inputs.release-id }}
           assetNamePattern: ${{ steps.patch-release-name.outputs.platform }}
-          args: ${{ inputs.build-args }}
+          args: --config src-tauri/tauri.summary-helper.conf.json ${{ inputs.build-args }}
 
       # Without a certificate the Apple variables must be absent, not empty:
       # Tauri tries to import any APPLE_CERTIFICATE it finds, even "", and the
@@ -508,7 +515,7 @@ jobs:
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseId: ${{ inputs.release-id }}
           assetNamePattern: ${{ steps.patch-release-name.outputs.platform }}
-          args: ${{ inputs.build-args }}
+          args: --config src-tauri/tauri.summary-helper.conf.json ${{ inputs.build-args }}
 
       # tauri-action uploads release assets before returning. All AppImage
       # filtering therefore happens inside linuxdeploy above; this verifies the
@@ -564,6 +571,8 @@ jobs:
           EXE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")"
           codesign --verify --deep --strict "$APP"
           "$APP/Contents/MacOS/$EXE" --list-devices | tee /tmp/bolke-devices.txt
+          # The summary helper ships beside Bolke and starts on its own.
+          "$APP/Contents/MacOS/bolke-llama-server" --version
           test -s /tmp/bolke-devices.txt || { echo "ERROR: Bolke listed no devices" >&2; exit 1; }
           echo "macOS app from the .dmg starts"
 
@@ -598,6 +607,12 @@ jobs:
           Get-Content $out | Out-Host
           if ($app.ExitCode -ne 0) { Get-Content $err | Out-Host; throw "Bolke exited with code $($app.ExitCode)" }
           if ((Get-Item $out).Length -eq 0) { Get-Content $err | Out-Host; throw 'Bolke listed no devices' }
+
+          # The summary helper ships beside Bolke and starts (no missing DLLs).
+          $helper = Join-Path $exe.DirectoryName 'bolke-llama-server.exe'
+          if (-not (Test-Path $helper)) { throw "bolke-llama-server.exe was not installed beside Bolke" }
+          & $helper --version
+          if ($LASTEXITCODE -ne 0) { throw "bolke-llama-server.exe failed to start ($LASTEXITCODE)" }
           Write-Host 'Windows app installed and starts'
 
       - name: Upload artifacts (macOS)

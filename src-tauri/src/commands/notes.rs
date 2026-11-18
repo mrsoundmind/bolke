@@ -4,6 +4,7 @@ use crate::managers::{
     history::HistoryManager,
     meeting::{wav_duration_ms, MeetingRecorder, MeetingStatus, SavedMeeting},
     notes::{ActionPoint, Note, NoteChanges, NoteKind, NoteSummary, NotesManager, Project},
+    summary_model::{SummaryModel, SummaryModelManager},
     transcription_jobs::TranscriptionJobManager,
 };
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
@@ -254,8 +255,8 @@ pub async fn rescue_meetings(app: AppHandle) {
 
 // ----- AI summary -----
 
-/// Writes the note's summary and action points with the AI provider set up
-/// for post-processing.
+/// Writes the note's summary and action points (see [`SummarySource`] for
+/// what writes them).
 #[tauri::command]
 #[specta::specta]
 pub async fn summarize_note(app: AppHandle, id: i64) -> Result<Note, String> {
@@ -264,9 +265,7 @@ pub async fn summarize_note(app: AppHandle, id: i64) -> Result<Note, String> {
     if note.text.trim().is_empty() {
         return Err("This note has no text to summarize yet".into());
     }
-    let summary = summarize(&get_settings(&app), &note.text)
-        .await
-        .map_err(err)?;
+    let summary = summarize(&app, id, &note.text).await.map_err(err)?;
     notes.set_summary(id, Some(&summary)).map_err(err)?;
     notes.get_note(id).await.map_err(err)
 }
@@ -280,23 +279,29 @@ sentences, and a list of action points: things someone said they or others \
 will do. Each action point is one short sentence. If there are none, give an \
 empty list. Reply only with JSON: {\"summary\": \"...\", \"action_points\": [\"...\"]}";
 
-/// What writes a note's summary.
+/// What writes a note's summary, in the order Bolke tries them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SummarySource {
     /// The AI service set up in Post Process settings.
     Service,
-    /// Apple Intelligence, on this Mac, when no service is set up.
+    /// A free summary model downloaded to this computer.
+    LocalModel,
+    /// Apple Intelligence, on this Mac, when neither of those is there.
     AppleIntelligence,
-    /// Nothing: the user has to set up a service.
+    /// Nothing yet: the note offers to download a summary model.
     None,
 }
 
 /// The post-process provider and model, when the user has set one up.
+/// Apple Intelligence picked there counts only where it's available.
 fn configured_service(
     settings: &AppSettings,
 ) -> Option<(crate::settings::PostProcessProvider, String)> {
     let provider = settings.active_post_process_provider()?.clone();
+    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID && !apple_intelligence_ready() {
+        return None;
+    }
     let model = settings
         .post_process_models
         .get(&provider.id)
@@ -312,12 +317,15 @@ fn apple_intelligence_ready() -> bool {
     false
 }
 
-fn summary_source(settings: &AppSettings) -> SummarySource {
-    match configured_service(settings) {
-        // Apple Intelligence picked by hand counts as a service.
-        Some(_) => SummarySource::Service,
-        None if apple_intelligence_ready() => SummarySource::AppleIntelligence,
-        None => SummarySource::None,
+fn summary_source(app: &AppHandle) -> SummarySource {
+    if configured_service(&get_settings(app)).is_some() {
+        SummarySource::Service
+    } else if app.state::<Arc<SummaryModelManager>>().active().is_some() {
+        SummarySource::LocalModel
+    } else if apple_intelligence_ready() {
+        SummarySource::AppleIntelligence
+    } else {
+        SummarySource::None
     }
 }
 
@@ -325,33 +333,162 @@ fn summary_source(settings: &AppSettings) -> SummarySource {
 #[tauri::command]
 #[specta::specta]
 pub fn get_summary_source(app: AppHandle) -> SummarySource {
-    summary_source(&get_settings(&app))
+    summary_source(&app)
 }
 
-/// Apple's on-device model reads about 4,000 tokens, its reply included, so
-/// a longer note is summarized in parts of this many words.
-const ON_DEVICE_PART_WORDS: usize = 1_500;
+/// Sent as "summary-progress" while a long note is summarized in parts.
+#[derive(Clone, Debug, serde::Serialize, specta::Type)]
+pub struct SummaryProgress {
+    pub note_id: i64,
+    pub part: u32,
+    pub parts: u32,
+}
 
-/// Writes the summary with Apple Intelligence, on this Mac. A long note is
-/// summarized part by part; the parts' summaries are then summarized again,
-/// and all the parts' action points are kept.
-async fn summarize_on_device(text: String, token_limit: i32) -> Result<NoteSummary> {
-    let words: Vec<&str> = text.split_whitespace().collect();
-    if words.len() <= ON_DEVICE_PART_WORDS {
-        return summarize_part_on_device(text, token_limit).await;
+/// What writes one part, with its settings.
+enum Writer {
+    Service {
+        provider: crate::settings::PostProcessProvider,
+        model: String,
+        api_key: String,
+    },
+    /// The downloaded model, served by the helper at `base_url`.
+    Local {
+        base_url: String,
+    },
+    AppleIntelligence {
+        token_limit: i32,
+    },
+}
+
+impl Writer {
+    /// The most text one request takes. Apple's model reads about 4,000
+    /// tokens with its reply; the helper 8,192. Services take it all.
+    fn part_chars(&self) -> usize {
+        match self {
+            Writer::Service { .. } => MAX_SUMMARY_INPUT,
+            Writer::Local { .. } => 10_000,
+            Writer::AppleIntelligence { .. } => 4_000,
+        }
     }
-    let parts: Vec<String> = words
-        .chunks(ON_DEVICE_PART_WORDS)
-        .map(|part| part.join(" "))
-        .collect();
-    debug!(
-        "Summarizing a long note on this Mac in {} parts",
-        parts.len()
-    );
+
+    async fn write(&self, text: String) -> Result<NoteSummary> {
+        match self {
+            Writer::Service {
+                provider,
+                model,
+                api_key,
+            } => {
+                let disable_reasoning = matches!(provider.id.as_str(), "custom" | "openrouter");
+                ask_chat_service(provider, api_key.clone(), model, text, disable_reasoning).await
+            }
+            Writer::Local { base_url } => {
+                let provider = crate::settings::PostProcessProvider {
+                    id: "bolke-summary-model".into(),
+                    label: "Bolke summary model".into(),
+                    base_url: base_url.clone(),
+                    allow_base_url_edit: false,
+                    models_endpoint: None,
+                    supports_structured_output: true,
+                    api_format: Default::default(),
+                };
+                ask_chat_service(&provider, String::new(), "summary", text, false).await
+            }
+            Writer::AppleIntelligence { token_limit } => {
+                summarize_part_on_device(text, *token_limit).await
+            }
+        }
+    }
+}
+
+async fn summarize(app: &AppHandle, note_id: i64, text: &str) -> Result<NoteSummary> {
+    let text: String = text.chars().take(MAX_SUMMARY_INPUT).collect();
+    let settings = get_settings(app);
+    if let Some((provider, model)) = configured_service(&settings) {
+        debug!("Summarizing a note with provider '{}'", provider.id);
+        let writer = if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+            Writer::AppleIntelligence {
+                token_limit: model.trim().parse::<i32>().unwrap_or(0),
+            }
+        } else {
+            let api_key = settings
+                .post_process_api_keys
+                .get(&provider.id)
+                .cloned()
+                .unwrap_or_default();
+            Writer::Service {
+                provider,
+                model,
+                api_key,
+            }
+        };
+        return summarize_in_parts(app, note_id, &writer, text).await;
+    }
+    let models = Arc::clone(&app.state::<Arc<SummaryModelManager>>());
+    if models.active().is_some() {
+        let app = app.clone();
+        return models
+            .with_helper(|base_url, model| async move {
+                debug!("Summarizing a note with the summary model {}", model.id);
+                let writer = Writer::Local { base_url };
+                summarize_in_parts(&app, note_id, &writer, text).await
+            })
+            .await;
+    }
+    if apple_intelligence_ready() {
+        debug!("Summarizing a note with Apple Intelligence");
+        let writer = Writer::AppleIntelligence { token_limit: 0 };
+        return summarize_in_parts(app, note_id, &writer, text).await;
+    }
+    Err(anyhow!("no_ai_provider"))
+}
+
+/// Splits `text` at spaces into parts of at most `limit` characters.
+fn split_into_parts(text: &str, limit: usize) -> Vec<String> {
+    let mut parts = Vec::new();
+    let mut part = String::new();
+    for word in text.split_whitespace() {
+        if !part.is_empty() && part.chars().count() + 1 + word.chars().count() > limit {
+            parts.push(std::mem::take(&mut part));
+        }
+        if !part.is_empty() {
+            part.push(' ');
+        }
+        part.push_str(word);
+    }
+    if !part.is_empty() {
+        parts.push(part);
+    }
+    parts
+}
+
+/// A note that fits is summarized at once. A longer one is summarized part
+/// by part; the parts' summaries are then summarized together, and every
+/// part's action points are kept.
+async fn summarize_in_parts(
+    app: &AppHandle,
+    note_id: i64,
+    writer: &Writer,
+    text: String,
+) -> Result<NoteSummary> {
+    let limit = writer.part_chars();
+    if text.chars().count() <= limit {
+        return writer.write(text).await;
+    }
+    let parts = split_into_parts(&text, limit);
+    let count = parts.len() as u32;
+    debug!("Summarizing a long note in {count} parts");
     let mut summaries = Vec::with_capacity(parts.len());
     let mut action_points: Vec<ActionPoint> = Vec::new();
-    for part in parts {
-        let summary = summarize_part_on_device(part, token_limit).await?;
+    for (i, part) in parts.into_iter().enumerate() {
+        let _ = app.emit(
+            "summary-progress",
+            SummaryProgress {
+                note_id,
+                part: i as u32 + 1,
+                parts: count,
+            },
+        );
+        let summary = writer.write(part).await?;
         summaries.push(summary.summary);
         for point in summary.action_points {
             if !action_points.iter().any(|p| p.text == point.text) {
@@ -360,8 +497,8 @@ async fn summarize_on_device(text: String, token_limit: i32) -> Result<NoteSumma
         }
     }
     let joined = summaries.join("\n\n");
-    let summary = if joined.split_whitespace().count() <= ON_DEVICE_PART_WORDS {
-        summarize_part_on_device(joined, token_limit).await?.summary
+    let summary = if joined.chars().count() <= limit {
+        writer.write(joined).await?.summary
     } else {
         joined
     };
@@ -371,6 +508,51 @@ async fn summarize_on_device(text: String, token_limit: i32) -> Result<NoteSumma
     })
 }
 
+/// Asks an OpenAI-style chat endpoint (a service, or the summary helper)
+/// for the summary as JSON.
+async fn ask_chat_service(
+    provider: &crate::settings::PostProcessProvider,
+    api_key: String,
+    model: &str,
+    text: String,
+    disable_reasoning: bool,
+) -> Result<NoteSummary> {
+    let reply = if provider.supports_structured_output {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "summary": { "type": "string" },
+                "action_points": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["summary", "action_points"],
+            "additionalProperties": false
+        });
+        crate::llm_client::send_chat_completion_with_schema(
+            provider,
+            api_key,
+            model,
+            text,
+            Some(SUMMARY_PROMPT.to_string()),
+            Some(schema),
+            disable_reasoning,
+        )
+        .await
+    } else {
+        crate::llm_client::send_chat_completion(
+            provider,
+            api_key,
+            model,
+            format!("{SUMMARY_PROMPT}\n\nText:\n{text}"),
+            disable_reasoning,
+        )
+        .await
+    }
+    .map_err(|e| anyhow!("{e}"))?
+    .ok_or_else(|| anyhow!("The AI sent back nothing"))?;
+    parse_summary_reply(&reply)
+}
+
+/// Writes one part's summary with Apple Intelligence, on this Mac.
 async fn summarize_part_on_device(text: String, token_limit: i32) -> Result<NoteSummary> {
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     {
@@ -402,62 +584,52 @@ async fn summarize_part_on_device(text: String, token_limit: i32) -> Result<Note
     }
 }
 
-async fn summarize(settings: &AppSettings, text: &str) -> Result<NoteSummary> {
-    let text: String = text.chars().take(MAX_SUMMARY_INPUT).collect();
-    let Some((provider, model)) = configured_service(settings) else {
-        // Nothing set up: Apple Intelligence on the Mac needs no key.
-        if apple_intelligence_ready() {
-            debug!("Summarizing a note with Apple Intelligence (no service set up)");
-            return summarize_on_device(text, 0).await;
-        }
-        return Err(anyhow!("no_ai_provider"));
-    };
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
-    let disable_reasoning = matches!(provider.id.as_str(), "custom" | "openrouter");
-    debug!("Summarizing a note with provider '{}'", provider.id);
+// ----- Summary models -----
 
-    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
-        let token_limit = model.trim().parse::<i32>().unwrap_or(0);
-        return summarize_on_device(text, token_limit).await;
-    }
+#[tauri::command]
+#[specta::specta]
+pub fn get_summary_models(app: AppHandle) -> Vec<SummaryModel> {
+    app.state::<Arc<SummaryModelManager>>().list()
+}
 
-    let reply = if provider.supports_structured_output {
-        let schema = serde_json::json!({
-            "type": "object",
-            "properties": {
-                "summary": { "type": "string" },
-                "action_points": { "type": "array", "items": { "type": "string" } }
-            },
-            "required": ["summary", "action_points"],
-            "additionalProperties": false
-        });
-        crate::llm_client::send_chat_completion_with_schema(
-            &provider,
-            api_key,
-            &model,
-            text,
-            Some(SUMMARY_PROMPT.to_string()),
-            Some(schema),
-            disable_reasoning,
-        )
-        .await
-    } else {
-        crate::llm_client::send_chat_completion(
-            &provider,
-            api_key,
-            &model,
-            format!("{SUMMARY_PROMPT}\n\nText:\n{text}"),
-            disable_reasoning,
-        )
-        .await
-    }
-    .map_err(|e| anyhow!("{e}"))?
-    .ok_or_else(|| anyhow!("The AI sent back nothing"))?;
-    parse_summary_reply(&reply)
+/// Downloads a summary model; returns when it's done or cancelled.
+#[tauri::command]
+#[specta::specta]
+pub async fn download_summary_model(app: AppHandle, id: String) -> Result<(), String> {
+    let models = Arc::clone(&app.state::<Arc<SummaryModelManager>>());
+    models.download(&id).await.map_err(err)
+}
+
+/// Setup's "Also get free AI summaries": downloads the model once the speech
+/// model is done.
+#[tauri::command]
+#[specta::specta]
+pub fn queue_summary_model_download(app: AppHandle, id: String) -> Result<(), String> {
+    app.state::<Arc<SummaryModelManager>>()
+        .queue_download(&id)
+        .map_err(err)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_summary_model_download(app: AppHandle, id: String) {
+    app.state::<Arc<SummaryModelManager>>().cancel_download(&id);
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_summary_model(app: AppHandle, id: String) -> Result<(), String> {
+    app.state::<Arc<SummaryModelManager>>()
+        .delete(&id)
+        .map_err(err)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn select_summary_model(app: AppHandle, id: String) -> Result<(), String> {
+    app.state::<Arc<SummaryModelManager>>()
+        .select(&id)
+        .map_err(err)
 }
 
 #[derive(serde::Deserialize)]
@@ -501,6 +673,17 @@ fn parse_summary_reply(reply: &str) -> Result<NoteSummary> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn long_text_splits_at_spaces_within_the_limit() {
+        let text = "one two three four five six seven";
+        let parts = split_into_parts(text, 10);
+        assert_eq!(parts, vec!["one two", "three four", "five six", "seven"]);
+        assert!(parts.iter().all(|p| p.chars().count() <= 10));
+        assert_eq!(split_into_parts("short", 100), vec!["short"]);
+        // A single word longer than the limit stays whole.
+        assert_eq!(split_into_parts("abcdefghijkl", 5), vec!["abcdefghijkl"]);
+    }
 
     #[test]
     fn summary_replies_are_read_with_or_without_wrapping() {
