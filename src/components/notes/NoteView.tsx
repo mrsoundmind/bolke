@@ -336,7 +336,13 @@ export const NoteView: React.FC<NoteViewProps> = ({
         </div>
       )}
 
-      <NotePeople note={note} job={job} onNote={setNote} />
+      <NotePeople
+        note={note}
+        job={job}
+        onNote={setNote}
+        onSummarize={summarize}
+        summarizing={summaryState === "writing"}
+      />
 
       <section
         aria-labelledby="note-summary"

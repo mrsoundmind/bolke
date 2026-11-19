@@ -333,7 +333,7 @@ empty list. Reply only with JSON: {\"summary\": \"...\", \"action_points\": [\".
 const PERSON_PROMPT: &str = "You read what one person said in a meeting, with a \
 short summary of the whole meeting for context. Write in the same language as \
 their words, about them in the third person, without their name. Give: said, \
-up to three short points of what they said; agreed, decisions or plans they \
+the main points of what they said, up to six; agreed, decisions or plans they \
 agreed to; will_do, things they said they will do. Each item is one short \
 sentence. Use an empty list when there is nothing. Reply only with JSON: \
 {\"said\": [\"...\"], \"agreed\": [\"...\"], \"will_do\": [\"...\"]}";
@@ -561,31 +561,62 @@ async fn summarize_with_people(
     if speakers.len() < 2 {
         return Ok(summary);
     }
-    let count = speakers.len() as u32;
-    for (i, (id, words)) in speakers.into_iter().enumerate() {
-        let _ = app.emit(
-            "summary-progress",
-            SummaryProgress {
-                note_id,
-                part: i as u32 + 1,
-                parts: count,
-            },
-        );
-        let input = format!(
-            "Meeting summary:\n{}\n\nWhat this person said:\n{}",
-            summary.summary, words
-        );
-        let input: String = input.chars().take(writer.part_chars()).collect();
-        match writer.ask(PERSON_PROMPT, person_schema(), input).await {
-            Ok(reply) => match parse_person_reply(id, &reply) {
-                Some(card) => summary.people.push(card),
-                None => warn!("Person {id}'s summary came back empty"),
-            },
-            // One person failing shouldn't lose the whole summary.
-            Err(e) => warn!("Failed to summarize person {id}: {e}"),
+    // Someone who talked a long time is read in parts, like a long note.
+    let context: String = summary.summary.chars().take(1_500).collect();
+    let room = writer
+        .part_chars()
+        .saturating_sub(context.chars().count() + 100)
+        .max(1_000);
+    let jobs: Vec<(u32, Vec<String>)> = speakers
+        .into_iter()
+        .map(|(id, words)| (id, split_into_parts(&words, room)))
+        .collect();
+    let count: u32 = jobs.iter().map(|(_, parts)| parts.len() as u32).sum();
+    let mut done = 0;
+    for (id, parts) in jobs {
+        let mut card = PersonSummary {
+            person: id,
+            ..Default::default()
+        };
+        for part in parts {
+            done += 1;
+            let _ = app.emit(
+                "summary-progress",
+                SummaryProgress {
+                    note_id,
+                    part: done,
+                    parts: count,
+                },
+            );
+            let input = format!("Meeting summary:\n{context}\n\nWhat this person said:\n{part}");
+            match writer.ask(PERSON_PROMPT, person_schema(), input).await {
+                Ok(reply) => match parse_person_reply(id, &reply) {
+                    Some(more) => merge_person(&mut card, more),
+                    None => debug!("Part of person {id}'s summary came back empty"),
+                },
+                // One person failing shouldn't lose the whole summary.
+                Err(e) => warn!("Failed to summarize part of person {id}'s words: {e}"),
+            }
+        }
+        if !(card.said.is_empty() && card.agreed.is_empty() && card.will_do.is_empty()) {
+            summary.people.push(card);
         }
     }
     Ok(summary)
+}
+
+/// Adds a part's points to a person's card, skipping repeats.
+fn merge_person(card: &mut PersonSummary, more: PersonSummary) {
+    fn add(to: &mut Vec<String>, items: Vec<String>) {
+        for item in items {
+            if !to.iter().any(|t| t.eq_ignore_ascii_case(&item)) {
+                to.push(item);
+            }
+        }
+    }
+    add(&mut card.said, more.said);
+    add(&mut card.agreed, more.agreed);
+    add(&mut card.will_do, more.will_do);
 }
 
 /// Each person who talked long enough, with their words in order.

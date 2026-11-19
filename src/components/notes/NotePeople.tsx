@@ -7,6 +7,10 @@ import type { ActiveJobStatus } from "@/stores/transcriptionJobsStore";
 import { notify } from "@/stores/noticeStore";
 import { copyToClipboard } from "../settings/history/clipboard";
 import { colorOf, formatBytes, formatDuration } from "./noteUtils";
+import { PersonCard } from "./PersonCards";
+
+/** Matches MIN_PERSON_TALK_MS in commands/notes.rs: less gets no summary. */
+const MIN_SUMMARY_TALK_MS = 15_000;
 
 /** "03:12", or "1:03:12" past an hour. */
 const clock = (ms: number) => {
@@ -61,6 +65,9 @@ interface NotePeopleProps {
   note: Note;
   job: ActiveJobStatus | undefined;
   onNote: (note: Note) => void;
+  /** Writes the note's summary, with a card for each person. */
+  onSummarize: () => void;
+  summarizing: boolean;
 }
 
 /** Who said what in a meeting (design/wireframes/MeetingSpeakers.dc.html):
@@ -69,6 +76,8 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
   note,
   job,
   onNote,
+  onSummarize,
+  summarizing,
 }) => {
   const { t } = useTranslation();
   const { models, progress } = useSpeakerModels();
@@ -405,6 +414,39 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
           </p>
         </div>
       )}
+
+      {selected &&
+        (() => {
+          // Their summary, from the note's AI summary.
+          const card = note.summary?.people?.find(
+            (c) => c.person === selected.id,
+          );
+          if (card)
+            return <PersonCard card={card} name={nameOf(selected.id)} />;
+          const tooLittle = selected.talk_ms < MIN_SUMMARY_TALK_MS;
+          return (
+            <div className="flex items-center justify-between gap-3 flex-wrap px-4 py-3 rounded-[18px] bg-[rgba(10,18,48,0.45)] border border-[rgba(140,170,255,0.18)]">
+              <span className="text-[13px] text-[#c9d4f2]">
+                {summarizing
+                  ? t("notes.ai.writing")
+                  : tooLittle
+                    ? t("notes.people.tooLittle", { name: nameOf(selected.id) })
+                    : t("notes.people.noSummary", {
+                        name: nameOf(selected.id),
+                      })}
+              </span>
+              {!summarizing && !tooLittle && (
+                <button
+                  type="button"
+                  className={smallBtn}
+                  onClick={onSummarize}
+                >
+                  {t("notes.people.writeSummary")}
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
       <div className="flex flex-col gap-[2px] max-h-[480px] overflow-y-auto">
         {selected && (
