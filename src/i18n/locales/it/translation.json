@@ -1059,7 +1059,23 @@
       "label": "Sezioni della riunione",
       "summary": "Riepilogo",
       "people": "Persone",
-      "transcript": "Trascrizione"
+      "transcript": "Trascrizione",
+      "ask": "Chiedi"
+    },
+    "ask": {
+      "intro": "Chiedi qualsiasi cosa su questa riunione. Bolke risponde da ciò che è stato detto e mostra chi l'ha detto.",
+      "decided": "Cosa è stato deciso?",
+      "open": "Ci sono domande aperte?",
+      "whatDid": "Cosa voleva {{name}}?",
+      "next": "Cosa devo fare adesso?",
+      "fromMeeting": "Dalla riunione",
+      "reading": "Sto leggendo la riunione…",
+      "placeholder": "Chiedi qualsiasi cosa su questa riunione…",
+      "ask": "Chiedi",
+      "private": "Le risposte vengono solo dalle parole di questa riunione, su questo computer. Tocca una citazione per vederla nella trascrizione.",
+      "clear": "Cancella",
+      "noModel": "Bolke ha bisogno di un modello di riassunto per rispondere. Scaricalo in Modelli.",
+      "failed": "Impossibile rispondere. Riprova."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

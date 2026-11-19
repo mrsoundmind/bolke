@@ -1059,7 +1059,23 @@
       "label": "会议栏目",
       "summary": "总结",
       "people": "参会人",
-      "transcript": "全文"
+      "transcript": "全文",
+      "ask": "提问"
+    },
+    "ask": {
+      "intro": "可以问关于这次会议的任何问题。Bolke 根据会上说的话回答，并显示是谁说的。",
+      "decided": "做了什么决定？",
+      "open": "还有未解决的问题吗？",
+      "whatDid": "{{name}} 想要什么？",
+      "next": "我接下来该做什么？",
+      "fromMeeting": "来自会议",
+      "reading": "正在阅读会议…",
+      "placeholder": "问一个关于这次会议的问题…",
+      "ask": "提问",
+      "private": "回答只来自这次会议的内容，在这台电脑上完成。点按引文可在转写中查看。",
+      "clear": "清除",
+      "noModel": "Bolke 需要摘要模型才能回答。请在“模型”中下载。",
+      "failed": "无法回答，请重试。"
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

@@ -70,8 +70,9 @@ interface NotePeopleProps {
   /** "people": a list and the picked person's summary; "transcript": who
    * said what, line by line. */
   mode: "people" | "transcript";
-  /** Shows only this person's lines (from "Read their words"). */
-  focus?: { person: number; n: number } | null;
+  /** Shows only this person's lines (from "Read their words"), or
+   * everyone's with the line said at `at` picked out (from a quote). */
+  focus?: { person: number | null; n: number; at?: number } | null;
   onReadWords?: (person: number) => void;
 }
 
@@ -97,9 +98,26 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
   const [picked, setPicked] = useState<number | null>(null);
   const people = note.people;
 
+  const [marked, setMarked] = useState<number | null>(null);
+
   useEffect(() => {
-    if (focus) setWho(focus.person);
-  }, [focus]);
+    if (!focus) return;
+    setWho(focus.person);
+    if (focus.at == null || !people) {
+      setMarked(null);
+      return;
+    }
+    // The turn the quote is part of: the last one to start by then.
+    const at = focus.at;
+    const line = [...people.lines].reverse().find((l) => l.start_ms <= at);
+    if (!line) return;
+    setMarked(line.start_ms);
+    requestAnimationFrame(() =>
+      document
+        .querySelector(`[data-line-start="${line.start_ms}"]`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" }),
+    );
+  }, [focus, people]);
 
   useEffect(() => {
     if (naming == null) return;
@@ -649,9 +667,10 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
           return (
             <div
               key={`${l.start_ms}-${i}`}
+              data-line-start={l.start_ms}
               className={`grid grid-cols-[128px_1fr] gap-3 px-[10px] rounded-[12px] text-[14px] leading-[1.5] hover:bg-[rgba(120,150,255,0.06)] ${
                 more ? "pt-0 pb-2" : "pt-2 pb-2"
-              }`}
+              } ${marked === l.start_ms ? "bg-[rgba(143,194,255,0.14)] ring-1 ring-[rgba(143,194,255,0.45)]" : ""}`}
             >
               <span
                 className="self-start flex items-center gap-[7px] min-w-0 h-[21px] text-[13px] font-semibold"

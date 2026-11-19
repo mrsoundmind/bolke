@@ -1059,7 +1059,23 @@
       "label": "Seções da reunião",
       "summary": "Resumo",
       "people": "Pessoas",
-      "transcript": "Transcrição"
+      "transcript": "Transcrição",
+      "ask": "Perguntar"
+    },
+    "ask": {
+      "intro": "Pergunte qualquer coisa sobre esta reunião. O Bolke responde com base no que foi dito e mostra quem disse.",
+      "decided": "O que foi decidido?",
+      "open": "Há perguntas em aberto?",
+      "whatDid": "O que {{name}} queria?",
+      "next": "O que devo fazer a seguir?",
+      "fromMeeting": "Da reunião",
+      "reading": "Lendo a reunião…",
+      "placeholder": "Pergunte qualquer coisa sobre esta reunião…",
+      "ask": "Perguntar",
+      "private": "As respostas vêm só das falas desta reunião, neste computador. Toque numa citação para vê-la na transcrição.",
+      "clear": "Limpar",
+      "noModel": "O Bolke precisa de um modelo de resumo para responder. Baixe um em Modelos.",
+      "failed": "Não foi possível responder. Tente novamente."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

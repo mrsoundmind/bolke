@@ -1059,7 +1059,23 @@
       "label": "Části schůzky",
       "summary": "Shrnutí",
       "people": "Lidé",
-      "transcript": "Přepis"
+      "transcript": "Přepis",
+      "ask": "Zeptat se"
+    },
+    "ask": {
+      "intro": "Zeptejte se na cokoli o této schůzce. Bolke odpoví z toho, co zaznělo, a ukáže, kdo to řekl.",
+      "decided": "Co se rozhodlo?",
+      "open": "Nějaké otevřené otázky?",
+      "whatDid": "Co chtěl(a) {{name}}?",
+      "next": "Co mám udělat dál?",
+      "fromMeeting": "Ze schůzky",
+      "reading": "Čtu schůzku…",
+      "placeholder": "Zeptejte se na cokoli o této schůzce…",
+      "ask": "Zeptat se",
+      "private": "Odpovědi vycházejí jen ze slov této schůzky, na tomto počítači. Klepnutím na citát ho zobrazíte v přepisu.",
+      "clear": "Vymazat",
+      "noModel": "Bolke potřebuje k odpovědi model pro shrnutí. Stáhněte ho v Modelech.",
+      "failed": "Nepodařilo se odpovědět. Zkuste to znovu."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

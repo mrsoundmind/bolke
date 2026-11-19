@@ -1,3 +1,4 @@
+pub mod ask;
 pub mod audio;
 pub mod history;
 pub mod models;

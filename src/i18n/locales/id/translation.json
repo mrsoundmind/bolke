@@ -1059,7 +1059,23 @@
       "label": "Bagian rapat",
       "summary": "Ringkasan",
       "people": "Orang",
-      "transcript": "Transkrip"
+      "transcript": "Transkrip",
+      "ask": "Tanya"
+    },
+    "ask": {
+      "intro": "Tanyakan apa saja tentang rapat ini. Bolke menjawab dari apa yang dikatakan dan menunjukkan siapa yang mengatakannya.",
+      "decided": "Apa yang diputuskan?",
+      "open": "Ada pertanyaan terbuka?",
+      "whatDid": "Apa yang diinginkan {{name}}?",
+      "next": "Apa yang harus saya lakukan selanjutnya?",
+      "fromMeeting": "Dari rapat",
+      "reading": "Membaca rapat…",
+      "placeholder": "Tanyakan apa saja tentang rapat ini…",
+      "ask": "Tanya",
+      "private": "Jawaban hanya berasal dari kata-kata rapat ini, di komputer ini. Ketuk kutipan untuk melihatnya di transkrip.",
+      "clear": "Hapus",
+      "noModel": "Bolke perlu model ringkasan untuk menjawab. Unduh di Model.",
+      "failed": "Tidak bisa menjawab. Coba lagi."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

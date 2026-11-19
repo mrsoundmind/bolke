@@ -1059,7 +1059,23 @@
       "label": "Onderdelen van de vergadering",
       "summary": "Samenvatting",
       "people": "Mensen",
-      "transcript": "Transcript"
+      "transcript": "Transcript",
+      "ask": "Vragen"
+    },
+    "ask": {
+      "intro": "Vraag alles over deze vergadering. Bolke antwoordt vanuit wat er gezegd is en laat zien wie het zei.",
+      "decided": "Wat is er besloten?",
+      "open": "Nog open vragen?",
+      "whatDid": "Wat wilde {{name}}?",
+      "next": "Wat moet ik nu doen?",
+      "fromMeeting": "Uit de vergadering",
+      "reading": "Vergadering lezen…",
+      "placeholder": "Vraag iets over deze vergadering…",
+      "ask": "Vragen",
+      "private": "Antwoorden komen alleen uit de woorden van deze vergadering, op deze computer. Tik op een citaat om het in het transcript te zien.",
+      "clear": "Wissen",
+      "noModel": "Bolke heeft een samenvattingsmodel nodig om te antwoorden. Download er een bij Modellen.",
+      "failed": "Kon geen antwoord geven. Probeer het opnieuw."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

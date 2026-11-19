@@ -72,6 +72,18 @@ static MIGRATIONS: &[M] = &[
     );
     CREATE INDEX IF NOT EXISTS todos_due ON todos(due_at);",
     ),
+    // Questions asked about a note, with their answers (`commands::ask`).
+    M::up(
+        "CREATE TABLE IF NOT EXISTS note_answers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        quotes TEXT NOT NULL,
+        asked_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS note_answers_note ON note_answers(note_id);",
+    ),
 ];
 
 /// A known voice this alike is taken to be that person.
@@ -179,6 +191,28 @@ pub struct NoteLine {
     pub start_ms: i64,
     pub end_ms: i64,
     pub person: u32,
+    pub text: String,
+}
+
+/// A question asked about a note, and Bolke's answer from its words.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Type)]
+pub struct NoteAnswer {
+    pub id: i64,
+    pub question: String,
+    pub answer: String,
+    /// The lines the answer came from, in the order they were said.
+    pub quotes: Vec<NoteQuote>,
+    /// Seconds since the Unix epoch.
+    pub asked_at: i64,
+}
+
+/// One line of a note that backs up an answer.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Type)]
+pub struct NoteQuote {
+    /// Who said it, in a meeting where Bolke found who said what.
+    pub person: Option<u32>,
+    /// When in the recording it was said.
+    pub start_ms: Option<i64>,
     pub text: String,
 }
 
@@ -495,6 +529,61 @@ impl NotesManager {
             params![project_id, Self::now(), id],
         )?;
         self.get_note(id).await
+    }
+
+    /// The questions asked about a note, oldest first.
+    pub fn list_answers(&self, note_id: i64) -> Result<Vec<NoteAnswer>> {
+        let conn = self.connection()?;
+        let mut stmt = conn.prepare(
+            "SELECT id, question, answer, quotes, asked_at FROM note_answers
+             WHERE note_id = ?1 ORDER BY id",
+        )?;
+        let rows = stmt.query_map([note_id], |row| {
+            let quotes: String = row.get(3)?;
+            Ok(NoteAnswer {
+                id: row.get(0)?,
+                question: row.get(1)?,
+                answer: row.get(2)?,
+                quotes: serde_json::from_str(&quotes).unwrap_or_default(),
+                asked_at: row.get(4)?,
+            })
+        })?;
+        Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+    }
+
+    pub fn add_answer(
+        &self,
+        note_id: i64,
+        question: &str,
+        answer: &str,
+        quotes: &[NoteQuote],
+    ) -> Result<NoteAnswer> {
+        let conn = self.connection()?;
+        let asked_at = Self::now();
+        conn.execute(
+            "INSERT INTO note_answers (note_id, question, answer, quotes, asked_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                note_id,
+                question,
+                answer,
+                serde_json::to_string(quotes)?,
+                asked_at
+            ],
+        )?;
+        Ok(NoteAnswer {
+            id: conn.last_insert_rowid(),
+            question: question.to_string(),
+            answer: answer.to_string(),
+            quotes: quotes.to_vec(),
+            asked_at,
+        })
+    }
+
+    pub fn clear_answers(&self, note_id: i64) -> Result<()> {
+        self.connection()?
+            .execute("DELETE FROM note_answers WHERE note_id = ?1", [note_id])?;
+        Ok(())
     }
 
     pub fn set_summary(&self, id: i64, summary: Option<&NoteSummary>) -> Result<()> {

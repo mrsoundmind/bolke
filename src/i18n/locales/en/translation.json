@@ -1059,7 +1059,23 @@
       "label": "Meeting sections",
       "summary": "Summary",
       "people": "People",
-      "transcript": "Transcript"
+      "transcript": "Transcript",
+      "ask": "Ask"
+    },
+    "ask": {
+      "intro": "Ask anything about this meeting. Bolke answers from what was said and shows who said it.",
+      "decided": "What was decided?",
+      "open": "Any open questions?",
+      "whatDid": "What did {{name}} want?",
+      "next": "What should I do next?",
+      "fromMeeting": "From the meeting",
+      "reading": "Reading the meeting…",
+      "placeholder": "Ask anything about this meeting…",
+      "ask": "Ask",
+      "private": "Answers come only from this meeting's words, on this computer. Tap a quote to see it in the transcript.",
+      "clear": "Clear",
+      "noModel": "Bolke needs a summary model to answer. Get one in Models.",
+      "failed": "Couldn't answer that. Try again."
     },
     "title": "Notes",
     "subtitle": "Your ideas and written notes.",

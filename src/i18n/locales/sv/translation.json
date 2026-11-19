@@ -1059,7 +1059,23 @@
       "label": "Mötets delar",
       "summary": "Sammanfattning",
       "people": "Personer",
-      "transcript": "Utskrift"
+      "transcript": "Utskrift",
+      "ask": "Fråga"
+    },
+    "ask": {
+      "intro": "Fråga vad som helst om det här mötet. Bolke svarar utifrån det som sades och visar vem som sa det.",
+      "decided": "Vad beslutades?",
+      "open": "Några öppna frågor?",
+      "whatDid": "Vad ville {{name}}?",
+      "next": "Vad ska jag göra härnäst?",
+      "fromMeeting": "Från mötet",
+      "reading": "Läser mötet…",
+      "placeholder": "Fråga vad som helst om det här mötet…",
+      "ask": "Fråga",
+      "private": "Svaren kommer bara från mötets ord, på den här datorn. Tryck på ett citat för att se det i transkriptionen.",
+      "clear": "Rensa",
+      "noModel": "Bolke behöver en sammanfattningsmodell för att svara. Hämta en under Modeller.",
+      "failed": "Kunde inte svara. Försök igen."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

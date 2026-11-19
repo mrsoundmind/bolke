@@ -1059,7 +1059,23 @@
       "label": "Części spotkania",
       "summary": "Podsumowanie",
       "people": "Osoby",
-      "transcript": "Transkrypcja"
+      "transcript": "Transkrypcja",
+      "ask": "Zapytaj"
+    },
+    "ask": {
+      "intro": "Zapytaj o cokolwiek z tego spotkania. Bolke odpowiada na podstawie tego, co padło, i pokazuje, kto to powiedział.",
+      "decided": "Co postanowiono?",
+      "open": "Są otwarte pytania?",
+      "whatDid": "Czego chciał(a) {{name}}?",
+      "next": "Co mam zrobić dalej?",
+      "fromMeeting": "Ze spotkania",
+      "reading": "Czytam spotkanie…",
+      "placeholder": "Zapytaj o cokolwiek z tego spotkania…",
+      "ask": "Zapytaj",
+      "private": "Odpowiedzi pochodzą tylko ze słów tego spotkania, na tym komputerze. Stuknij cytat, by zobaczyć go w transkrypcji.",
+      "clear": "Wyczyść",
+      "noModel": "Bolke potrzebuje modelu podsumowań, by odpowiadać. Pobierz go w Modelach.",
+      "failed": "Nie udało się odpowiedzieć. Spróbuj ponownie."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

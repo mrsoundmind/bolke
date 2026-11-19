@@ -1059,7 +1059,23 @@
       "label": "Bereiche des Meetings",
       "summary": "Zusammenfassung",
       "people": "Personen",
-      "transcript": "Mitschrift"
+      "transcript": "Mitschrift",
+      "ask": "Fragen"
+    },
+    "ask": {
+      "intro": "Frag alles zu diesem Meeting. Bolke antwortet aus dem Gesagten und zeigt, wer es gesagt hat.",
+      "decided": "Was wurde beschlossen?",
+      "open": "Gibt es offene Fragen?",
+      "whatDid": "Was wollte {{name}}?",
+      "next": "Was sollte ich als Nächstes tun?",
+      "fromMeeting": "Aus dem Meeting",
+      "reading": "Lese das Meeting…",
+      "placeholder": "Frag alles zu diesem Meeting…",
+      "ask": "Fragen",
+      "private": "Antworten stammen nur aus den Worten dieses Meetings, auf diesem Computer. Tippe auf ein Zitat, um es im Transkript zu sehen.",
+      "clear": "Leeren",
+      "noModel": "Bolke braucht ein Zusammenfassungsmodell, um zu antworten. Lade eins unter Modelle.",
+      "failed": "Konnte nicht antworten. Versuch es erneut."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

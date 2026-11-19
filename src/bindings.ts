@@ -1246,6 +1246,33 @@ async importAudioNote(path: string, projectId: number | null) : Promise<Result<N
  * Writes the note's summary and action points (see [`SummarySource`] for
  * what writes them).
  */
+/**
+ * Answers `question` from the note's words and keeps it with the note.
+ */
+async askNote(id: number, question: string) : Promise<Result<NoteAnswer, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("ask_note", { id, question }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async listNoteAnswers(id: number) : Promise<Result<NoteAnswer[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_note_answers", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearNoteAnswers(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_note_answers", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async summarizeNote(id: number) : Promise<Result<Note, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("summarize_note", { id }) };
@@ -1795,6 +1822,30 @@ export type NotePeople = { people: Person[]; lines: NoteLine[] }
 /**
  * The AI summary of a note.
  */
+/**
+ * A question asked about a note, and Bolke's answer from its words.
+ */
+export type NoteAnswer = { id: number; question: string; answer: string; 
+/**
+ * The lines the answer came from, in the order they were said.
+ */
+quotes: NoteQuote[]; 
+/**
+ * Seconds since the Unix epoch.
+ */
+asked_at: number }
+/**
+ * One line of a note that backs up an answer.
+ */
+export type NoteQuote = { 
+/**
+ * Who said it, in a meeting where Bolke found who said what.
+ */
+person: number | null; 
+/**
+ * When in the recording it was said.
+ */
+start_ms: number | null; text: string }
 export type NoteSummary = { summary: string; 
 /**
  * Things someone has to do; empty when there are none.

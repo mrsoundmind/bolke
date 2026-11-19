@@ -1059,7 +1059,23 @@
       "label": "Seccions de la reunió",
       "summary": "Resum",
       "people": "Persones",
-      "transcript": "Transcripció"
+      "transcript": "Transcripció",
+      "ask": "Pregunta"
+    },
+    "ask": {
+      "intro": "Pregunta qualsevol cosa sobre aquesta reunió. Bolke respon a partir del que es va dir i mostra qui ho va dir.",
+      "decided": "Què es va decidir?",
+      "open": "Hi ha preguntes obertes?",
+      "whatDid": "Què volia {{name}}?",
+      "next": "Què he de fer ara?",
+      "fromMeeting": "De la reunió",
+      "reading": "Llegint la reunió…",
+      "placeholder": "Pregunta qualsevol cosa sobre aquesta reunió…",
+      "ask": "Pregunta",
+      "private": "Les respostes surten només de les paraules d'aquesta reunió, en aquest ordinador. Toca una cita per veure-la a la transcripció.",
+      "clear": "Esborra",
+      "noModel": "Bolke necessita un model de resums per respondre. Descarrega'l a Models.",
+      "failed": "No s'ha pogut respondre. Torna-ho a provar."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

@@ -1059,7 +1059,23 @@
       "label": "Mødets dele",
       "summary": "Resumé",
       "people": "Personer",
-      "transcript": "Udskrift"
+      "transcript": "Udskrift",
+      "ask": "Spørg"
+    },
+    "ask": {
+      "intro": "Spørg om hvad som helst fra dette møde. Bolke svarer ud fra det, der blev sagt, og viser hvem der sagde det.",
+      "decided": "Hvad blev besluttet?",
+      "open": "Er der åbne spørgsmål?",
+      "whatDid": "Hvad ville {{name}}?",
+      "next": "Hvad skal jeg gøre nu?",
+      "fromMeeting": "Fra mødet",
+      "reading": "Læser mødet…",
+      "placeholder": "Spørg om hvad som helst fra dette møde…",
+      "ask": "Spørg",
+      "private": "Svarene kommer kun fra mødets ord, på denne computer. Tryk på et citat for at se det i udskriften.",
+      "clear": "Ryd",
+      "noModel": "Bolke skal bruge en opsummeringsmodel for at svare. Hent en under Modeller.",
+      "failed": "Kunne ikke svare. Prøv igen."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

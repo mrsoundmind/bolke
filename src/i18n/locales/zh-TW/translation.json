@@ -1059,7 +1059,23 @@
       "label": "會議欄目",
       "summary": "摘要",
       "people": "參與者",
-      "transcript": "全文"
+      "transcript": "全文",
+      "ask": "提問"
+    },
+    "ask": {
+      "intro": "可以問關於這場會議的任何問題。Bolke 會根據會上說的話回答，並顯示是誰說的。",
+      "decided": "做了什麼決定？",
+      "open": "還有未解決的問題嗎？",
+      "whatDid": "{{name}} 想要什麼？",
+      "next": "我接下來該做什麼？",
+      "fromMeeting": "來自會議",
+      "reading": "正在閱讀會議…",
+      "placeholder": "問一個關於這場會議的問題…",
+      "ask": "提問",
+      "private": "回答只來自這場會議的內容，在這台電腦上完成。點按引文可在逐字稿中查看。",
+      "clear": "清除",
+      "noModel": "Bolke 需要摘要模型才能回答。請在「模型」中下載。",
+      "failed": "無法回答，請再試一次。"
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

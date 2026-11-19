@@ -1059,7 +1059,23 @@
       "label": "会議のセクション",
       "summary": "要約",
       "people": "参加者",
-      "transcript": "書き起こし"
+      "transcript": "書き起こし",
+      "ask": "質問"
+    },
+    "ask": {
+      "intro": "この会議について何でも質問できます。Bolke は話された内容から答え、誰が言ったかを示します。",
+      "decided": "何が決まった？",
+      "open": "未解決の質問は？",
+      "whatDid": "{{name}} さんは何を望んでいた？",
+      "next": "次に何をすべき？",
+      "fromMeeting": "会議から",
+      "reading": "会議を読んでいます…",
+      "placeholder": "この会議について質問…",
+      "ask": "質問",
+      "private": "回答はこの会議の発言だけから、このコンピューター上で作られます。引用をタップすると文字起こしで表示します。",
+      "clear": "クリア",
+      "noModel": "回答するには要約モデルが必要です。「モデル」から入手してください。",
+      "failed": "回答できませんでした。もう一度お試しください。"
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

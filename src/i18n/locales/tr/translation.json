@@ -1059,7 +1059,23 @@
       "label": "Toplantı bölümleri",
       "summary": "Özet",
       "people": "Kişiler",
-      "transcript": "Döküm"
+      "transcript": "Döküm",
+      "ask": "Sor"
+    },
+    "ask": {
+      "intro": "Bu toplantı hakkında her şeyi sorun. Bolke söylenenlerden yanıt verir ve kimin söylediğini gösterir.",
+      "decided": "Ne karar verildi?",
+      "open": "Açık soru var mı?",
+      "whatDid": "{{name}} ne istedi?",
+      "next": "Sırada ne yapmalıyım?",
+      "fromMeeting": "Toplantıdan",
+      "reading": "Toplantı okunuyor…",
+      "placeholder": "Bu toplantı hakkında bir şey sorun…",
+      "ask": "Sor",
+      "private": "Yanıtlar yalnızca bu toplantının sözlerinden, bu bilgisayarda gelir. Dökümde görmek için bir alıntıya dokunun.",
+      "clear": "Temizle",
+      "noModel": "Bolke'nin yanıt vermek için bir özet modeline ihtiyacı var. Modeller'den indirin.",
+      "failed": "Yanıt verilemedi. Tekrar deneyin."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

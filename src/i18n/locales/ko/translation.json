@@ -1059,7 +1059,23 @@
       "label": "회의 섹션",
       "summary": "요약",
       "people": "참석자",
-      "transcript": "전체 기록"
+      "transcript": "전체 기록",
+      "ask": "질문"
+    },
+    "ask": {
+      "intro": "이 회의에 대해 무엇이든 물어보세요. Bolke가 말한 내용을 바탕으로 답하고 누가 말했는지 보여 줍니다.",
+      "decided": "무엇이 결정됐나요?",
+      "open": "남은 질문이 있나요?",
+      "whatDid": "{{name}} 님은 무엇을 원했나요?",
+      "next": "다음에 무엇을 해야 하나요?",
+      "fromMeeting": "회의에서",
+      "reading": "회의를 읽는 중…",
+      "placeholder": "이 회의에 대해 물어보세요…",
+      "ask": "질문",
+      "private": "답변은 이 컴퓨터에서 이 회의의 말로만 만들어집니다. 인용을 누르면 녹취록에서 볼 수 있습니다.",
+      "clear": "지우기",
+      "noModel": "답하려면 요약 모델이 필요합니다. 모델에서 받으세요.",
+      "failed": "답할 수 없었습니다. 다시 시도하세요."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

@@ -1059,7 +1059,23 @@
       "label": "Sections de la réunion",
       "summary": "Résumé",
       "people": "Personnes",
-      "transcript": "Transcription"
+      "transcript": "Transcription",
+      "ask": "Demander"
+    },
+    "ask": {
+      "intro": "Posez n'importe quelle question sur cette réunion. Bolke répond à partir de ce qui a été dit et montre qui l'a dit.",
+      "decided": "Qu'est-ce qui a été décidé ?",
+      "open": "Des questions en suspens ?",
+      "whatDid": "Que voulait {{name}} ?",
+      "next": "Que dois-je faire ensuite ?",
+      "fromMeeting": "Tiré de la réunion",
+      "reading": "Lecture de la réunion…",
+      "placeholder": "Posez une question sur cette réunion…",
+      "ask": "Demander",
+      "private": "Les réponses viennent uniquement des paroles de cette réunion, sur cet ordinateur. Touchez une citation pour la voir dans la transcription.",
+      "clear": "Effacer",
+      "noModel": "Bolke a besoin d'un modèle de résumé pour répondre. Téléchargez-en un dans Modèles.",
+      "failed": "Impossible de répondre. Réessayez."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

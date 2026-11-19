@@ -20,6 +20,7 @@ import {
 import type { ActiveJobStatus } from "@/stores/transcriptionJobsStore";
 import { useOsType } from "@/hooks/useOsType";
 import { AudioPlayer } from "../ui/AudioPlayer";
+import { NoteAsk } from "./NoteAsk";
 import { copyToClipboard } from "../settings/history/clipboard";
 import {
   downloadPercent,
@@ -76,12 +77,14 @@ export const NoteView: React.FC<NoteViewProps> = ({
   const [copied, setCopied] = useState(false);
   const [summaryState, setSummaryState] = useState<SummaryState>("idle");
   // A meeting's page (design/wireframes/MeetingPage.dc.html) is in tabs.
-  const [tab, setTab] = useState<"summary" | "people" | "transcript">(
+  const [tab, setTab] = useState<"summary" | "people" | "transcript" | "ask">(
     "summary",
   );
-  const [focus, setFocus] = useState<{ person: number; n: number } | null>(
-    null,
-  );
+  const [focus, setFocus] = useState<{
+    person: number | null;
+    n: number;
+    at?: number;
+  } | null>(null);
   const [added, setAdded] = useState<number[]>([]);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summarySource, setSummarySource] = useState<SummarySource | null>(
@@ -349,16 +352,16 @@ export const NoteView: React.FC<NoteViewProps> = ({
         <div
           role="tablist"
           aria-label={t("notes.tabs.label")}
-          className="inline-flex self-start gap-1 p-1 rounded-full bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.12)]"
+          className="inline-flex self-start max-w-full overflow-x-auto gap-1 p-1 rounded-full bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.12)]"
         >
-          {(["summary", "people", "transcript"] as const).map((id) => (
+          {(["summary", "people", "transcript", "ask"] as const).map((id) => (
             <button
               key={id}
               type="button"
               role="tab"
               aria-selected={tab === id}
               onClick={() => setTab(id)}
-              className={`min-h-[34px] px-[18px] rounded-full text-[14px] font-medium cursor-pointer ${
+              className={`shrink-0 min-h-[34px] px-3 sm:px-[18px] rounded-full text-[14px] font-medium cursor-pointer ${
                 tab === id
                   ? "bg-[rgba(143,194,255,0.16)] text-white"
                   : "text-[#9aa7c7] hover:text-white"
@@ -370,7 +373,17 @@ export const NoteView: React.FC<NoteViewProps> = ({
         </div>
       )}
 
-      {(!isMeeting || tab !== "summary") && (
+      {isMeeting && tab === "ask" && (
+        <NoteAsk
+          note={note}
+          onJump={(at) => {
+            setFocus({ person: null, n: Date.now(), at: at ?? undefined });
+            setTab("transcript");
+          }}
+        />
+      )}
+
+      {(!isMeeting || (tab !== "summary" && tab !== "ask")) && (
         <NotePeople
           note={note}
           job={job}

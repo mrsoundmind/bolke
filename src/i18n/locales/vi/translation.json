@@ -1059,7 +1059,23 @@
       "label": "Các phần cuộc họp",
       "summary": "Tóm tắt",
       "people": "Người tham gia",
-      "transcript": "Bản ghi"
+      "transcript": "Bản ghi",
+      "ask": "Hỏi"
+    },
+    "ask": {
+      "intro": "Hỏi bất cứ điều gì về cuộc họp này. Bolke trả lời từ những gì đã nói và cho biết ai đã nói.",
+      "decided": "Đã quyết định gì?",
+      "open": "Còn câu hỏi nào chưa giải quyết?",
+      "whatDid": "{{name}} muốn gì?",
+      "next": "Tôi nên làm gì tiếp theo?",
+      "fromMeeting": "Từ cuộc họp",
+      "reading": "Đang đọc cuộc họp…",
+      "placeholder": "Hỏi bất cứ điều gì về cuộc họp này…",
+      "ask": "Hỏi",
+      "private": "Câu trả lời chỉ lấy từ lời nói trong cuộc họp này, trên máy tính này. Chạm vào trích dẫn để xem trong bản ghi.",
+      "clear": "Xóa",
+      "noModel": "Bolke cần mô hình tóm tắt để trả lời. Tải trong Mô hình.",
+      "failed": "Không thể trả lời. Hãy thử lại."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

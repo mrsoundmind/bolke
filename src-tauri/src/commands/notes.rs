@@ -425,7 +425,7 @@ pub struct SummaryProgress {
 }
 
 /// What writes one part, with its settings.
-enum Writer {
+pub(crate) enum Writer {
     Service {
         provider: crate::settings::PostProcessProvider,
         model: String,
@@ -443,7 +443,7 @@ enum Writer {
 impl Writer {
     /// The most text one request takes. Apple's model reads about 4,000
     /// tokens with its reply; the helper 8,192. Services take it all.
-    fn part_chars(&self) -> usize {
+    pub(crate) fn part_chars(&self) -> usize {
         match self {
             Writer::Service { .. } => MAX_SUMMARY_INPUT,
             Writer::Local { .. } => 10_000,
@@ -470,7 +470,12 @@ impl Writer {
 
     /// Sends `text` with a prompt that asks for JSON shaped like `schema`;
     /// returns the reply as it came.
-    async fn ask(&self, prompt: &str, schema: serde_json::Value, text: String) -> Result<String> {
+    pub(crate) async fn ask(
+        &self,
+        prompt: &str,
+        schema: serde_json::Value,
+        text: String,
+    ) -> Result<String> {
         match self {
             Writer::Service {
                 provider,
@@ -523,9 +528,23 @@ async fn summarize(
 ) -> Result<NoteSummary> {
     let people = people.cloned();
     let text: String = text.chars().take(MAX_SUMMARY_INPUT).collect();
+    let app2 = app.clone();
+    with_writer(app, |writer| async move {
+        summarize_with_people(&app2, note_id, &writer, text, people).await
+    })
+    .await
+}
+
+/// Runs `work` with whatever writes summaries on this computer, in the
+/// order [`SummarySource`] lists them.
+pub(crate) async fn with_writer<T, F, Fut>(app: &AppHandle, work: F) -> Result<T>
+where
+    F: FnOnce(Writer) -> Fut,
+    Fut: std::future::Future<Output = Result<T>>,
+{
     let settings = get_settings(app);
     if let Some((provider, model)) = configured_service(&settings) {
-        debug!("Summarizing a note with provider '{}'", provider.id);
+        debug!("Writing with provider '{}'", provider.id);
         let writer = if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
             Writer::AppleIntelligence {
                 token_limit: model.trim().parse::<i32>().unwrap_or(0),
@@ -542,23 +561,20 @@ async fn summarize(
                 api_key,
             }
         };
-        return summarize_with_people(app, note_id, &writer, text, people).await;
+        return work(writer).await;
     }
     let models = Arc::clone(&app.state::<Arc<SummaryModelManager>>());
     if models.active().is_some() {
-        let app = app.clone();
         return models
             .with_helper(|base_url, model| async move {
-                debug!("Summarizing a note with the summary model {}", model.id);
-                let writer = Writer::Local { base_url };
-                summarize_with_people(&app, note_id, &writer, text, people).await
+                debug!("Writing with the summary model {}", model.id);
+                work(Writer::Local { base_url }).await
             })
             .await;
     }
     if apple_intelligence_ready() {
-        debug!("Summarizing a note with Apple Intelligence");
-        let writer = Writer::AppleIntelligence { token_limit: 0 };
-        return summarize_with_people(app, note_id, &writer, text, people).await;
+        debug!("Writing with Apple Intelligence");
+        return work(Writer::AppleIntelligence { token_limit: 0 }).await;
     }
     Err(anyhow!("no_ai_provider"))
 }
@@ -683,7 +699,7 @@ fn trimmed(mut card: PersonSummary) -> PersonSummary {
 }
 
 /// Lower-case words, for spotting copied sentences.
-fn plain_words(text: &str) -> String {
+pub(crate) fn plain_words(text: &str) -> String {
     text.split_whitespace()
         .map(|w| {
             w.trim_matches(|c: char| !c.is_alphanumeric())
@@ -977,7 +993,7 @@ fn parse_person_reply(person: u32, reply: &str, their_words: &str) -> Option<Per
 }
 
 /// The JSON in a reply, past any `<think>` block or code fence.
-fn json_body(reply: &str) -> &str {
+pub(crate) fn json_body(reply: &str) -> &str {
     let mut body = reply.trim();
     if let Some(end) = body.find("</think>") {
         body = body[end + "</think>".len()..].trim();
