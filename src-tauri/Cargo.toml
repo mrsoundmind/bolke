@@ -179,6 +179,10 @@ transcribe-cpp = { version = "0.4.2", default-features = false, features = ["met
 [target.'cfg(all(target_os = "macos", target_arch = "x86_64"))'.dependencies]
 transcribe-cpp = { version = "0.4.2", default-features = false }
 
+[target.'cfg(any(target_os = "macos", windows))'.dependencies]
+# The call's sound (call_audio.rs): the speakers recorded as an input.
+cpal = { version = "=0.18.2", package = "bolke-cpal", path = "crates/bolke-cpal" }
+
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
 # Used by the receipt-sequenced ("reliable") paste path for lazy NSPasteboard

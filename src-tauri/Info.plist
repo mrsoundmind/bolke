@@ -4,5 +4,7 @@
 <dict>
   <key>NSMicrophoneUsageDescription</key>
   <string>Request microphone access to transcribe audio locally</string>
+  <key>NSAudioCaptureUsageDescription</key>
+  <string>Bolke records a call's sound so everyone in your meeting is in the notes, even with headphones. Only sound, never the screen.</string>
 </dict>
 </plist>
