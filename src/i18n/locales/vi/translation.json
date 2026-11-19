@@ -1193,6 +1193,7 @@
       "noSummary": "Chưa có tóm tắt cho {{name}}. Nó được viết cùng tóm tắt cuộc họp.",
       "tooLittle": "{{name}} nói quá ít để tóm tắt.",
       "writeSummary": "Viết tóm tắt",
+      "outdated": "Phần này do phiên bản Bolke cũ viết và chép lại lời họ nói. Hãy viết lại để có ghi chú ngắn.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

@@ -1193,6 +1193,7 @@
       "noSummary": "還沒有 {{name}} 的摘要，會和會議摘要一起產生。",
       "tooLittle": "{{name}} 說得太少，無法摘要。",
       "writeSummary": "產生摘要",
+      "outdated": "這是舊版 Bolke 寫的，照抄了他們說的話。重新產生以取得簡短的筆記。",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

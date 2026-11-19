@@ -724,6 +724,18 @@ fn tidy_note(item: &str, their_words: &str, limit: usize) -> Option<String> {
         "i will ",
         "i'll ",
         "we will ",
+        "we'll ",
+        "we agreed to ",
+        "we agreed that ",
+        "we discussed ",
+        "we need to ",
+        "we should ",
+        "we must ",
+        "we have to ",
+        "the team needs to ",
+        "the team should ",
+        "the person ",
+        "this person ",
         "i ",
     ] {
         if lower.starts_with(start) {
@@ -740,26 +752,124 @@ fn tidy_note(item: &str, their_words: &str, limit: usize) -> Option<String> {
     if item.chars().count() > limit {
         return None;
     }
-    // Eight or more of their words in a row is a quote, not a note.
-    let plain = plain_words(&item);
-    if plain.split(' ').count() >= 8 && their_words.contains(&plain) {
+    if let Some(why) = not_a_note(&item, their_words) {
+        debug!("Left out \"{item}\": {why}");
         return None;
     }
     Some(item)
 }
 
-/// Adds a part's points to a person's card, skipping repeats.
-fn merge_person(card: &mut PersonSummary, more: PersonSummary) {
-    fn add(to: &mut Vec<String>, items: Vec<String>) {
-        for item in items {
-            if !to.iter().any(|t| t.eq_ignore_ascii_case(&item)) {
-                to.push(item);
-            }
+/// The check every line of a summary passes before it's kept: why `item`
+/// isn't a note about the meeting, or `None` when it is one.
+fn not_a_note(item: &str, their_words: &str) -> Option<&'static str> {
+    let plain = plain_words(item);
+    let words: Vec<&str> = plain.split(' ').filter(|w| !w.is_empty()).collect();
+    if words.len() < 2 {
+        return Some("too short");
+    }
+    // Written as the speaker ("I", "my", "you") means their words copied.
+    if words.iter().any(|w| {
+        matches!(
+            *w,
+            "i" | "i'm" | "im" | "i've" | "ive" | "i'd" | "me" | "my" | "you" | "your" | "you're"
+        )
+    }) {
+        return Some("written as the speaker");
+    }
+    // Talk about the call itself: sound, screens, joining.
+    const CALL_TALK: [&str; 18] = [
+        "voice is",
+        "voices are",
+        "voice went",
+        "voice was",
+        "cracking",
+        "breaking up",
+        "rejoin",
+        "can hear",
+        "can't hear",
+        "hear me",
+        "can see",
+        "share my screen",
+        "screen share",
+        "on mute",
+        "unmute",
+        "connection",
+        "internet",
+        "audio",
+    ];
+    if CALL_TALK.iter().any(|t| plain.contains(t)) {
+        return Some("about the call, not the meeting");
+    }
+    // Most of it found word for word in what they said is a quote.
+    if !their_words.is_empty() && words.len() >= 6 {
+        let runs: Vec<String> = words.windows(5).map(|w| w.join(" ")).collect();
+        let copied = runs
+            .iter()
+            .filter(|r| their_words.contains(r.as_str()))
+            .count();
+        if copied * 2 >= runs.len() {
+            return Some("copied from what they said");
         }
     }
-    add(&mut card.said, more.said);
-    add(&mut card.agreed, more.agreed);
-    add(&mut card.will_do, more.will_do);
+    None
+}
+
+/// The longer words of a line, for telling when two lines say the same.
+fn key_words(text: &str) -> std::collections::HashSet<String> {
+    plain_words(text)
+        .split(' ')
+        .filter(|w| w.chars().count() > 3)
+        .filter(|w| {
+            !matches!(
+                *w,
+                "from"
+                    | "that"
+                    | "with"
+                    | "this"
+                    | "they"
+                    | "their"
+                    | "what"
+                    | "when"
+                    | "about"
+                    | "into"
+                    | "ensure"
+                    | "wants"
+                    | "thinks"
+                    | "clear"
+                    | "clearly"
+            )
+        })
+        // Different verbs for the same task: "create a list", "make a list".
+        .map(|w| match w {
+            "create" | "develop" | "build" | "prepare" | "draft" | "write" => "make".into(),
+            "clarify" | "define" | "decide" => "define".into(),
+            w => w.to_string(),
+        })
+        .collect()
+}
+
+/// Two lines say the same thing when most of the shorter one's key words
+/// are in the other.
+fn same_point(a: &str, b: &str) -> bool {
+    let (a, b) = (key_words(a), key_words(b));
+    let fewer = a.len().min(b.len());
+    fewer > 0 && a.intersection(&b).count() * 5 >= fewer * 3
+}
+
+/// Adds `items` to `to`, skipping any that say what's already there.
+fn add_new(to: &mut Vec<String>, items: Vec<String>) {
+    for item in items {
+        if !to.iter().any(|t| same_point(t, &item)) {
+            to.push(item);
+        }
+    }
+}
+
+/// Adds a part's points to a person's card, skipping repeats.
+fn merge_person(card: &mut PersonSummary, more: PersonSummary) {
+    add_new(&mut card.said, more.said);
+    add_new(&mut card.agreed, more.agreed);
+    add_new(&mut card.will_do, more.will_do);
 }
 
 /// Each person who talked long enough, with their words in order.
@@ -834,23 +944,31 @@ fn parse_person_reply(person: u32, reply: &str, their_words: &str) -> Option<Per
     let their_words = plain_words(their_words);
     let clean = |items: Vec<String>| -> Vec<String> {
         let mut kept: Vec<String> = Vec::new();
-        for item in items {
-            if let Some(note) = tidy_note(&item, &their_words, MAX_ITEM_CHARS) {
-                if !kept.iter().any(|k| k.eq_ignore_ascii_case(&note)) {
-                    kept.push(note);
-                }
-            }
-        }
+        let notes = items
+            .iter()
+            .filter_map(|item| tidy_note(item, &their_words, MAX_ITEM_CHARS))
+            .collect();
+        add_new(&mut kept, notes);
         kept
     };
+    let tasks = |items: Vec<String>| -> Vec<String> {
+        clean(items).into_iter().filter(|i| !is_topic(i)).collect()
+    };
+    let will_do = tasks(reply.will_do);
+    let said = clean(reply.said);
+    // An agreement already listed as a point or a task isn't said twice.
+    let agreed = tasks(reply.agreed)
+        .into_iter()
+        .filter(|a| !will_do.iter().chain(&said).any(|w| same_point(a, w)))
+        .collect();
     let card = PersonSummary {
         person,
         gist: tidy_note(&reply.gist, &their_words, MAX_GIST_CHARS)
-            .map(|g| format!("{g}."))
+            .map(|g| format!("{}.", short_gist(&g)))
             .unwrap_or_default(),
-        said: clean(reply.said),
-        agreed: clean(reply.agreed),
-        will_do: clean(reply.will_do),
+        said,
+        agreed,
+        will_do,
     };
     if card.said.is_empty() && card.agreed.is_empty() && card.will_do.is_empty() {
         return None;
@@ -919,7 +1037,10 @@ async fn summarize_in_parts(
         let summary = writer.write(part).await?;
         summaries.push(summary.summary);
         for point in summary.action_points {
-            if !action_points.iter().any(|p| p.text == point.text) {
+            if !action_points
+                .iter()
+                .any(|p| same_point(&p.text, &point.text))
+            {
                 action_points.push(point);
             }
         }
@@ -1107,6 +1228,47 @@ pub fn select_summary_model(app: AppHandle, id: String) -> Result<(), String> {
         .map_err(err)
 }
 
+/// "Discuss X" is a topic, not something anyone agreed or will do.
+fn is_topic(item: &str) -> bool {
+    let lower = item.to_lowercase();
+    ["discuss ", "talk about ", "explore ", "mention "]
+        .iter()
+        .any(|t| lower.starts_with(t))
+}
+
+/// A one-line gist: past this many characters it's cut at a comma.
+const SHORT_GIST_CHARS: usize = 150;
+
+fn short_gist(gist: &str) -> String {
+    if gist.chars().count() <= SHORT_GIST_CHARS {
+        return gist.to_string();
+    }
+    let head: String = gist.chars().take(SHORT_GIST_CHARS).collect();
+    match head.rfind(", ") {
+        Some(cut) if cut > 40 => head[..cut].to_string(),
+        _ => gist.to_string(),
+    }
+}
+
+/// The action points worth keeping: real tasks, each said once. "Discuss
+/// X" is a topic, not a task.
+fn to_dos(points: Vec<String>) -> Vec<String> {
+    let mut kept = Vec::new();
+    let points = points
+        .into_iter()
+        .map(|p| {
+            p.trim()
+                .trim_start_matches(['-', '•', '*'])
+                .trim()
+                .to_string()
+        })
+        .filter(|p| !p.is_empty())
+        .filter(|p| !is_topic(p) && not_a_note(p, "").is_none())
+        .collect();
+    add_new(&mut kept, points);
+    kept
+}
+
 #[derive(serde::Deserialize)]
 struct SummaryReply {
     summary: String,
@@ -1131,11 +1293,8 @@ fn parse_summary_reply(reply: &str) -> Result<NoteSummary> {
     });
     let summary = NoteSummary {
         summary: reply.summary.trim().to_string(),
-        action_points: reply
-            .action_points
+        action_points: to_dos(reply.action_points)
             .into_iter()
-            .map(|p| p.trim().to_string())
-            .filter(|p| !p.is_empty())
             .map(|text| ActionPoint { text, done: false })
             .collect(),
         people: Vec::new(),
@@ -1198,6 +1357,54 @@ mod tests {
             Some("Wants the whole process mapped first".into())
         );
         assert_eq!(tidy_note(&"word ".repeat(40), &words, MAX_ITEM_CHARS), None);
+    }
+
+    #[test]
+    fn the_check_leaves_out_quotes_call_talk_and_repeats() {
+        let words =
+            plain_words("Sorry, your voice is cracking. Can you see my screen now?");
+        // Quotes, the call itself, and lines written as the speaker.
+        assert!(not_a_note("Sorry, your voice is cracking", &words).is_some());
+        assert!(not_a_note("Wants to rejoin but voices are cracking", &words).is_some());
+        assert!(not_a_note("Asked if you can see the screen", &words).is_some());
+        assert!(not_a_note("Wants a checklist for the launch", &words).is_none());
+        // "We need to" and "The person" are dropped from the front.
+        assert_eq!(
+            tidy_note("We need to define the launch", "", MAX_ITEM_CHARS),
+            Some("Define the launch".into())
+        );
+        assert_eq!(
+            tidy_note("The person emphasized clear goals", "", MAX_ITEM_CHARS),
+            Some("Emphasized clear goals".into())
+        );
+        // What they agreed to do isn't listed twice.
+        let reply = r#"{"gist":"Cares about the launch","said":["Thinks the launch is vague","Thinks the launch is too vague"],
+            "agreed":["We need to create a checklist for the launch to ensure clarity"],
+            "will_do":["Create a checklist for the launch"]}"#;
+        let card = parse_person_reply(1, reply, "").unwrap();
+        assert_eq!(card.said, vec!["Thinks the launch is vague"]);
+        assert!(card.agreed.is_empty());
+        assert_eq!(card.will_do, vec!["Create a checklist for the launch"]);
+        // To-dos: topics and repeats left out.
+        let got = to_dos(vec![
+            "Discuss the role of AI".into(),
+            "Define the launch checklist for websites".into(),
+            "Define the launch checklist for the websites".into(),
+            " ".into(),
+        ]);
+        assert_eq!(got, vec!["Define the launch checklist for websites"]);
+        assert_eq!(
+            short_gist("Define the problem and audience before involving the technical team, use CDP for tracking, ensure the team understands feasibility and cost, and standardize experience definitions"),
+            "Define the problem and audience before involving the technical team, use CDP for tracking, ensure the team understands feasibility and cost"
+        );
+        assert!(same_point(
+            "Create a checklist for the launch and criteria",
+            "Develop a checklist for the launch that is practical"
+        ));
+        assert_eq!(
+            tidy_note("We agreed to map the funnel", "", MAX_ITEM_CHARS),
+            Some("Map the funnel".into())
+        );
     }
 
     #[test]

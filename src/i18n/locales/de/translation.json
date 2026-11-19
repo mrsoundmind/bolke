@@ -1193,6 +1193,7 @@
       "noSummary": "Noch keine Zusammenfassung für {{name}}. Sie entsteht mit der des Meetings.",
       "tooLittle": "{{name}} hat zu wenig für eine Zusammenfassung gesagt.",
       "writeSummary": "Zusammenfassung schreiben",
+      "outdated": "Dies wurde von einer älteren Bolke-Version geschrieben und kopiert das Gesagte. Neu schreiben für kurze Notizen.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

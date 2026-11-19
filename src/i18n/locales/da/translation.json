@@ -1193,6 +1193,7 @@
       "noSummary": "Endnu intet resumé for {{name}}. Det skrives med mødets resumé.",
       "tooLittle": "{{name}} sagde for lidt til et resumé.",
       "writeSummary": "Skriv resuméet",
+      "outdated": "Dette blev skrevet af en ældre Bolke og kopierer, hvad de sagde. Skriv det igen for korte noter.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

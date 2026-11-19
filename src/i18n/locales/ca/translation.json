@@ -1193,6 +1193,7 @@
       "noSummary": "Encara no hi ha resum de {{name}}. S'escriu amb el resum de la reunió.",
       "tooLittle": "{{name}} ha dit massa poc per fer-ne un resum.",
       "writeSummary": "Escriu-ne el resum",
+      "outdated": "Això ho va escriure una versió antiga de Bolke i copia el que van dir. Torna-ho a escriure per tenir notes curtes.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

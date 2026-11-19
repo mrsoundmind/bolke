@@ -1193,6 +1193,7 @@
       "noSummary": "{{name}}의 요약이 아직 없어요. 회의 요약과 함께 작성돼요.",
       "tooLittle": "{{name}}의 발언이 너무 적어 요약할 수 없어요.",
       "writeSummary": "요약 작성",
+      "outdated": "이전 버전의 Bolke가 작성한 것으로 말한 내용을 그대로 옮겼습니다. 짧은 메모로 다시 작성하세요.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

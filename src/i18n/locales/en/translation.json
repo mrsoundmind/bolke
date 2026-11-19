@@ -1193,6 +1193,7 @@
       "noSummary": "No summary for {{name}} yet. It's written with the meeting's summary.",
       "tooLittle": "{{name}} said too little for a summary.",
       "writeSummary": "Write their summary",
+      "outdated": "This was written by an older Bolke and copies what they said. Write it again for short notes.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

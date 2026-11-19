@@ -1193,6 +1193,7 @@
       "noSummary": "Ingen sammanfattning för {{name}} än. Den skrivs med mötets sammanfattning.",
       "tooLittle": "{{name}} sa för lite för en sammanfattning.",
       "writeSummary": "Skriv sammanfattningen",
+      "outdated": "Detta skrevs av en äldre Bolke och kopierar det som sades. Skriv om det för korta anteckningar.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

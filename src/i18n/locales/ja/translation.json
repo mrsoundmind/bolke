@@ -1193,6 +1193,7 @@
       "noSummary": "{{name}} の要約はまだありません。会議の要約と一緒に作られます。",
       "tooLittle": "{{name}} の発言が少なすぎて要約できません。",
       "writeSummary": "要約を書く",
+      "outdated": "これは古いBolkeが書いたもので、発言をそのまま写しています。短いメモにするには書き直してください。",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

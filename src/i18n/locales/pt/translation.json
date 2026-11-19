@@ -1193,6 +1193,7 @@
       "noSummary": "Ainda sem resumo de {{name}}. É escrito com o resumo da reunião.",
       "tooLittle": "{{name}} falou pouco demais para um resumo.",
       "writeSummary": "Escrever o resumo",
+      "outdated": "Isto foi escrito por uma versão antiga do Bolke e copia o que disseram. Escreva novamente para ter notas curtas.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

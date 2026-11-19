@@ -1193,6 +1193,7 @@
       "noSummary": "Shrnutí pro {{name}} zatím není. Píše se se shrnutím schůzky.",
       "tooLittle": "{{name}} řekl/a na shrnutí příliš málo.",
       "writeSummary": "Napsat shrnutí",
+      "outdated": "Toto napsala starší verze Bolke a kopíruje, co řekli. Napište to znovu pro krátké poznámky.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

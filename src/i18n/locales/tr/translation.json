@@ -1193,6 +1193,7 @@
       "noSummary": "{{name}} için henüz özet yok. Toplantı özetiyle birlikte yazılır.",
       "tooLittle": "{{name}} özet için çok az konuştu.",
       "writeSummary": "Özetini yaz",
+      "outdated": "Bu, Bolke'nin eski bir sürümü tarafından yazıldı ve söylenenleri kopyalıyor. Kısa notlar için yeniden yazın.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",

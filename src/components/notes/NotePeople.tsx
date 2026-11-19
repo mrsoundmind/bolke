@@ -470,7 +470,25 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
 
           {naming === current.id && namingForm}
 
-          {card ? (
+          {card && !card.gist ? (
+            // Written before cards had a gist: those copied what was said.
+            <div className="flex items-center justify-between gap-3 flex-wrap rounded-[12px] border border-[#2a3a66] bg-[#121c3a] px-[14px] py-[12px]">
+              <span className="text-[14px] text-[#c9d4f2]">
+                {summarizing
+                  ? t("notes.ai.writing")
+                  : t("notes.people.outdated")}
+              </span>
+              {!summarizing && (
+                <button
+                  type="button"
+                  className={smallBtn}
+                  onClick={onSummarize}
+                >
+                  {t("notes.ai.again")}
+                </button>
+              )}
+            </div>
+          ) : card ? (
             <>
               {card.gist && (
                 <p

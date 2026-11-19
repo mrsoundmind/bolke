@@ -1193,6 +1193,7 @@
       "noSummary": "Brak jeszcze podsumowania dla {{name}}. Powstaje z podsumowaniem spotkania.",
       "tooLittle": "{{name}} powiedział(a) za mało na podsumowanie.",
       "writeSummary": "Napisz podsumowanie",
+      "outdated": "To napisała starsza wersja Bolke i kopiuje to, co powiedzieli. Napisz ponownie, aby mieć krótkie notatki.",
       "who": "Who?",
       "notThem": "Not them?",
       "whoIs": "Who is {{name}}?",
