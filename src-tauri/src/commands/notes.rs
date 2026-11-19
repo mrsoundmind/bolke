@@ -775,6 +775,40 @@ fn tidy_note(item: &str, their_words: &str, limit: usize) -> Option<String> {
     Some(item)
 }
 
+/// Talk about the call itself: sound, screens, joining.
+const CALL_TALK: &[&str] = &[
+    "voice is",
+    "voices are",
+    "voice went",
+    "voice was",
+    "cracking",
+    "breaking up",
+    "rejoin",
+    "can hear",
+    "can't hear",
+    "hear me",
+    "can see",
+    "share my screen",
+    "screen share",
+    "on mute",
+    "unmute",
+    "connection",
+    "internet",
+    "audio",
+    "your voice",
+    "my voice",
+    "still breaking",
+    "glitch",
+    "hello hello",
+    "you guys are breaking",
+];
+
+/// Whether lower-case, plain `text` is about the call itself rather than
+/// what the meeting is about.
+pub(crate) fn about_the_call(plain: &str) -> bool {
+    CALL_TALK.iter().any(|t| plain.contains(t))
+}
+
 /// The check every line of a summary passes before it's kept: why `item`
 /// isn't a note about the meeting, or `None` when it is one.
 fn not_a_note(item: &str, their_words: &str) -> Option<&'static str> {
@@ -792,28 +826,7 @@ fn not_a_note(item: &str, their_words: &str) -> Option<&'static str> {
     }) {
         return Some("written as the speaker");
     }
-    // Talk about the call itself: sound, screens, joining.
-    const CALL_TALK: [&str; 18] = [
-        "voice is",
-        "voices are",
-        "voice went",
-        "voice was",
-        "cracking",
-        "breaking up",
-        "rejoin",
-        "can hear",
-        "can't hear",
-        "hear me",
-        "can see",
-        "share my screen",
-        "screen share",
-        "on mute",
-        "unmute",
-        "connection",
-        "internet",
-        "audio",
-    ];
-    if CALL_TALK.iter().any(|t| plain.contains(t)) {
+    if about_the_call(&plain) {
         return Some("about the call, not the meeting");
     }
     // Most of it found word for word in what they said is a quote.

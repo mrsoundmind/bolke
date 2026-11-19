@@ -1075,7 +1075,11 @@
       "private": "Antworten stammen nur aus den Worten dieses Meetings, auf diesem Computer. Tippe auf ein Zitat, um es im Transkript zu sehen.",
       "clear": "Leeren",
       "noModel": "Bolke braucht ein Zusammenfassungsmodell, um zu antworten. Lade eins unter Modelle.",
-      "failed": "Konnte nicht antworten. Versuch es erneut."
+      "failed": "Konnte nicht antworten. Versuch es erneut.",
+      "backed": "Geprüft: steht so im Meeting",
+      "notInMeeting": "Kam in diesem Meeting nicht vor",
+      "unsure": "Unsicher: Teile davon kommen im Meeting nicht vor. Prüf die Zitate.",
+      "unsureNoQuotes": "Unsicher: Bolke hat das im Meeting nicht gefunden."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

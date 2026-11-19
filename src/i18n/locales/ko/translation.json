@@ -1075,7 +1075,11 @@
       "private": "답변은 이 컴퓨터에서 이 회의의 말로만 만들어집니다. 인용을 누르면 녹취록에서 볼 수 있습니다.",
       "clear": "지우기",
       "noModel": "답하려면 요약 모델이 필요합니다. 모델에서 받으세요.",
-      "failed": "답할 수 없었습니다. 다시 시도하세요."
+      "failed": "답할 수 없었습니다. 다시 시도하세요.",
+      "backed": "확인됨: 회의에 있음",
+      "notInMeeting": "이 회의에서 나오지 않음",
+      "unsure": "확실하지 않음: 일부가 회의에 없습니다. 인용을 확인하세요.",
+      "unsureNoQuotes": "확실하지 않음: Bolke가 회의에서 찾지 못했습니다."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

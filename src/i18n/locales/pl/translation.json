@@ -1075,7 +1075,11 @@
       "private": "Odpowiedzi pochodzą tylko ze słów tego spotkania, na tym komputerze. Stuknij cytat, by zobaczyć go w transkrypcji.",
       "clear": "Wyczyść",
       "noModel": "Bolke potrzebuje modelu podsumowań, by odpowiadać. Pobierz go w Modelach.",
-      "failed": "Nie udało się odpowiedzieć. Spróbuj ponownie."
+      "failed": "Nie udało się odpowiedzieć. Spróbuj ponownie.",
+      "backed": "Sprawdzone: padło na spotkaniu",
+      "notInMeeting": "Nie padło na tym spotkaniu",
+      "unsure": "Niepewne: część tego nie padła na spotkaniu. Sprawdź cytaty.",
+      "unsureNoQuotes": "Niepewne: Bolke nie znalazł tego w spotkaniu."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

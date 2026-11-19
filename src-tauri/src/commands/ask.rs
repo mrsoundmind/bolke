@@ -14,15 +14,15 @@ use anyhow::Result;
 use log::debug;
 use tauri::{AppHandle, Manager};
 
-use super::notes::{json_body, plain_words, with_writer, Writer};
-use crate::managers::notes::{Note, NoteAnswer, NoteQuote, NotesManager};
+use super::notes::{about_the_call, json_body, plain_words, with_writer, Writer};
+use crate::managers::notes::{AnswerCheck, Note, NoteAnswer, NoteQuote, NotesManager};
 
 const ASK_PROMPT: &str = "You answer a question about one meeting or note, \
 using only the text in the user message. It has a short summary, then \
 numbered lines, each with who said it. Answer the question at the end in one \
 to three short sentences, in the same language as the question. Name who \
-said or decided things. If the text doesn't answer the question, say it \
-didn't come up. Never make anything up. lines: the numbers of up to three \
+said or decided things. If the text doesn't answer the question, \
+say it didn't come up. Never make anything up. lines: the numbers of up to three \
 lines that back up the answer. Reply only with JSON with the keys answer (a \
 string) and lines (a list of numbers).";
 
@@ -76,15 +76,28 @@ pub async fn ask_note(app: AppHandle, id: i64, question: String) -> Result<NoteA
     if passages.is_empty() {
         return Err("This note has no words to ask about yet".into());
     }
-    let (answer, quotes) = with_writer(&app, |writer| {
+    let checked = with_writer(&app, |writer| {
         let question = question.clone();
         async move { answer(&writer, &note, &passages, &earlier, &question).await }
     })
     .await
     .map_err(|e| e.to_string())?;
     notes
-        .add_answer(id, &question, &answer, &quotes)
+        .add_answer(
+            id,
+            &question,
+            &checked.answer,
+            &checked.quotes,
+            checked.check,
+        )
         .map_err(|e| e.to_string())
+}
+
+/// An answer, its quotes, and how well the meeting backs it up.
+struct Checked {
+    answer: String,
+    quotes: Vec<NoteQuote>,
+    check: AnswerCheck,
 }
 
 async fn answer(
@@ -93,7 +106,7 @@ async fn answer(
     passages: &[Passage],
     earlier: &[NoteAnswer],
     question: &str,
-) -> Result<(String, Vec<NoteQuote>)> {
+) -> Result<Checked> {
     let names = names(note);
     let budget = writer
         .part_chars()
@@ -106,8 +119,74 @@ async fn answer(
         passages.len()
     );
     let text = context(note, passages, &picked, &names, earlier, question);
-    let reply = writer.ask(ASK_PROMPT, schema(), text).await?;
-    Ok(read_reply(&reply, passages, &picked))
+    let reply = writer.ask(ASK_PROMPT, schema(), text.clone()).await?;
+    let (answer, lines) = read_reply(&reply, passages, &picked);
+    let check = check(&answer, &text, &lines);
+    debug!("Answer checked: {check:?}");
+    Ok(Checked {
+        answer,
+        quotes: quotes_of(passages, &lines),
+        check,
+    })
+}
+
+/// "It didn't come up", in the words a model uses for it.
+fn didnt_come_up(answer: &str) -> bool {
+    let a = answer.to_lowercase();
+    [
+        "didn't come up",
+        "did not come up",
+        "not discussed",
+        "wasn't discussed",
+        "was not discussed",
+        "weren't discussed",
+        "not mentioned",
+        "wasn't mentioned",
+        "was not mentioned",
+        "no mention",
+        "not covered",
+        "doesn't say",
+        "does not say",
+        "no information",
+        "not specified",
+        "wasn't specified",
+        "not explicitly",
+        "no specific",
+        "nothing about",
+        "does not mention",
+        "doesn't mention",
+        "not come up",
+        "no discussion",
+    ]
+    .iter()
+    .any(|t| a.contains(t))
+        || a.trim_start().starts_with("no,")
+        || a.trim_start().starts_with("no.")
+        || a.trim() == "no"
+}
+
+/// Share of an answer's key words that must be in what the model read for
+/// the answer to count as backed.
+const BACKED_SHARE: f32 = 0.8;
+
+/// Checks an answer against the text the model was given: an answer whose
+/// key words aren't in the meeting was made up, at least in part.
+fn check(answer: &str, sent: &str, quotes: &[usize]) -> AnswerCheck {
+    if didnt_come_up(answer) {
+        return AnswerCheck::NotInMeeting;
+    }
+    let sent: HashSet<String> = key_stems(sent).into_iter().collect();
+    let words = key_stems(answer);
+    if words.is_empty() {
+        return AnswerCheck::Unsure;
+    }
+    let found = words.iter().filter(|w| sent.contains(*w)).count();
+    let share = found as f32 / words.len() as f32;
+    if share >= BACKED_SHARE && !quotes.is_empty() {
+        AnswerCheck::Backed
+    } else {
+        AnswerCheck::Unsure
+    }
 }
 
 /// The note in short passages, in the order they were said.
@@ -307,9 +386,17 @@ fn pick(
             (w, (n / (df + 1.0)).ln() + 1.0)
         })
         .collect();
+    // Small talk about the call crowds out the meeting, unless that's what
+    // the question is about.
+    let call_question = about_the_call(&asked)
+        || ["call", "interrupt", "connect"]
+            .iter()
+            .any(|w| asked.split(' ').any(|a| a.starts_with(w)));
+    let part = when_in_meeting(&asked);
     let mut scored: Vec<(f32, usize)> = passages
         .iter()
         .enumerate()
+        .filter(|(_, p)| call_question || !about_the_call(&plain_words(&p.text)))
         .map(|(i, p)| {
             let mut score: f32 = wanted
                 .iter()
@@ -318,6 +405,16 @@ fn pick(
                 .sum();
             if p.person.is_some_and(|id| about.contains(&id)) {
                 score += 1.5;
+            }
+            if call_question && about_the_call(&plain_words(&p.text)) {
+                score += 2.0;
+            }
+            // "At the start", "after the meeting": the first or last part.
+            let at = i as f32 / n;
+            match part {
+                Some(Part::Start) if at < 0.15 => score += 2.0,
+                Some(Part::End) if at > 0.85 => score += 2.0,
+                _ => {}
             }
             (score, i)
         })
@@ -328,7 +425,9 @@ fn pick(
     let mut used = 0;
     'best: for (_, i) in scored {
         for j in [i, i.saturating_sub(1), (i + 1).min(passages.len() - 1)] {
-            if chosen.contains(&j) {
+            if chosen.contains(&j)
+                || (!call_question && about_the_call(&plain_words(&passages[j].text)))
+            {
                 continue;
             }
             if used + size(j) > budget {
@@ -352,6 +451,46 @@ fn pick(
     }
     chosen.sort_unstable();
     chosen
+}
+
+/// A part of the meeting a question points at.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Part {
+    Start,
+    End,
+}
+
+fn when_in_meeting(asked: &str) -> Option<Part> {
+    let has = |phrases: &[&str]| {
+        phrases
+            .iter()
+            .any(|p| format!(" {asked} ").contains(&format!(" {p} ")))
+    };
+    if has(&[
+        "after the meeting",
+        "next step",
+        "next steps",
+        "action item",
+        "action items",
+        "follow up",
+        "at the end",
+        "end of the meeting",
+        "do next",
+        "wrap up",
+    ]) {
+        Some(Part::End)
+    } else if has(&[
+        "at the start",
+        "start of the meeting",
+        "at the beginning",
+        "beginning of the meeting",
+        "first thing",
+        "opened with",
+    ]) {
+        Some(Part::Start)
+    } else {
+        None
+    }
 }
 
 fn clock(ms: i64) -> String {
@@ -410,8 +549,29 @@ fn context(
             text.push_str(&format!("Q: {}\nA: {}\n", a.question, a.answer));
         }
     }
-    text.push_str(&format!("\nQuestion: {question}"));
+    text.push_str(&format!("\nQuestion: {}", open_form(question)));
     text
+}
+
+/// Words that start a yes or no question.
+const YES_NO: [&str; 14] = [
+    "does", "did", "do", "is", "was", "are", "were", "will", "would", "can", "could", "should",
+    "has", "have",
+];
+
+/// A yes or no question asked as an open one. A small model often gets the
+/// yes or no backwards ("Does the deadline matter?" "Yes" when they said it doesn't),
+/// but says what was said about it correctly.
+fn open_form(question: &str) -> String {
+    let q = question.trim();
+    let first = q.split_whitespace().next().unwrap_or("").to_lowercase();
+    if !YES_NO.contains(&first.as_str()) {
+        return q.to_string();
+    }
+    let rest = q[q.find(char::is_whitespace).unwrap_or(q.len())..]
+        .trim()
+        .trim_end_matches('?');
+    format!("What was said about this: {rest}?")
 }
 
 fn schema() -> serde_json::Value {
@@ -428,7 +588,7 @@ fn schema() -> serde_json::Value {
 
 /// The answer and its quotes. Only lines that were sent can be quoted; a
 /// reply that isn't JSON is the answer as it came.
-fn read_reply(reply: &str, passages: &[Passage], picked: &[usize]) -> (String, Vec<NoteQuote>) {
+fn read_reply(reply: &str, passages: &[Passage], picked: &[usize]) -> (String, Vec<usize>) {
     #[derive(serde::Deserialize)]
     struct Reply {
         answer: String,
@@ -458,9 +618,14 @@ fn read_reply(reply: &str, passages: &[Passage], picked: &[usize]) -> (String, V
     lines.sort_unstable();
     lines.dedup();
     lines.truncate(MAX_QUOTES);
-    let quotes = lines
-        .into_iter()
-        .map(|i| {
+    (parsed.answer.trim().to_string(), lines)
+}
+
+/// The passages at `lines`, as the page shows them.
+fn quotes_of(passages: &[Passage], lines: &[usize]) -> Vec<NoteQuote> {
+    lines
+        .iter()
+        .map(|&i| {
             let p = &passages[i];
             NoteQuote {
                 person: p.person,
@@ -468,8 +633,7 @@ fn read_reply(reply: &str, passages: &[Passage], picked: &[usize]) -> (String, V
                 text: shortened(&p.text),
             }
         })
-        .collect();
-    (parsed.answer.trim().to_string(), quotes)
+        .collect()
 }
 
 fn shortened(text: &str) -> String {
@@ -539,7 +703,8 @@ mod tests {
         let reply = r#"```json
 {"answer":" Friday, and Rahul tests it. ","lines":[2, "1", 3, 9, 2]}
 ```"#;
-        let (answer, quotes) = read_reply(reply, &passages, &[0, 1, 2]);
+        let (answer, lines) = read_reply(reply, &passages, &[0, 1, 2]);
+        let quotes = quotes_of(&passages, &lines);
         assert_eq!(answer, "Friday, and Rahul tests it.");
         assert_eq!(
             quotes.iter().map(|q| q.text.as_str()).collect::<Vec<_>>(),
@@ -548,9 +713,22 @@ mod tests {
                 "I will test it with five people."
             ]
         );
-        let (answer, quotes) = read_reply("<think>x</think> It didn't come up.", &passages, &[0]);
+        let (answer, lines) = read_reply("<think>x</think> It didn't come up.", &passages, &[0]);
+        let quotes = quotes_of(&passages, &lines);
         assert_eq!(answer, "It didn't come up.");
         assert!(quotes.is_empty());
+    }
+
+    #[test]
+    fn yes_or_no_questions_are_asked_as_open_ones() {
+        assert_eq!(
+            open_form("Does the deadline matter, according to Priya?"),
+            "What was said about this: the deadline matter, according to Priya?"
+        );
+        assert_eq!(open_form("What was decided?"), "What was decided?");
+        assert!(didnt_come_up("The text does not come up."));
+        assert!(didnt_come_up("No"));
+        assert!(!didnt_come_up("Nobody objected to Drupal."));
     }
 
     #[test]
@@ -571,12 +749,7 @@ mod tests {
 mod ask_live {
     use super::*;
 
-    #[test]
-    #[ignore]
-    fn ask_live() {
-        let base_url = std::env::var("BOLKE_HELPER").unwrap();
-        let id: i64 = std::env::var("BOLKE_NOTE").unwrap().parse().unwrap();
-        let questions = std::env::var("BOLKE_ASK").unwrap();
+    pub(super) fn load(id: i64) -> Note {
         let db = std::path::PathBuf::from(std::env::var("HOME").unwrap())
             .join("Library/Application Support/app.bolke.desktop/notes.db");
         let conn =
@@ -605,17 +778,29 @@ mod ask_live {
             people: people.and_then(|p| serde_json::from_str(&p).ok()),
             people_state: None,
         };
+        note
+    }
+
+    #[test]
+    #[ignore]
+    fn ask_live() {
+        let base_url = std::env::var("BOLKE_HELPER").unwrap();
+        let id: i64 = std::env::var("BOLKE_NOTE").unwrap().parse().unwrap();
+        let questions = std::env::var("BOLKE_ASK").unwrap();
+        let note = load(id);
         let writer = Writer::Local { base_url };
         let passages = passages(&note);
         tauri::async_runtime::block_on(async {
             for q in questions.split('|') {
                 let started = std::time::Instant::now();
-                let (a, quotes) = answer(&writer, &note, &passages, &[], q).await.unwrap();
+                let c = answer(&writer, &note, &passages, &[], q).await.unwrap();
                 println!(
-                    "\nQ: {q}\nA: {a}  ({:.1}s)",
-                    started.elapsed().as_secs_f32()
+                    "\nQ: {q}\nA: {}  ({:.1}s, {:?})",
+                    c.answer,
+                    started.elapsed().as_secs_f32(),
+                    c.check
                 );
-                for quote in quotes {
+                for quote in c.quotes {
                     println!(
                         "   > {:?} {:?}: {}",
                         quote.person, quote.start_ms, quote.text
@@ -623,5 +808,73 @@ mod ask_live {
                 }
             }
         });
+    }
+}
+
+/// Grades answers against questions with known answers:
+/// `BOLKE_HELPER=... BOLKE_NOTE=12 BOLKE_CASES=cases.json cargo test --lib
+/// ask_eval -- --ignored --nocapture`. Each case has `q`, `truth`, and
+/// either words the answer must have (`any` / `all`) or `trap: true` for a
+/// question the meeting never answers.
+#[cfg(test)]
+mod ask_eval {
+    use super::*;
+
+    #[derive(serde::Deserialize)]
+    struct Case {
+        q: String,
+        truth: String,
+        #[serde(default)]
+        any: Vec<String>,
+        #[serde(default)]
+        all: Vec<String>,
+        #[serde(default)]
+        trap: bool,
+    }
+
+    #[test]
+    #[ignore]
+    fn ask_eval() {
+        let base_url = std::env::var("BOLKE_HELPER").unwrap();
+        let id: i64 = std::env::var("BOLKE_NOTE").unwrap().parse().unwrap();
+        let cases: Vec<Case> = serde_json::from_str(
+            &std::fs::read_to_string(std::env::var("BOLKE_CASES").unwrap()).unwrap(),
+        )
+        .unwrap();
+        let note = super::ask_live::load(id);
+        let writer = Writer::Local { base_url };
+        let passages = passages(&note);
+        let (mut right, mut sure_and_wrong) = (0, 0);
+        tauri::async_runtime::block_on(async {
+            for case in &cases {
+                let c = answer(&writer, &note, &passages, &[], &case.q)
+                    .await
+                    .unwrap();
+                let a = c.answer.to_lowercase();
+                let ok = if case.trap {
+                    didnt_come_up(&a)
+                } else {
+                    (case.any.is_empty() || case.any.iter().any(|w| a.contains(w)))
+                        && case.all.iter().all(|w| a.contains(w))
+                };
+                right += ok as usize;
+                if !ok && c.check == AnswerCheck::Backed {
+                    sure_and_wrong += 1;
+                }
+                println!(
+                    "\n[{}] {}\n  A: {}\n  check: {:?}  quotes: {}\n  truth: {}",
+                    if ok { "RIGHT" } else { "WRONG" },
+                    case.q,
+                    c.answer,
+                    c.check,
+                    c.quotes.len(),
+                    case.truth
+                );
+            }
+        });
+        println!(
+            "\nSCORE {right}/{} right; {sure_and_wrong} wrong but shown as backed",
+            cases.len()
+        );
     }
 }

@@ -1075,7 +1075,11 @@
       "private": "Les respostes surten només de les paraules d'aquesta reunió, en aquest ordinador. Toca una cita per veure-la a la transcripció.",
       "clear": "Esborra",
       "noModel": "Bolke necessita un model de resums per respondre. Descarrega'l a Models.",
-      "failed": "No s'ha pogut respondre. Torna-ho a provar."
+      "failed": "No s'ha pogut respondre. Torna-ho a provar.",
+      "backed": "Comprovat: és a la reunió",
+      "notInMeeting": "No surt en aquesta reunió",
+      "unsure": "No és segur: part d'això no és a la reunió. Revisa les cites.",
+      "unsureNoQuotes": "No és segur: Bolke no ho ha trobat a la reunió."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

@@ -1075,7 +1075,11 @@
       "private": "Svarene kommer kun fra mødets ord, på denne computer. Tryk på et citat for at se det i udskriften.",
       "clear": "Ryd",
       "noModel": "Bolke skal bruge en opsummeringsmodel for at svare. Hent en under Modeller.",
-      "failed": "Kunne ikke svare. Prøv igen."
+      "failed": "Kunne ikke svare. Prøv igen.",
+      "backed": "Tjekket: findes i mødet",
+      "notInMeeting": "Ikke i dette møde",
+      "unsure": "Usikkert: noget af det er ikke i mødet. Tjek citaterne.",
+      "unsureNoQuotes": "Usikkert: Bolke kunne ikke finde det i mødet."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

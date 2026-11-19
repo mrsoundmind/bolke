@@ -1075,7 +1075,11 @@
       "private": "回答はこの会議の発言だけから、このコンピューター上で作られます。引用をタップすると文字起こしで表示します。",
       "clear": "クリア",
       "noModel": "回答するには要約モデルが必要です。「モデル」から入手してください。",
-      "failed": "回答できませんでした。もう一度お試しください。"
+      "failed": "回答できませんでした。もう一度お試しください。",
+      "backed": "確認済み：会議で話されています",
+      "notInMeeting": "この会議では話されていません",
+      "unsure": "不確か：一部は会議にありません。引用を確認してください。",
+      "unsureNoQuotes": "不確か：Bolke は会議でこれを見つけられませんでした。"
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

@@ -1075,7 +1075,11 @@
       "private": "Odpovědi vycházejí jen ze slov této schůzky, na tomto počítači. Klepnutím na citát ho zobrazíte v přepisu.",
       "clear": "Vymazat",
       "noModel": "Bolke potřebuje k odpovědi model pro shrnutí. Stáhněte ho v Modelech.",
-      "failed": "Nepodařilo se odpovědět. Zkuste to znovu."
+      "failed": "Nepodařilo se odpovědět. Zkuste to znovu.",
+      "backed": "Ověřeno: zaznělo na schůzce",
+      "notInMeeting": "Na této schůzce nezaznělo",
+      "unsure": "Nejisté: část z toho na schůzce nezazněla. Zkontrolujte citáty.",
+      "unsureNoQuotes": "Nejisté: Bolke to na schůzce nenašel."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

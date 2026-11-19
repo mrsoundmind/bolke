@@ -1075,7 +1075,11 @@
       "private": "Svaren kommer bara från mötets ord, på den här datorn. Tryck på ett citat för att se det i transkriptionen.",
       "clear": "Rensa",
       "noModel": "Bolke behöver en sammanfattningsmodell för att svara. Hämta en under Modeller.",
-      "failed": "Kunde inte svara. Försök igen."
+      "failed": "Kunde inte svara. Försök igen.",
+      "backed": "Kontrollerat: finns i mötet",
+      "notInMeeting": "Kom inte upp i det här mötet",
+      "unsure": "Osäkert: en del finns inte i mötet. Kolla citaten.",
+      "unsureNoQuotes": "Osäkert: Bolke hittade inte detta i mötet."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

@@ -1075,7 +1075,11 @@
       "private": "回答只来自这次会议的内容，在这台电脑上完成。点按引文可在转写中查看。",
       "clear": "清除",
       "noModel": "Bolke 需要摘要模型才能回答。请在“模型”中下载。",
-      "failed": "无法回答，请重试。"
+      "failed": "无法回答，请重试。",
+      "backed": "已核对：会议中有提到",
+      "notInMeeting": "这次会议没有提到",
+      "unsure": "不确定：部分内容不在会议中，请查看引文。",
+      "unsureNoQuotes": "不确定：Bolke 在会议中没有找到。"
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

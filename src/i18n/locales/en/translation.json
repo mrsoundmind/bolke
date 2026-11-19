@@ -1075,7 +1075,11 @@
       "private": "Answers come only from this meeting's words, on this computer. Tap a quote to see it in the transcript.",
       "clear": "Clear",
       "noModel": "Bolke needs a summary model to answer. Get one in Models.",
-      "failed": "Couldn't answer that. Try again."
+      "failed": "Couldn't answer that. Try again.",
+      "backed": "Checked: found in the meeting",
+      "notInMeeting": "Not in this meeting",
+      "unsure": "Not sure: part of this isn't in the meeting. Check the quotes.",
+      "unsureNoQuotes": "Not sure: Bolke couldn't find this in the meeting."
     },
     "title": "Notes",
     "subtitle": "Your ideas and written notes.",

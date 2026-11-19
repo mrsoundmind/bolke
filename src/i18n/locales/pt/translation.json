@@ -1075,7 +1075,11 @@
       "private": "As respostas vêm só das falas desta reunião, neste computador. Toque numa citação para vê-la na transcrição.",
       "clear": "Limpar",
       "noModel": "O Bolke precisa de um modelo de resumo para responder. Baixe um em Modelos.",
-      "failed": "Não foi possível responder. Tente novamente."
+      "failed": "Não foi possível responder. Tente novamente.",
+      "backed": "Verificado: está na reunião",
+      "notInMeeting": "Não surgiu nesta reunião",
+      "unsure": "Incerto: parte disto não está na reunião. Confira as citações.",
+      "unsureNoQuotes": "Incerto: o Bolke não encontrou isto na reunião."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

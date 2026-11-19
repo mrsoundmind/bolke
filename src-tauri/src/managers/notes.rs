@@ -84,6 +84,8 @@ static MIGRATIONS: &[M] = &[
     );
     CREATE INDEX IF NOT EXISTS note_answers_note ON note_answers(note_id);",
     ),
+    // How well the meeting backs each answer up.
+    M::up("ALTER TABLE note_answers ADD COLUMN checked TEXT;"),
 ];
 
 /// A known voice this alike is taken to be that person.
@@ -204,6 +206,38 @@ pub struct NoteAnswer {
     pub quotes: Vec<NoteQuote>,
     /// Seconds since the Unix epoch.
     pub asked_at: i64,
+    pub check: AnswerCheck,
+}
+
+/// How well a note backs up an answer, checked word by word against what
+/// the AI was given to read.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum AnswerCheck {
+    /// Its words are in the meeting, and it has quotes.
+    Backed,
+    /// The answer says the meeting doesn't answer it.
+    NotInMeeting,
+    /// Some of it isn't in the meeting: check the quotes.
+    Unsure,
+}
+
+impl AnswerCheck {
+    fn as_str(self) -> &'static str {
+        match self {
+            AnswerCheck::Backed => "backed",
+            AnswerCheck::NotInMeeting => "not_in_meeting",
+            AnswerCheck::Unsure => "unsure",
+        }
+    }
+
+    fn parse(s: Option<String>) -> AnswerCheck {
+        match s.as_deref() {
+            Some("backed") => AnswerCheck::Backed,
+            Some("not_in_meeting") => AnswerCheck::NotInMeeting,
+            _ => AnswerCheck::Unsure,
+        }
+    }
 }
 
 /// One line of a note that backs up an answer.
@@ -535,7 +569,7 @@ impl NotesManager {
     pub fn list_answers(&self, note_id: i64) -> Result<Vec<NoteAnswer>> {
         let conn = self.connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, question, answer, quotes, asked_at FROM note_answers
+            "SELECT id, question, answer, quotes, asked_at, checked FROM note_answers
              WHERE note_id = ?1 ORDER BY id",
         )?;
         let rows = stmt.query_map([note_id], |row| {
@@ -546,6 +580,7 @@ impl NotesManager {
                 answer: row.get(2)?,
                 quotes: serde_json::from_str(&quotes).unwrap_or_default(),
                 asked_at: row.get(4)?,
+                check: AnswerCheck::parse(row.get(5)?),
             })
         })?;
         Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -557,18 +592,20 @@ impl NotesManager {
         question: &str,
         answer: &str,
         quotes: &[NoteQuote],
+        check: AnswerCheck,
     ) -> Result<NoteAnswer> {
         let conn = self.connection()?;
         let asked_at = Self::now();
         conn.execute(
-            "INSERT INTO note_answers (note_id, question, answer, quotes, asked_at)
-             VALUES (?1, ?2, ?3, ?4, ?5)",
+            "INSERT INTO note_answers (note_id, question, answer, quotes, asked_at, checked)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![
                 note_id,
                 question,
                 answer,
                 serde_json::to_string(quotes)?,
-                asked_at
+                asked_at,
+                check.as_str()
             ],
         )?;
         Ok(NoteAnswer {
@@ -577,6 +614,7 @@ impl NotesManager {
             answer: answer.to_string(),
             quotes: quotes.to_vec(),
             asked_at,
+            check,
         })
     }
 

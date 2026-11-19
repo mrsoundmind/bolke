@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { commands, type Note, type NoteAnswer } from "@/bindings";
+import {
+  commands,
+  type AnswerCheck,
+  type Note,
+  type NoteAnswer,
+} from "@/bindings";
 import { colorOf } from "./noteUtils";
 
 interface NoteAskProps {
@@ -15,6 +20,36 @@ const clock = (ms: number) => {
   return s >= 3600
     ? `${Math.floor(s / 3600)}:${two(Math.floor(s / 60) % 60)}:${two(s % 60)}`
     : `${Math.floor(s / 60)}:${two(s % 60)}`;
+};
+
+/** How well the meeting backs an answer up, from Bolke's word check. */
+const CheckBadge: React.FC<{ check: AnswerCheck; quoted: boolean }> = ({
+  check,
+  quoted,
+}) => {
+  const { t } = useTranslation();
+  const [text, color] =
+    check === "backed"
+      ? [t("notes.ask.backed"), "#7fe0b8"]
+      : check === "not_in_meeting"
+        ? [t("notes.ask.notInMeeting"), "#9aa7c7"]
+        : [
+            quoted ? t("notes.ask.unsure") : t("notes.ask.unsureNoQuotes"),
+            "#f2b36b",
+          ];
+  return (
+    <span
+      className="inline-flex items-center gap-[6px] text-[12.5px] leading-[1.4]"
+      style={{ color }}
+    >
+      <span
+        aria-hidden="true"
+        className="w-[7px] h-[7px] rounded-full shrink-0"
+        style={{ background: color }}
+      />
+      {text}
+    </span>
+  );
 };
 
 /** Questions about one meeting, answered from its own words
@@ -102,6 +137,7 @@ export const NoteAsk: React.FC<NoteAskProps> = ({ note, onJump }) => {
             <p className="m-0 text-[15px] leading-[1.6] text-[#eaf0ff] select-text">
               {a.answer}
             </p>
+            <CheckBadge check={a.check} quoted={a.quotes.length > 0} />
             {a.quotes.length > 0 && (
               <>
                 <span className="text-[10.5px] font-semibold tracking-[0.07em] uppercase text-[#8fb4ff]">

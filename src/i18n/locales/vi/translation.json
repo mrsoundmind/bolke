@@ -1075,7 +1075,11 @@
       "private": "Câu trả lời chỉ lấy từ lời nói trong cuộc họp này, trên máy tính này. Chạm vào trích dẫn để xem trong bản ghi.",
       "clear": "Xóa",
       "noModel": "Bolke cần mô hình tóm tắt để trả lời. Tải trong Mô hình.",
-      "failed": "Không thể trả lời. Hãy thử lại."
+      "failed": "Không thể trả lời. Hãy thử lại.",
+      "backed": "Đã kiểm tra: có trong cuộc họp",
+      "notInMeeting": "Không có trong cuộc họp này",
+      "unsure": "Chưa chắc: một phần không có trong cuộc họp. Hãy xem trích dẫn.",
+      "unsureNoQuotes": "Chưa chắc: Bolke không tìm thấy điều này trong cuộc họp."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

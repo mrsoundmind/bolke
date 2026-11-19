@@ -1833,7 +1833,24 @@ quotes: NoteQuote[];
 /**
  * Seconds since the Unix epoch.
  */
-asked_at: number }
+asked_at: number; check: AnswerCheck }
+/**
+ * How well a note backs up an answer, checked word by word against what
+ * the AI was given to read.
+ */
+export type AnswerCheck = 
+/**
+ * Its words are in the meeting, and it has quotes.
+ */
+"backed" | 
+/**
+ * The answer says the meeting doesn't answer it.
+ */
+"not_in_meeting" | 
+/**
+ * Some of it isn't in the meeting: check the quotes.
+ */
+"unsure"
 /**
  * One line of a note that backs up an answer.
  */

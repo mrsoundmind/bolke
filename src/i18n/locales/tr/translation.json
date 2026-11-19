@@ -1075,7 +1075,11 @@
       "private": "Yanıtlar yalnızca bu toplantının sözlerinden, bu bilgisayarda gelir. Dökümde görmek için bir alıntıya dokunun.",
       "clear": "Temizle",
       "noModel": "Bolke'nin yanıt vermek için bir özet modeline ihtiyacı var. Modeller'den indirin.",
-      "failed": "Yanıt verilemedi. Tekrar deneyin."
+      "failed": "Yanıt verilemedi. Tekrar deneyin.",
+      "backed": "Kontrol edildi: toplantıda geçiyor",
+      "notInMeeting": "Bu toplantıda geçmedi",
+      "unsure": "Emin değil: bir kısmı toplantıda yok. Alıntıları kontrol edin.",
+      "unsureNoQuotes": "Emin değil: Bolke bunu toplantıda bulamadı."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",

@@ -1075,7 +1075,11 @@
       "private": "Jawaban hanya berasal dari kata-kata rapat ini, di komputer ini. Ketuk kutipan untuk melihatnya di transkrip.",
       "clear": "Hapus",
       "noModel": "Bolke perlu model ringkasan untuk menjawab. Unduh di Model.",
-      "failed": "Tidak bisa menjawab. Coba lagi."
+      "failed": "Tidak bisa menjawab. Coba lagi.",
+      "backed": "Diperiksa: ada di rapat",
+      "notInMeeting": "Tidak ada di rapat ini",
+      "unsure": "Belum pasti: sebagian tidak ada di rapat. Periksa kutipannya.",
+      "unsureNoQuotes": "Belum pasti: Bolke tidak menemukannya di rapat."
     },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
