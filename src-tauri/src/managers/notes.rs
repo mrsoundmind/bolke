@@ -125,6 +125,22 @@ pub struct NoteSummary {
     /// Things someone has to do; empty when there are none.
     #[serde(default)]
     pub action_points: Vec<ActionPoint>,
+    /// A meeting's summary for each person who spoke; empty for other notes.
+    #[serde(default)]
+    pub people: Vec<PersonSummary>,
+}
+
+/// What one person in a meeting said, agreed to and will do.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, Type)]
+pub struct PersonSummary {
+    /// The person's id in the note's `people`.
+    pub person: u32,
+    #[serde(default)]
+    pub said: Vec<String>,
+    #[serde(default)]
+    pub agreed: Vec<String>,
+    #[serde(default)]
+    pub will_do: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, Type)]
@@ -718,7 +734,7 @@ pub(crate) fn parse_summary(stored: Option<String>) -> Option<NoteSummary> {
     let stored = stored?;
     Some(serde_json::from_str(&stored).unwrap_or(NoteSummary {
         summary: stored,
-        action_points: Vec::new(),
+        ..Default::default()
     }))
 }
 
@@ -841,6 +857,7 @@ mod tests {
                 text: "a".into(),
                 done: true,
             }],
+            ..Default::default()
         })
         .unwrap();
         let points = parse_summary(Some(json)).unwrap().action_points;

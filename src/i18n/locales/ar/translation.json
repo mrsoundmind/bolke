@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "تم حذف التذكير",
+    "reminderMarkedDone": "تم إنجازه",
+    "reminderMoved": "تم نقل التذكير",
+    "reminderNotFound": "لم أجد هذا التذكير",
+    "reminderNotFoundHint": "قل كلمة منه، مثل «تذكير بريا»",
+    "reminderUndo": "تراجع",
+    "reminderOpen": "افتح المهام",
+    "callPrompt": "هل تسجّل هذا الاجتماع؟",
+    "callPromptApp": "{{app}} يستخدم الميكروفون",
+    "callRecord": "سجّل",
+    "callNotNow": "ليس الآن",
+    "callTitle": "مكالمة {{app}}، {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "قد يحظر {{name}} اختصارًا واحدًا",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "حسب الشخص",
+      "said": "ما قاله",
+      "agreed": "وافق على",
+      "willDo": "سيفعل",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Påminnelsen raderad",
+    "reminderMarkedDone": "Markerad som klar",
+    "reminderMoved": "Påminnelsen flyttad",
+    "reminderNotFound": "Hittade inte den påminnelsen",
+    "reminderNotFoundHint": "Säg ett ord ur den, t.ex. ”Priya-påminnelsen”",
+    "reminderUndo": "Ångra",
+    "reminderOpen": "Öppna To-do",
+    "callPrompt": "Spela in mötet?",
+    "callPromptApp": "{{app}} använder mikrofonen",
+    "callRecord": "Spela in",
+    "callNotNow": "Inte nu",
+    "callTitle": "{{app}}-samtal, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} kanske blockerar 1 kortkommando",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Per person",
+      "said": "Vad de sa",
+      "agreed": "Kom överens om",
+      "willDo": "Ska göra",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

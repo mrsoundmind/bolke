@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Påmindelse slettet",
+    "reminderMarkedDone": "Markeret som færdig",
+    "reminderMoved": "Påmindelse flyttet",
+    "reminderNotFound": "Kunne ikke finde den påmindelse",
+    "reminderNotFoundHint": "Sig et ord fra den, fx “Priya-påmindelsen”",
+    "reminderUndo": "Fortryd",
+    "reminderOpen": "Åbn To-do",
+    "callPrompt": "Optag dette møde?",
+    "callPromptApp": "{{app}} bruger din mikrofon",
+    "callRecord": "Optag",
+    "callNotNow": "Ikke nu",
+    "callTitle": "{{app}}-opkald, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokerer muligvis 1 genvej",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Pr. person",
+      "said": "Hvad de sagde",
+      "agreed": "Aftalt",
+      "willDo": "Vil gøre",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

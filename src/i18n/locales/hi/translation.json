@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "रिमाइंडर हटाया",
+    "reminderMarkedDone": "हो गया के रूप में चिह्नित",
+    "reminderMoved": "रिमाइंडर का समय बदला",
+    "reminderNotFound": "वह रिमाइंडर नहीं मिला",
+    "reminderNotFoundHint": "उसका कोई शब्द बोलें, जैसे “प्रिया वाला रिमाइंडर”",
+    "reminderUndo": "वापस लें",
+    "reminderOpen": "टू-डू खोलें",
+    "callPrompt": "यह मीटिंग रिकॉर्ड करें?",
+    "callPromptApp": "{{app}} आपका माइक्रोफ़ोन इस्तेमाल कर रहा है",
+    "callRecord": "रिकॉर्ड करें",
+    "callNotNow": "अभी नहीं",
+    "callTitle": "{{app}} कॉल, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} शायद 1 शॉर्टकट को ब्लॉक कर रहा है",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "हर व्यक्ति",
+      "said": "क्या कहा",
+      "agreed": "किस पर सहमति",
+      "willDo": "क्या करेंगे",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

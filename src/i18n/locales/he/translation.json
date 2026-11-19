@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "התזכורת נמחקה",
+    "reminderMarkedDone": "סומן כבוצע",
+    "reminderMoved": "התזכורת הועברה",
+    "reminderNotFound": "לא מצאתי את התזכורת",
+    "reminderNotFoundHint": "אמרו מילה ממנה, כמו ״התזכורת של פריה״",
+    "reminderUndo": "ביטול",
+    "reminderOpen": "פתח משימות",
+    "callPrompt": "להקליט את הפגישה?",
+    "callPromptApp": "{{app}} משתמש במיקרופון",
+    "callRecord": "הקלט",
+    "callNotNow": "לא עכשיו",
+    "callTitle": "שיחת {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "ייתכן ש-{{name}} חוסם קיצור דרך אחד",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "לפי אדם",
+      "said": "מה אמר/ה",
+      "agreed": "הסכים/ה",
+      "willDo": "יעשה/תעשה",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

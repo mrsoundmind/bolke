@@ -607,6 +607,128 @@ pub fn hear(text: &str, heard: Heard, now: NaiveDateTime) -> Option<Spoken> {
     Some(Spoken { what, due })
 }
 
+/// A change to a reminder already in To-do, said out loud: "delete the
+/// reminder about Priya", "move my dentist reminder to 6 pm", "mark the milk
+/// to-do done", "Priya wala reminder hata do".
+#[derive(Clone, Debug, PartialEq)]
+pub enum Change {
+    Delete,
+    Done,
+    Move(NaiveDateTime),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SpokenChange {
+    pub change: Change,
+    /// The words that name the reminder, lower case; empty for "that
+    /// reminder", which means the newest.
+    pub about: Vec<String>,
+    /// A time said to pick it out: "delete my 5 pm reminder".
+    pub at: Option<NaiveDateTime>,
+}
+
+const DELETE_WORDS: &[&str] = &["delete", "cancel", "remove", "clear", "drop", "scrap"];
+const MOVE_WORDS: &[&str] = &["move", "change", "push", "reschedule", "shift", "postpone"];
+const DONE_WORDS: &[&str] = &["done", "complete", "completed", "finished"];
+const NOUNS: &[&str] = &[
+    "reminder",
+    "reminders",
+    "todo",
+    "todos",
+    "to-do",
+    "to-dos",
+    "task",
+    "alarm",
+];
+const HINDI_DELETE: &[&[&str]] = &[
+    &["hata", "do"],
+    &["hatao"],
+    &["mita", "do"],
+    &["delete", "kar", "do"],
+    &["delete", "karo"],
+    &["cancel", "kar", "do"],
+    &["cancel", "karo"],
+];
+const HINDI_DONE: &[&[&str]] = &[&["ho", "gaya"], &["ho", "gya"], &["done", "kar", "do"]];
+const HINDI_DO: &[&[&str]] = &[&["kar", "do"], &["karo"]];
+/// Words around the name of the reminder that aren't part of it.
+const LINKS: &[&str] = &[
+    "the", "my", "a", "an", "about", "to", "for", "of", "as", "that", "this", "it", "called",
+    "named", "with", "which", "is", "say", "says", "saying", "mark", "tick", "off", "wala", "wali",
+    "vala", "wale", "ka", "ki", "ke", "ko", "please", "at", "on", "by", "set", "one",
+];
+
+/// Reads a change to an existing reminder out of `text`, or `None` when it
+/// isn't one. Dictation needs the word "reminder" or "to-do" in it.
+pub fn hear_change(text: &str, heard: Heard, now: NaiveDateTime) -> Option<SpokenChange> {
+    if heard == Heard::Typed {
+        return None;
+    }
+    let mut toks: Vec<Tok> = text.split_whitespace().map(Tok::new).collect();
+    let start = first_word(&mut toks);
+    if start >= toks.len() {
+        return None;
+    }
+    take(&mut toks, 0, start);
+    let has_noun = toks.iter().any(|t| NOUNS.contains(&t.norm.as_str()));
+    let first = toks[start].norm.clone();
+    let at_end = |toks: &[Tok], phrase: &[&str]| {
+        toks.len() >= phrase.len() && matches_at(toks, toks.len() - phrase.len(), phrase)
+    };
+    let take_end = |toks: &mut Vec<Tok>, phrase: &[&str]| {
+        let n = toks.len();
+        take(toks, n - phrase.len(), phrase.len());
+    };
+    let last_is_done = toks
+        .last()
+        .is_some_and(|t| DONE_WORDS.contains(&t.norm.as_str()));
+
+    let change = if DELETE_WORDS.contains(&first.as_str()) && has_noun {
+        take(&mut toks, start, 1);
+        Change::Delete
+    } else if let Some(p) = HINDI_DELETE.iter().find(|p| has_noun && at_end(&toks, p)) {
+        take_end(&mut toks, p);
+        Change::Delete
+    } else if (first == "mark" || first == "tick")
+        && (has_noun || heard == Heard::Idea)
+        && (last_is_done || toks.iter().any(|t| t.norm == "off"))
+    {
+        Change::Done
+    } else if has_noun && last_is_done {
+        Change::Done
+    } else if let Some(p) = HINDI_DONE.iter().find(|p| has_noun && at_end(&toks, p)) {
+        take_end(&mut toks, p);
+        Change::Done
+    } else if has_noun
+        && (MOVE_WORDS.contains(&first.as_str()) || HINDI_DO.iter().any(|p| at_end(&toks, p)))
+    {
+        if MOVE_WORDS.contains(&first.as_str()) {
+            take(&mut toks, start, 1);
+        } else if let Some(p) = HINDI_DO.iter().find(|p| at_end(&toks, p)) {
+            take_end(&mut toks, p);
+        }
+        let when = take_when(&mut toks);
+        Change::Move(resolve(&when, now)?)
+    } else {
+        return None;
+    };
+    let at = match change {
+        Change::Move(_) => None,
+        _ => resolve(&take_when(&mut toks), now),
+    };
+    let about = toks
+        .iter()
+        .filter(|t| !t.used && !t.norm.is_empty())
+        .map(|t| t.norm.clone())
+        .filter(|w| {
+            !NOUNS.contains(&w.as_str())
+                && !DONE_WORDS.contains(&w.as_str())
+                && !LINKS.contains(&w.as_str())
+        })
+        .collect();
+    Some(SpokenChange { change, about, at })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -634,6 +756,49 @@ mod tests {
 
     fn dictation(text: &str) -> Option<(String, Option<NaiveDateTime>)> {
         hear(text, Heard::Dictation, now()).map(|s| (s.what, s.due))
+    }
+
+    fn change(text: &str) -> Option<(Change, Vec<String>)> {
+        hear_change(text, Heard::Dictation, now()).map(|c| (c.change, c.about))
+    }
+
+    fn words(w: &[&str]) -> Vec<String> {
+        w.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn reminders_are_changed_by_voice() {
+        assert_eq!(
+            change("Delete the reminder about calling Priya."),
+            Some((Change::Delete, words(&["calling", "priya"])))
+        );
+        assert_eq!(
+            change("Hey Bolke, cancel that reminder"),
+            Some((Change::Delete, vec![]))
+        );
+        assert_eq!(
+            change("Priya wala reminder hata do"),
+            Some((Change::Delete, words(&["priya"])))
+        );
+        assert_eq!(
+            change("Mark the milk to-do as done"),
+            Some((Change::Done, words(&["milk"])))
+        );
+        assert_eq!(
+            change("move my dentist reminder to 6 pm"),
+            Some((Change::Move(at(18, 18, 0).unwrap()), words(&["dentist"])))
+        );
+        let by_time = hear_change("delete my 5 pm reminder", Heard::Dictation, now()).unwrap();
+        assert_eq!(by_time.at, at(18, 17, 0));
+        assert!(by_time.about.is_empty());
+        // Not a change: ordinary words, or a reminder being made.
+        assert_eq!(change("delete the second paragraph"), None);
+        assert_eq!(change("remind me to delete the old files"), None);
+        assert_eq!(change("mark it done"), None);
+        assert_eq!(
+            hear_change("mark call Priya done", Heard::Idea, now()).map(|c| c.change),
+            Some(Change::Done)
+        );
     }
 
     #[test]

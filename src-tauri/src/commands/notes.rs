@@ -3,7 +3,10 @@
 use crate::managers::{
     history::HistoryManager,
     meeting::{wav_duration_ms, MeetingRecorder, MeetingStatus, SavedMeeting},
-    notes::{ActionPoint, Note, NoteChanges, NoteKind, NoteSummary, NotesManager, Project},
+    notes::{
+        ActionPoint, Note, NoteChanges, NoteKind, NotePeople, NoteSummary, NotesManager,
+        PersonSummary, Project,
+    },
     speaker_models::{SpeakerModelManager, SpeakerModels},
     summary_model::{SummaryModel, SummaryModelManager},
     transcription_jobs::TranscriptionJobManager,
@@ -195,6 +198,30 @@ pub fn start_meeting(
     meeting.start(title, project_id, call).map_err(err)
 }
 
+/// "Record" in the "Record this meeting?" bubble: starts the meeting, with
+/// the call's sound when it can, and opens it in Meetings.
+#[tauri::command]
+#[specta::specta]
+pub fn record_call(app: AppHandle, title: String) -> Result<(), String> {
+    crate::overlay::hide_call_prompt(&app);
+    let meeting = app.state::<Arc<MeetingRecorder>>();
+    if !meeting.status().recording {
+        meeting
+            .start(title, None, crate::call_audio::available())
+            .map_err(err)?;
+    }
+    crate::show_main_window(&app);
+    let _ = app.emit("open-meetings", ());
+    Ok(())
+}
+
+/// "Not now" in the "Record this meeting?" bubble.
+#[tauri::command]
+#[specta::specta]
+pub fn dismiss_call_prompt(app: AppHandle) {
+    crate::overlay::hide_call_prompt(&app);
+}
+
 /// Turns the call's sound on or off during a meeting.
 #[tauri::command]
 #[specta::specta]
@@ -287,7 +314,9 @@ pub async fn summarize_note(app: AppHandle, id: i64) -> Result<Note, String> {
     if note.text.trim().is_empty() {
         return Err("This note has no text to summarize yet".into());
     }
-    let summary = summarize(&app, id, &note.text).await.map_err(err)?;
+    let summary = summarize(&app, id, &note.text, note.people.as_ref())
+        .await
+        .map_err(err)?;
     notes.set_summary(id, Some(&summary)).map_err(err)?;
     notes.get_note(id).await.map_err(err)
 }
@@ -300,6 +329,17 @@ Write in the same language as the text. Give a short summary of two to four \
 sentences, and a list of action points: things someone said they or others \
 will do. Each action point is one short sentence. If there are none, give an \
 empty list. Reply only with JSON: {\"summary\": \"...\", \"action_points\": [\"...\"]}";
+
+const PERSON_PROMPT: &str = "You read what one person said in a meeting, with a \
+short summary of the whole meeting for context. Write in the same language as \
+their words, about them in the third person, without their name. Give: said, \
+up to three short points of what they said; agreed, decisions or plans they \
+agreed to; will_do, things they said they will do. Each item is one short \
+sentence. Use an empty list when there is nothing. Reply only with JSON: \
+{\"said\": [\"...\"], \"agreed\": [\"...\"], \"will_do\": [\"...\"]}";
+
+/// People who talked less than this get no card of their own.
+const MIN_PERSON_TALK_MS: i64 = 15_000;
 
 /// What writes a note's summary, in the order Bolke tries them.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
@@ -394,6 +434,25 @@ impl Writer {
     }
 
     async fn write(&self, text: String) -> Result<NoteSummary> {
+        let reply = self.ask(SUMMARY_PROMPT, summary_schema(), text).await?;
+        let mut summary = parse_summary_reply(&reply)?;
+        if let Writer::AppleIntelligence { token_limit } = self {
+            // A word limit set for Apple Intelligence in Post Process applies
+            // to the summary, not the action points.
+            if *token_limit > 0 {
+                let limit = *token_limit as usize;
+                let words: Vec<&str> = summary.summary.split_whitespace().collect();
+                if words.len() > limit {
+                    summary.summary = words[..limit].join(" ");
+                }
+            }
+        }
+        Ok(summary)
+    }
+
+    /// Sends `text` with a prompt that asks for JSON shaped like `schema`;
+    /// returns the reply as it came.
+    async fn ask(&self, prompt: &str, schema: serde_json::Value, text: String) -> Result<String> {
         match self {
             Writer::Service {
                 provider,
@@ -401,7 +460,16 @@ impl Writer {
                 api_key,
             } => {
                 let disable_reasoning = matches!(provider.id.as_str(), "custom" | "openrouter");
-                ask_chat_service(provider, api_key.clone(), model, text, disable_reasoning).await
+                ask_chat_service(
+                    provider,
+                    api_key.clone(),
+                    model,
+                    prompt,
+                    schema,
+                    text,
+                    disable_reasoning,
+                )
+                .await
             }
             Writer::Local { base_url } => {
                 let provider = crate::settings::PostProcessProvider {
@@ -413,16 +481,29 @@ impl Writer {
                     supports_structured_output: true,
                     api_format: Default::default(),
                 };
-                ask_chat_service(&provider, String::new(), "summary", text, false).await
+                ask_chat_service(
+                    &provider,
+                    String::new(),
+                    "summary",
+                    prompt,
+                    schema,
+                    text,
+                    false,
+                )
+                .await
             }
-            Writer::AppleIntelligence { token_limit } => {
-                summarize_part_on_device(text, *token_limit).await
-            }
+            Writer::AppleIntelligence { .. } => ask_on_device(prompt, text).await,
         }
     }
 }
 
-async fn summarize(app: &AppHandle, note_id: i64, text: &str) -> Result<NoteSummary> {
+async fn summarize(
+    app: &AppHandle,
+    note_id: i64,
+    text: &str,
+    people: Option<&NotePeople>,
+) -> Result<NoteSummary> {
+    let people = people.cloned();
     let text: String = text.chars().take(MAX_SUMMARY_INPUT).collect();
     let settings = get_settings(app);
     if let Some((provider, model)) = configured_service(&settings) {
@@ -443,7 +524,7 @@ async fn summarize(app: &AppHandle, note_id: i64, text: &str) -> Result<NoteSumm
                 api_key,
             }
         };
-        return summarize_in_parts(app, note_id, &writer, text).await;
+        return summarize_with_people(app, note_id, &writer, text, people).await;
     }
     let models = Arc::clone(&app.state::<Arc<SummaryModelManager>>());
     if models.active().is_some() {
@@ -452,16 +533,144 @@ async fn summarize(app: &AppHandle, note_id: i64, text: &str) -> Result<NoteSumm
             .with_helper(|base_url, model| async move {
                 debug!("Summarizing a note with the summary model {}", model.id);
                 let writer = Writer::Local { base_url };
-                summarize_in_parts(&app, note_id, &writer, text).await
+                summarize_with_people(&app, note_id, &writer, text, people).await
             })
             .await;
     }
     if apple_intelligence_ready() {
         debug!("Summarizing a note with Apple Intelligence");
         let writer = Writer::AppleIntelligence { token_limit: 0 };
-        return summarize_in_parts(app, note_id, &writer, text).await;
+        return summarize_with_people(app, note_id, &writer, text, people).await;
     }
     Err(anyhow!("no_ai_provider"))
+}
+
+/// The whole note's summary, then a card for each person who said enough.
+async fn summarize_with_people(
+    app: &AppHandle,
+    note_id: i64,
+    writer: &Writer,
+    text: String,
+    people: Option<NotePeople>,
+) -> Result<NoteSummary> {
+    let mut summary = summarize_in_parts(app, note_id, writer, text).await?;
+    let Some(people) = people else {
+        return Ok(summary);
+    };
+    let speakers = people_to_summarize(&people);
+    if speakers.len() < 2 {
+        return Ok(summary);
+    }
+    let count = speakers.len() as u32;
+    for (i, (id, words)) in speakers.into_iter().enumerate() {
+        let _ = app.emit(
+            "summary-progress",
+            SummaryProgress {
+                note_id,
+                part: i as u32 + 1,
+                parts: count,
+            },
+        );
+        let input = format!(
+            "Meeting summary:\n{}\n\nWhat this person said:\n{}",
+            summary.summary, words
+        );
+        let input: String = input.chars().take(writer.part_chars()).collect();
+        match writer.ask(PERSON_PROMPT, person_schema(), input).await {
+            Ok(reply) => match parse_person_reply(id, &reply) {
+                Some(card) => summary.people.push(card),
+                None => warn!("Person {id}'s summary came back empty"),
+            },
+            // One person failing shouldn't lose the whole summary.
+            Err(e) => warn!("Failed to summarize person {id}: {e}"),
+        }
+    }
+    Ok(summary)
+}
+
+/// Each person who talked long enough, with their words in order.
+fn people_to_summarize(people: &NotePeople) -> Vec<(u32, String)> {
+    people
+        .people
+        .iter()
+        .filter(|p| p.talk_ms >= MIN_PERSON_TALK_MS)
+        .map(|p| {
+            let words: Vec<&str> = people
+                .lines
+                .iter()
+                .filter(|l| l.person == p.id && !l.text.trim().is_empty())
+                .map(|l| l.text.trim())
+                .collect();
+            (p.id, words.join("\n"))
+        })
+        .filter(|(_, words)| !words.is_empty())
+        .collect()
+}
+
+fn summary_schema() -> serde_json::Value {
+    serde_json::json!({
+        "type": "object",
+        "properties": {
+            "summary": { "type": "string" },
+            "action_points": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["summary", "action_points"],
+        "additionalProperties": false
+    })
+}
+
+fn person_schema() -> serde_json::Value {
+    let list = serde_json::json!({ "type": "array", "items": { "type": "string" } });
+    serde_json::json!({
+        "type": "object",
+        "properties": { "said": list, "agreed": list, "will_do": list },
+        "required": ["said", "agreed", "will_do"],
+        "additionalProperties": false
+    })
+}
+
+/// Reads a person's JSON card; `None` when it has nothing in it.
+fn parse_person_reply(person: u32, reply: &str) -> Option<PersonSummary> {
+    #[derive(serde::Deserialize)]
+    struct Reply {
+        #[serde(default)]
+        said: Vec<String>,
+        #[serde(default)]
+        agreed: Vec<String>,
+        #[serde(default)]
+        will_do: Vec<String>,
+    }
+    let json = json_body(reply);
+    let reply: Reply = serde_json::from_str(json).ok()?;
+    let clean = |items: Vec<String>| -> Vec<String> {
+        items
+            .into_iter()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect()
+    };
+    let card = PersonSummary {
+        person,
+        said: clean(reply.said),
+        agreed: clean(reply.agreed),
+        will_do: clean(reply.will_do),
+    };
+    if card.said.is_empty() && card.agreed.is_empty() && card.will_do.is_empty() {
+        return None;
+    }
+    Some(card)
+}
+
+/// The JSON in a reply, past any `<think>` block or code fence.
+fn json_body(reply: &str) -> &str {
+    let mut body = reply.trim();
+    if let Some(end) = body.find("</think>") {
+        body = body[end + "</think>".len()..].trim();
+    }
+    match (body.find('{'), body.rfind('}')) {
+        (Some(start), Some(end)) if end > start => &body[start..=end],
+        _ => body,
+    }
 }
 
 /// Splits `text` at spaces into parts of at most `limit` characters.
@@ -527,34 +736,28 @@ async fn summarize_in_parts(
     Ok(NoteSummary {
         summary,
         action_points,
+        people: Vec::new(),
     })
 }
 
 /// Asks an OpenAI-style chat endpoint (a service, or the summary helper)
-/// for the summary as JSON.
+/// for JSON shaped like `schema`.
 async fn ask_chat_service(
     provider: &crate::settings::PostProcessProvider,
     api_key: String,
     model: &str,
+    prompt: &str,
+    schema: serde_json::Value,
     text: String,
     disable_reasoning: bool,
-) -> Result<NoteSummary> {
-    let reply = if provider.supports_structured_output {
-        let schema = serde_json::json!({
-            "type": "object",
-            "properties": {
-                "summary": { "type": "string" },
-                "action_points": { "type": "array", "items": { "type": "string" } }
-            },
-            "required": ["summary", "action_points"],
-            "additionalProperties": false
-        });
+) -> Result<String> {
+    if provider.supports_structured_output {
         crate::llm_client::send_chat_completion_with_schema(
             provider,
             api_key,
             model,
             text,
-            Some(SUMMARY_PROMPT.to_string()),
+            Some(prompt.to_string()),
             Some(schema),
             disable_reasoning,
         )
@@ -564,44 +767,33 @@ async fn ask_chat_service(
             provider,
             api_key,
             model,
-            format!("{SUMMARY_PROMPT}\n\nText:\n{text}"),
+            format!("{prompt}\n\nText:\n{text}"),
             disable_reasoning,
         )
         .await
     }
     .map_err(|e| anyhow!("{e}"))?
-    .ok_or_else(|| anyhow!("The AI sent back nothing"))?;
-    parse_summary_reply(&reply)
+    .ok_or_else(|| anyhow!("The AI sent back nothing"))
 }
 
-/// Writes one part's summary with Apple Intelligence, on this Mac.
-async fn summarize_part_on_device(text: String, token_limit: i32) -> Result<NoteSummary> {
+/// Asks Apple Intelligence, on this Mac.
+async fn ask_on_device(prompt: &str, text: String) -> Result<String> {
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     {
         if !crate::apple_intelligence::check_apple_intelligence_availability() {
             return Err(anyhow!("Apple Intelligence isn't available on this Mac"));
         }
-        let reply = tauri::async_runtime::spawn_blocking(move || {
-            crate::apple_intelligence::process_text_plain(SUMMARY_PROMPT, &text)
+        let prompt = prompt.to_string();
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::apple_intelligence::process_text_plain(&prompt, &text)
         })
         .await
         .map_err(|e| anyhow!("{e}"))?
-        .map_err(|e| anyhow!("{e}"))?;
-        let mut summary = parse_summary_reply(&reply)?;
-        // A word limit set for Apple Intelligence in Post Process applies to
-        // the summary, not the action points.
-        if token_limit > 0 {
-            let limit = token_limit as usize;
-            let words: Vec<&str> = summary.summary.split_whitespace().collect();
-            if words.len() > limit {
-                summary.summary = words[..limit].join(" ");
-            }
-        }
-        Ok(summary)
+        .map_err(|e| anyhow!("{e}"))
     }
     #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
     {
-        let _ = (text, token_limit);
+        let _ = (prompt, text);
         Err(anyhow!("Apple Intelligence isn't available here"))
     }
 }
@@ -728,14 +920,14 @@ struct SummaryReply {
 /// Reads the JSON reply, allowing a `<think>` block or code fence around it.
 /// A reply that isn't JSON is kept whole as the summary.
 fn parse_summary_reply(reply: &str) -> Result<NoteSummary> {
-    let mut body = reply.trim();
-    if let Some(end) = body.find("</think>") {
-        body = body[end + "</think>".len()..].trim();
-    }
-    let json = match (body.find('{'), body.rfind('}')) {
-        (Some(start), Some(end)) if end > start => &body[start..=end],
-        _ => body,
+    let body = {
+        let b = reply.trim();
+        match b.find("</think>") {
+            Some(end) => b[end + "</think>".len()..].trim(),
+            None => b,
+        }
     };
+    let json = json_body(reply);
     let reply = serde_json::from_str::<SummaryReply>(json).unwrap_or_else(|_| SummaryReply {
         summary: body.to_string(),
         action_points: Vec::new(),
@@ -749,6 +941,7 @@ fn parse_summary_reply(reply: &str) -> Result<NoteSummary> {
             .filter(|p| !p.is_empty())
             .map(|text| ActionPoint { text, done: false })
             .collect(),
+        people: Vec::new(),
     };
     if summary.summary.is_empty() && summary.action_points.is_empty() {
         return Err(anyhow!("The AI sent back nothing"));
@@ -769,6 +962,50 @@ mod tests {
         assert_eq!(split_into_parts("short", 100), vec!["short"]);
         // A single word longer than the limit stays whole.
         assert_eq!(split_into_parts("abcdefghijkl", 5), vec!["abcdefghijkl"]);
+    }
+
+    #[test]
+    fn person_cards_are_read_and_empty_ones_dropped() {
+        let reply = r#"<think>x</think>```json
+{"said":[" Deck is long ",""],"agreed":[],"will_do":["Send the deck by Friday"]}
+```"#;
+        let card = parse_person_reply(2, reply).unwrap();
+        assert_eq!(card.person, 2);
+        assert_eq!(card.said, vec!["Deck is long"]);
+        assert_eq!(card.will_do, vec!["Send the deck by Friday"]);
+        assert!(parse_person_reply(1, r#"{"said":[],"agreed":[],"will_do":[]}"#).is_none());
+        assert!(parse_person_reply(1, "not json").is_none());
+    }
+
+    #[test]
+    fn only_people_who_talked_enough_get_a_card() {
+        use crate::managers::notes::{NoteLine, Person};
+        let person = |id, talk_ms| Person {
+            id,
+            name: None,
+            talk_ms,
+            guessed: false,
+        };
+        let line = |person, text: &str| NoteLine {
+            start_ms: 0,
+            end_ms: 0,
+            person,
+            text: text.into(),
+        };
+        let people = NotePeople {
+            people: vec![person(1, 60_000), person(2, 3_000), person(3, 20_000)],
+            lines: vec![
+                line(1, "hello"),
+                line(2, "hi"),
+                line(3, "yes"),
+                line(1, "bye"),
+            ],
+        };
+        let got = people_to_summarize(&people);
+        assert_eq!(
+            got,
+            vec![(1, "hello\nbye".to_string()), (3, "yes".to_string())]
+        );
     }
 
     #[test]

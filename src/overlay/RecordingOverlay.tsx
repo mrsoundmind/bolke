@@ -31,7 +31,9 @@ type OverlayState =
   | "idea_saved"
   // A reminder just set from what was said, or one whose time has come.
   | "reminder_set"
-  | "reminder_due";
+  | "reminder_due"
+  // A call app started using the microphone: "Record this meeting?"
+  | "call_prompt";
 
 const isIdeaState = (state: OverlayState) => state.startsWith("idea_");
 
@@ -92,6 +94,7 @@ const RecordingOverlay: React.FC = () => {
   const [overflowing, setOverflowing] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [reminder, setReminder] = useState<ReminderBubble | null>(null);
+  const [callApp, setCallApp] = useState<string | null>(null);
   const [noticeWidth, setNoticeWidth] = useState<number>();
   const noticeProbeRef = useRef<HTMLSpanElement>(null);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -114,6 +117,10 @@ const RecordingOverlay: React.FC = () => {
       const unlistenReminder = await listen<ReminderBubble>(
         "reminder-overlay",
         (event) => setReminder(event.payload),
+      );
+
+      const unlistenCall = await listen<string>("call-prompt", (event) =>
+        setCallApp(event.payload),
       );
 
       const unlistenShow = await listen("show-overlay", async (event) => {
@@ -228,6 +235,7 @@ const RecordingOverlay: React.FC = () => {
       return () => {
         unlistenNotice();
         unlistenReminder();
+        unlistenCall();
         unlistenShow();
         unlistenHide();
         unlistenReady();
@@ -453,6 +461,65 @@ const RecordingOverlay: React.FC = () => {
     );
   }
 
+  // ---- "Record this meeting?" (design/wireframes/MeetingCapture): a call
+  // app started using the microphone. One tap records it.
+  if (state === "call_prompt" && callApp && !shownNotice) {
+    const record = () => {
+      const date = new Intl.DateTimeFormat(i18n.language, {
+        day: "numeric",
+        month: "short",
+      }).format(new Date());
+      commands.recordCall(t("overlay.callTitle", { app: callApp, date }));
+    };
+    return (
+      <div
+        dir={direction}
+        className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
+      >
+        <div className="scard compact reminder callprompt">
+          <div className="sbase sreminder" role="status">
+            <span className="sbell" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect
+                  x="9"
+                  y="3"
+                  width="6"
+                  height="11"
+                  rx="3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+                <path
+                  d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <span className="sreminder-text">
+              <span className="sreminder-title">{t("overlay.callPrompt")}</span>
+              <span className="sreminder-when">
+                {t("overlay.callPromptApp", { app: callApp })}
+              </span>
+            </span>
+            <button className="sreminder-btn main" onClick={record}>
+              {t("overlay.callRecord")}
+            </button>
+            <button
+              className="sreminder-btn"
+              onClick={() => commands.dismissCallPrompt()}
+            >
+              {t("overlay.callNotNow")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ---- Reminder bubble (design/wireframes/ReminderFlow): a bell, what was
   // understood, and what can be done about it.
   if (
@@ -465,16 +532,27 @@ const RecordingOverlay: React.FC = () => {
       reminder.due_at != null
         ? formatDue(reminder.due_at, i18n.language, t)
         : null;
+    const changed = due ? null : reminder.changed;
     const title = due
       ? reminder.text
-      : when
-        ? t("overlay.reminderSet")
-        : t("overlay.todoAdded");
+      : changed === "deleted"
+        ? t("overlay.reminderDeleted")
+        : changed === "done"
+          ? t("overlay.reminderMarkedDone")
+          : changed === "moved"
+            ? t("overlay.reminderMoved")
+            : changed === "not_found"
+              ? t("overlay.reminderNotFound")
+              : when
+                ? t("overlay.reminderSet")
+                : t("overlay.todoAdded");
     const detail = due
       ? (when ?? "")
-      : when
-        ? `${reminder.text} · ${when}`
-        : reminder.text;
+      : changed === "not_found"
+        ? t("overlay.reminderNotFoundHint")
+        : when && changed !== "deleted" && changed !== "done"
+          ? `${reminder.text} · ${when}`
+          : reminder.text;
     const close = () => commands.dismissReminder();
     return (
       <div
@@ -505,7 +583,21 @@ const RecordingOverlay: React.FC = () => {
               <span className="sreminder-title">{title}</span>
               {detail && <span className="sreminder-when">{detail}</span>}
             </span>
-            {due ? (
+            {changed === "not_found" ? (
+              <button
+                className="sreminder-btn"
+                onClick={() => commands.openTodo(0)}
+              >
+                {t("overlay.reminderOpen")}
+              </button>
+            ) : changed ? (
+              <button
+                className="sreminder-btn main"
+                onClick={() => commands.undoReminderChange()}
+              >
+                {t("overlay.reminderUndo")}
+              </button>
+            ) : due ? (
               <>
                 <button
                   className="sreminder-btn main"

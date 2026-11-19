@@ -126,8 +126,13 @@ function App() {
   // "Change" in the reminder bubble opens To-do.
   useEffect(() => {
     const unlisten = listen("open-todo", () => setCurrentSection("todo"));
+    // "Record" in the "Record this meeting?" bubble.
+    const unlistenMeetings = listen("open-meetings", () =>
+      setCurrentSection("meetings"),
+    );
     return () => {
       unlisten.then((f) => f());
+      unlistenMeetings.then((f) => f());
     };
   }, []);
   const { settings, updateSetting } = useSettings();

@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "已删除提醒",
+    "reminderMarkedDone": "已标记完成",
+    "reminderMoved": "已改提醒时间",
+    "reminderNotFound": "没找到那个提醒",
+    "reminderNotFoundHint": "说出其中的词，比如“Priya 那个提醒”",
+    "reminderUndo": "撤销",
+    "reminderOpen": "打开待办",
+    "callPrompt": "要录下这场会议吗？",
+    "callPromptApp": "{{app}} 正在使用麦克风",
+    "callRecord": "录制",
+    "callNotNow": "暂不",
+    "callTitle": "{{app}} 通话，{{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} 可能正在阻止 1 个快捷键",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "按人",
+      "said": "说了什么",
+      "agreed": "同意了",
+      "willDo": "要做的事",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

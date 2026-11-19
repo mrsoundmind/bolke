@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Připomínka smazána",
+    "reminderMarkedDone": "Označeno jako hotové",
+    "reminderMoved": "Připomínka přesunuta",
+    "reminderNotFound": "Tu připomínku jsem nenašel",
+    "reminderNotFoundHint": "Řekněte z ní slovo, třeba „připomínka Priya“",
+    "reminderUndo": "Zpět",
+    "reminderOpen": "Otevřít úkoly",
+    "callPrompt": "Nahrát tuto schůzku?",
+    "callPromptApp": "{{app}} používá mikrofon",
+    "callRecord": "Nahrát",
+    "callNotNow": "Teď ne",
+    "callTitle": "Hovor v {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} může blokovat 1 zkratku",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Podle osob",
+      "said": "Co řekl/a",
+      "agreed": "Souhlasil/a",
+      "willDo": "Udělá",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

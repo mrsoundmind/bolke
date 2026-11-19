@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Recordatori eliminat",
+    "reminderMarkedDone": "Marcat com a fet",
+    "reminderMoved": "Recordatori mogut",
+    "reminderNotFound": "No he trobat aquest recordatori",
+    "reminderNotFoundHint": "Digues una paraula d'ell, com «el recordatori de la Priya»",
+    "reminderUndo": "Desfés",
+    "reminderOpen": "Obre Tasques",
+    "callPrompt": "Vols gravar aquesta reunió?",
+    "callPromptApp": "{{app}} fa servir el micròfon",
+    "callRecord": "Grava",
+    "callNotNow": "Ara no",
+    "callTitle": "Trucada de {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} pot estar blocant 1 drecera",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Per persona",
+      "said": "Què ha dit",
+      "agreed": "Ha acordat",
+      "willDo": "Farà",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

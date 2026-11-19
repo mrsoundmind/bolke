@@ -98,7 +98,7 @@ fn overlay_dimensions(state: &str) -> (f64, f64) {
         (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
     } else if state.starts_with("idea_") {
         (OVERLAY_IDEA_WIDTH, OVERLAY_HEIGHT)
-    } else if state.starts_with("reminder_") {
+    } else if state.starts_with("reminder_") || state == CALL_PROMPT_STATE {
         (OVERLAY_REMINDER_WIDTH, OVERLAY_HEIGHT)
     } else {
         (OVERLAY_WIDTH, OVERLAY_HEIGHT)
@@ -644,6 +644,43 @@ pub fn show_reminder_overlay(
             }
         });
     });
+}
+
+/// "Record this meeting?" (call_watch.rs): the reminder bubble's shape, with
+/// a button to record and one to say not now.
+const CALL_PROMPT_STATE: &str = "call_prompt";
+/// How long the question stays up before it fades on its own.
+const CALL_PROMPT_HOLD: Duration = Duration::from_secs(30);
+static CALL_PROMPT_GENERATION: AtomicU64 = AtomicU64::new(u64::MAX);
+
+/// Asks whether to record the call `app` just started.
+pub fn show_call_prompt(app_handle: &AppHandle, app: &str) {
+    if settings::get_settings(app_handle).overlay_style == OverlayStyle::None {
+        return;
+    }
+    let handle = app_handle.clone();
+    let app = app.to_string();
+    let _ = app_handle.run_on_main_thread(move || {
+        let _ = handle.emit_to("recording_overlay", "call-prompt", &app);
+        show_overlay_state_on_main(&handle, CALL_PROMPT_STATE);
+        let shown = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+        CALL_PROMPT_GENERATION.store(shown, Ordering::SeqCst);
+        std::thread::spawn(move || {
+            std::thread::sleep(CALL_PROMPT_HOLD);
+            if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) == shown {
+                hide_recording_overlay(&handle);
+            }
+        });
+    });
+}
+
+/// Takes the question down, if it's still what the overlay shows.
+pub fn hide_call_prompt(app_handle: &AppHandle) {
+    if CALL_PROMPT_GENERATION.load(Ordering::SeqCst)
+        == OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst)
+    {
+        hide_recording_overlay(app_handle);
+    }
 }
 
 /// Whether the reminder bubble is what the overlay shows now.

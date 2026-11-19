@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "已刪除提醒",
+    "reminderMarkedDone": "已標記完成",
+    "reminderMoved": "已改提醒時間",
+    "reminderNotFound": "找不到那個提醒",
+    "reminderNotFoundHint": "說出其中的詞，例如「Priya 那個提醒」",
+    "reminderUndo": "復原",
+    "reminderOpen": "打開待辦",
+    "callPrompt": "要錄下這場會議嗎？",
+    "callPromptApp": "{{app}} 正在使用麥克風",
+    "callRecord": "錄製",
+    "callNotNow": "暫不",
+    "callTitle": "{{app}} 通話，{{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} 可能正在阻擋 1 個快捷鍵",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "依人",
+      "said": "說了什麼",
+      "agreed": "同意了",
+      "willDo": "要做的事",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

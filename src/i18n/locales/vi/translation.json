@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Đã xóa lời nhắc",
+    "reminderMarkedDone": "Đã đánh dấu xong",
+    "reminderMoved": "Đã dời lời nhắc",
+    "reminderNotFound": "Không tìm thấy lời nhắc đó",
+    "reminderNotFoundHint": "Hãy nói một từ trong đó, như “lời nhắc Priya”",
+    "reminderUndo": "Hoàn tác",
+    "reminderOpen": "Mở việc cần làm",
+    "callPrompt": "Ghi lại cuộc họp này?",
+    "callPromptApp": "{{app}} đang dùng micrô",
+    "callRecord": "Ghi",
+    "callNotNow": "Để sau",
+    "callTitle": "Cuộc gọi {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} có thể đang chặn 1 phím tắt",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Theo từng người",
+      "said": "Đã nói",
+      "agreed": "Đã đồng ý",
+      "willDo": "Sẽ làm",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

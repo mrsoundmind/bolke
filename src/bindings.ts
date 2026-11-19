@@ -1195,6 +1195,30 @@ async dismissReminder() : Promise<void> {
     await TAURI_INVOKE("dismiss_reminder");
 },
 /**
+ * "Record" in the "Record this meeting?" bubble: starts the meeting, with
+ * the call's sound when it can, and opens it in Meetings.
+ */
+async recordCall(title: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("record_call", { title }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * "Not now" in the "Record this meeting?" bubble.
+ */
+async dismissCallPrompt() : Promise<void> {
+    await TAURI_INVOKE("dismiss_call_prompt");
+},
+/**
+ * Undo in the bubble, after a reminder was changed by voice.
+ */
+async undoReminderChange() : Promise<void> {
+    await TAURI_INVOKE("undo_reminder_change");
+},
+/**
  * Opens To-do in the main window, from the bubble.
  */
 async openTodo(id: number) : Promise<void> {
@@ -1775,7 +1799,11 @@ export type NoteSummary = { summary: string;
 /**
  * Things someone has to do; empty when there are none.
  */
-action_points?: ActionPoint[] }
+action_points?: ActionPoint[]; 
+/**
+ * A meeting's summary for each person who spoke; empty for other notes.
+ */
+people?: PersonSummary[] }
 export type Notice = { code: NoticeCode; level: NoticeLevel; source: NoticeSource; 
 /**
  * What only Rust knows, such as a model name or a raw error.
@@ -1824,6 +1852,14 @@ export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_
  */
 export type PeopleState = "working" | "failed"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
+/**
+ * What one person in a meeting said, agreed to and will do.
+ */
+export type PersonSummary = { 
+/**
+ * The person's id in the note's `people`.
+ */
+person: number; said?: string[]; agreed?: string[]; will_do?: string[] }
 export type Person = { 
 /**
  * 1-based, in the order people first spoke.

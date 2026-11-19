@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Напомнянето е изтрито",
+    "reminderMarkedDone": "Отбелязано като готово",
+    "reminderMoved": "Напомнянето е преместено",
+    "reminderNotFound": "Не намерих това напомняне",
+    "reminderNotFoundHint": "Кажете дума от него, напр. „напомнянето за Прия“",
+    "reminderUndo": "Отмени",
+    "reminderOpen": "Отвори задачите",
+    "callPrompt": "Да запиша ли срещата?",
+    "callPromptApp": "{{app}} използва микрофона",
+    "callRecord": "Запиши",
+    "callNotNow": "Не сега",
+    "callTitle": "Разговор в {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} може да блокира 1 бърз клавиш",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "По хора",
+      "said": "Какво каза",
+      "agreed": "Съгласи се",
+      "willDo": "Ще направи",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

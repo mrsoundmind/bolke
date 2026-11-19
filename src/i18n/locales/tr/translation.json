@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Hatırlatıcı silindi",
+    "reminderMarkedDone": "Tamamlandı olarak işaretlendi",
+    "reminderMoved": "Hatırlatıcı taşındı",
+    "reminderNotFound": "O hatırlatıcı bulunamadı",
+    "reminderNotFoundHint": "İçinden bir kelime söyleyin, ör. “Priya hatırlatıcısı”",
+    "reminderUndo": "Geri al",
+    "reminderOpen": "Yapılacakları aç",
+    "callPrompt": "Bu toplantı kaydedilsin mi?",
+    "callPromptApp": "{{app}} mikrofonu kullanıyor",
+    "callRecord": "Kaydet",
+    "callNotNow": "Şimdi değil",
+    "callTitle": "{{app}} görüşmesi, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} 1 kısayolu engelliyor olabilir",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Kişiye göre",
+      "said": "Söyledikleri",
+      "agreed": "Kabul ettikleri",
+      "willDo": "Yapacakları",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

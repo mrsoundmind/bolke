@@ -5,6 +5,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod autostart;
 mod call_audio;
+mod call_watch;
 mod catalog;
 mod chinese_script;
 pub mod cli;
@@ -277,6 +278,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     summary_models.start_queued();
     tauri::async_runtime::spawn(commands::notes::rescue_meetings(app_handle.clone()));
     reminders::start(app_handle);
+    call_watch::start(app_handle);
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -888,6 +890,9 @@ pub fn run(cli_args: CliArgs) {
             commands::todos::type_reminder_instead,
             commands::todos::dismiss_reminder,
             commands::todos::open_todo,
+            commands::todos::undo_reminder_change,
+            commands::notes::record_call,
+            commands::notes::dismiss_call_prompt,
             commands::notes::toggle_idea_recording,
             commands::notes::import_audio_note,
             commands::notes::summarize_note,

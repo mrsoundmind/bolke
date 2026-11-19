@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Pengingat dihapus",
+    "reminderMarkedDone": "Ditandai selesai",
+    "reminderMoved": "Pengingat dipindah",
+    "reminderNotFound": "Pengingat itu tidak ditemukan",
+    "reminderNotFoundHint": "Sebut satu kata darinya, seperti “pengingat Priya”",
+    "reminderUndo": "Urungkan",
+    "reminderOpen": "Buka To-do",
+    "callPrompt": "Rekam rapat ini?",
+    "callPromptApp": "{{app}} sedang memakai mikrofon",
+    "callRecord": "Rekam",
+    "callNotNow": "Nanti saja",
+    "callTitle": "Panggilan {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} mungkin memblokir 1 pintasan",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Per orang",
+      "said": "Yang dikatakan",
+      "agreed": "Disetujui",
+      "willDo": "Akan dilakukan",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

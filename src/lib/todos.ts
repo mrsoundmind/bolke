@@ -6,6 +6,8 @@ export interface ReminderBubble {
   text: string;
   due_at: number | null;
   can_type: boolean;
+  /** What was just done to it by voice, with Undo; null for a new one. */
+  changed: "deleted" | "done" | "moved" | "not_found" | null;
 }
 
 const startOfDay = (d: Date) =>

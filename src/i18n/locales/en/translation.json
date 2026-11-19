@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Reminder deleted",
+    "reminderMarkedDone": "Marked done",
+    "reminderMoved": "Reminder moved",
+    "reminderNotFound": "Couldn't find that reminder",
+    "reminderNotFoundHint": "Say a word from it, like “the Priya reminder”",
+    "reminderUndo": "Undo",
+    "reminderOpen": "Open To-do",
+    "callPrompt": "Record this meeting?",
+    "callPromptApp": "{{app}} is using your microphone",
+    "callRecord": "Record",
+    "callNotNow": "Not now",
+    "callTitle": "{{app}} call, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "By person",
+      "said": "What they said",
+      "agreed": "Agreed",
+      "willDo": "Will do",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Przypomnienie usunięte",
+    "reminderMarkedDone": "Oznaczono jako zrobione",
+    "reminderMoved": "Przypomnienie przeniesione",
+    "reminderNotFound": "Nie znalazłem tego przypomnienia",
+    "reminderNotFoundHint": "Powiedz z niego słowo, np. „przypomnienie o Priyi”",
+    "reminderUndo": "Cofnij",
+    "reminderOpen": "Otwórz zadania",
+    "callPrompt": "Nagrać to spotkanie?",
+    "callPromptApp": "{{app}} używa mikrofonu",
+    "callRecord": "Nagraj",
+    "callNotNow": "Nie teraz",
+    "callTitle": "Rozmowa {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} może blokować 1 skrót",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Według osób",
+      "said": "Co powiedział(a)",
+      "agreed": "Uzgodnił(a)",
+      "willDo": "Zrobi",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

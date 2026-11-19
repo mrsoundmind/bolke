@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "리마인더 삭제됨",
+    "reminderMarkedDone": "완료로 표시됨",
+    "reminderMoved": "리마인더 시간 변경됨",
+    "reminderNotFound": "그 리마인더를 찾지 못했어요",
+    "reminderNotFoundHint": "“프리야 리마인더”처럼 그 안의 단어를 말해 주세요",
+    "reminderUndo": "실행 취소",
+    "reminderOpen": "할 일 열기",
+    "callPrompt": "이 회의를 녹음할까요?",
+    "callPromptApp": "{{app}}에서 마이크를 사용 중입니다",
+    "callRecord": "녹음",
+    "callNotNow": "나중에",
+    "callTitle": "{{app}} 통화, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}}이(가) 단축키 1개를 차단하고 있을 수 있습니다",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "사람별",
+      "said": "말한 내용",
+      "agreed": "동의한 내용",
+      "willDo": "할 일",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

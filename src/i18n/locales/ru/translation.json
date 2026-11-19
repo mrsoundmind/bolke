@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Напоминание удалено",
+    "reminderMarkedDone": "Отмечено как сделанное",
+    "reminderMoved": "Напоминание перенесено",
+    "reminderNotFound": "Не нашёл это напоминание",
+    "reminderNotFoundHint": "Скажите слово из него, например «напоминание про Прию»",
+    "reminderUndo": "Отменить",
+    "reminderOpen": "Открыть задачи",
+    "callPrompt": "Записать эту встречу?",
+    "callPromptApp": "{{app}} использует микрофон",
+    "callRecord": "Записать",
+    "callNotNow": "Не сейчас",
+    "callTitle": "Звонок в {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} может блокировать 1 сочетание клавиш",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "По людям",
+      "said": "Что сказал(а)",
+      "agreed": "Согласовано",
+      "willDo": "Сделает",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

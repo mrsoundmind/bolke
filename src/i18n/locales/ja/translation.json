@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "リマインダーを削除しました",
+    "reminderMarkedDone": "完了にしました",
+    "reminderMoved": "リマインダーを移動しました",
+    "reminderNotFound": "そのリマインダーが見つかりません",
+    "reminderNotFoundHint": "「プリヤのリマインダー」のように、その中の言葉を言ってください",
+    "reminderUndo": "元に戻す",
+    "reminderOpen": "To-do を開く",
+    "callPrompt": "この会議を録音しますか？",
+    "callPromptApp": "{{app}} がマイクを使っています",
+    "callRecord": "録音",
+    "callNotNow": "今はしない",
+    "callTitle": "{{app}} の通話、{{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} が1個のショートカットをブロックしている可能性があります",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "人ごと",
+      "said": "話したこと",
+      "agreed": "合意したこと",
+      "willDo": "やること",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

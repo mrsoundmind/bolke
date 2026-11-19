@@ -33,6 +33,7 @@ import {
   wordCount,
 } from "./noteUtils";
 import { NotePeople } from "./NotePeople";
+import { PersonCards } from "./PersonCards";
 import { listen } from "@tauri-apps/api/event";
 
 /** Typing pauses this long before the text is saved. */
@@ -408,6 +409,9 @@ export const NoteView: React.FC<NoteViewProps> = ({
                 ))
               )}
             </div>
+            {(summary.people ?? []).length > 0 && (
+              <PersonCards cards={summary.people ?? []} people={note.people} />
+            )}
           </div>
         ) : note.text_pending ? (
           <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">

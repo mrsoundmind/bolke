@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Нагадування видалено",
+    "reminderMarkedDone": "Позначено як виконане",
+    "reminderMoved": "Нагадування перенесено",
+    "reminderNotFound": "Не знайшов це нагадування",
+    "reminderNotFoundHint": "Скажіть слово з нього, наприклад «нагадування про Прію»",
+    "reminderUndo": "Скасувати",
+    "reminderOpen": "Відкрити завдання",
+    "callPrompt": "Записати цю зустріч?",
+    "callPromptApp": "{{app}} використовує мікрофон",
+    "callRecord": "Записати",
+    "callNotNow": "Не зараз",
+    "callTitle": "Дзвінок у {{app}}, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} може блокувати 1 комбінацію клавіш",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "За людьми",
+      "said": "Що сказав(ла)",
+      "agreed": "Погоджено",
+      "willDo": "Зробить",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

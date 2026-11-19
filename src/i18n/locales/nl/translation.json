@@ -1000,7 +1000,19 @@
     "reminderSnooze": "In 10 min",
     "reminderTypeInstead": "Type it instead",
     "reminderChange": "Change",
-    "reminderClose": "Close"
+    "reminderClose": "Close",
+    "reminderDeleted": "Herinnering verwijderd",
+    "reminderMarkedDone": "Gemarkeerd als klaar",
+    "reminderMoved": "Herinnering verplaatst",
+    "reminderNotFound": "Die herinnering niet gevonden",
+    "reminderNotFoundHint": "Zeg een woord eruit, zoals “de Priya-herinnering”",
+    "reminderUndo": "Ongedaan maken",
+    "reminderOpen": "To-do openen",
+    "callPrompt": "Deze vergadering opnemen?",
+    "callPromptApp": "{{app}} gebruikt je microfoon",
+    "callRecord": "Opnemen",
+    "callNotNow": "Niet nu",
+    "callTitle": "{{app}}-gesprek, {{date}}"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokkeert mogelijk 1 sneltoets",
@@ -1129,6 +1141,10 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
+      "byPerson": "Per persoon",
+      "said": "Wat ze zeiden",
+      "agreed": "Afgesproken",
+      "willDo": "Gaat doen",
       "failed": "Couldn't write the summary: {{error}}"
     },
     "changeShortcut": "Change shortcut",

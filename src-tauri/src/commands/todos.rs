@@ -102,6 +102,13 @@ pub fn dismiss_reminder(app: AppHandle) {
     reminders::dismiss(&app);
 }
 
+/// Undo in the bubble, after a reminder was changed by voice.
+#[tauri::command]
+#[specta::specta]
+pub fn undo_reminder_change(app: AppHandle) {
+    reminders::undo_change(&app);
+}
+
 /// Opens To-do in the main window, from the bubble.
 #[tauri::command]
 #[specta::specta]

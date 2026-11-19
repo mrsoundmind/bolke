@@ -752,6 +752,28 @@
   cursor: pointer;
   white-space: nowrap;
 }
+/* "Record this meeting?" (call_watch.rs): the same bubble, in the
+   dictation pill's blue. */
+.scard.compact.reminder.callprompt {
+  --s-surface: rgba(12, 18, 40, 0.95);
+  --s-border: rgba(143, 194, 255, 0.6);
+  box-shadow: inset 0 0 18px rgba(143, 194, 255, 0.12);
+}
+.callprompt .sbell {
+  background: #8fc2ff;
+  color: #0c1228;
+}
+.callprompt .sreminder-btn:hover {
+  background: rgba(143, 194, 255, 0.22);
+}
+.callprompt .sreminder-btn.main {
+  background: #8fc2ff;
+  border-color: #8fc2ff;
+  color: #0c1228;
+}
+.callprompt .sreminder-btn:focus-visible {
+  outline-color: #b9d8ff;
+}
 .sreminder-btn:hover {
   background: rgba(246, 203, 152, 0.22);
 }
