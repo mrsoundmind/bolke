@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "會議欄目",
+      "summary": "摘要",
+      "people": "參與者",
+      "transcript": "全文"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "依人",
-      "said": "說了什麼",
+      "inShort": "簡要",
+      "todo": "待辦",
+      "addTodo": "加入待辦",
+      "added": "已加入",
+      "mainPoints": "重點",
       "agreed": "同意了",
       "willDo": "要做的事",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "這是誰？命名",
+      "talked": "發言 {{time}} · 佔會議 {{percent}}%",
+      "readWords": "查看發言 · {{count}} 次 ›",
       "noSummary": "還沒有 {{name}} 的摘要，會和會議摘要一起產生。",
       "tooLittle": "{{name}} 說得太少，無法摘要。",
       "writeSummary": "產生摘要",

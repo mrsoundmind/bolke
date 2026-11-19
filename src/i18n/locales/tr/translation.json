@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Toplantı bölümleri",
+      "summary": "Özet",
+      "people": "Kişiler",
+      "transcript": "Döküm"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Kişiye göre",
-      "said": "Söyledikleri",
+      "inShort": "Kısaca",
+      "todo": "Yapılacaklar",
+      "addTodo": "Yapılacaklara ekle",
+      "added": "Eklendi",
+      "mainPoints": "Ana noktalar",
       "agreed": "Kabul ettikleri",
       "willDo": "Yapacakları",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Bu kim? Ad verin",
+      "talked": "{{time}} konuştu · toplantının %{{percent}}'i",
+      "readWords": "Söylediklerini oku · {{count}} kez ›",
       "noSummary": "{{name}} için henüz özet yok. Toplantı özetiyle birlikte yazılır.",
       "tooLittle": "{{name}} özet için çok az konuştu.",
       "writeSummary": "Özetini yaz",

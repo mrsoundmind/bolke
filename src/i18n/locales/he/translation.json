@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "חלקי הפגישה",
+      "summary": "סיכום",
+      "people": "אנשים",
+      "transcript": "תמליל"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "לפי אדם",
-      "said": "מה אמר/ה",
+      "inShort": "בקצרה",
+      "todo": "משימות",
+      "addTodo": "הוסף למשימות",
+      "added": "נוסף",
+      "mainPoints": "נקודות עיקריות",
       "agreed": "הסכים/ה",
       "willDo": "יעשה/תעשה",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "מי זה? תנו שם",
+      "talked": "דיבר/ה {{time}} · {{percent}}% מהפגישה",
+      "readWords": "קרא את דבריו · {{count}} פעמים ›",
       "noSummary": "עדיין אין סיכום עבור {{name}}. הוא נכתב עם סיכום הפגישה.",
       "tooLittle": "{{name}} אמר/ה מעט מדי לסיכום.",
       "writeSummary": "כתוב סיכום",

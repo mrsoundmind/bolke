@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Části schůzky",
+      "summary": "Shrnutí",
+      "people": "Lidé",
+      "transcript": "Přepis"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Podle osob",
-      "said": "Co řekl/a",
+      "inShort": "Ve zkratce",
+      "todo": "Úkoly",
+      "addTodo": "Přidat do úkolů",
+      "added": "Přidáno",
+      "mainPoints": "Hlavní body",
       "agreed": "Souhlasil/a",
       "willDo": "Udělá",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Kdo to je? Pojmenujte",
+      "talked": "Mluvil/a {{time}} · {{percent}} % schůzky",
+      "readWords": "Číst jejich slova · {{count}}× ›",
       "noSummary": "Shrnutí pro {{name}} zatím není. Píše se se shrnutím schůzky.",
       "tooLittle": "{{name}} řekl/a na shrnutí příliš málo.",
       "writeSummary": "Napsat shrnutí",

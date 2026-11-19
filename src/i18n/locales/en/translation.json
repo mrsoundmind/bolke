@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Meeting sections",
+      "summary": "Summary",
+      "people": "People",
+      "transcript": "Transcript"
+    },
     "title": "Notes",
     "subtitle": "Your ideas and written notes.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "By person",
-      "said": "What they said",
+      "inShort": "In short",
+      "todo": "To do",
+      "addTodo": "Add to To-do",
+      "added": "Added",
+      "mainPoints": "Main points",
       "agreed": "Agreed",
       "willDo": "Will do",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Who is this? Name them",
+      "talked": "Talked {{time}} · {{percent}}% of the meeting",
+      "readWords": "Read their words · {{count}} times they spoke ›",
       "noSummary": "No summary for {{name}} yet. It's written with the meeting's summary.",
       "tooLittle": "{{name}} said too little for a summary.",
       "writeSummary": "Write their summary",

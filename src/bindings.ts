@@ -1859,7 +1859,11 @@ export type PersonSummary = {
 /**
  * The person's id in the note's `people`.
  */
-person: number; said?: string[]; agreed?: string[]; will_do?: string[] }
+person: number; 
+/**
+ * One sentence on what they mainly cared about or argued.
+ */
+gist?: string; said?: string[]; agreed?: string[]; will_do?: string[] }
 export type Person = { 
 /**
  * 1-based, in the order people first spoke.

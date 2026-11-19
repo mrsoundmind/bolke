@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "회의 섹션",
+      "summary": "요약",
+      "people": "참석자",
+      "transcript": "전체 기록"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "사람별",
-      "said": "말한 내용",
+      "inShort": "요약",
+      "todo": "할 일",
+      "addTodo": "할 일에 추가",
+      "added": "추가됨",
+      "mainPoints": "핵심 내용",
       "agreed": "동의한 내용",
       "willDo": "할 일",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "누구인가요? 이름 지정",
+      "talked": "{{time}} 발언 · 회의의 {{percent}}%",
+      "readWords": "발언 읽기 · {{count}}회 ›",
       "noSummary": "{{name}}의 요약이 아직 없어요. 회의 요약과 함께 작성돼요.",
       "tooLittle": "{{name}}의 발언이 너무 적어 요약할 수 없어요.",
       "writeSummary": "요약 작성",

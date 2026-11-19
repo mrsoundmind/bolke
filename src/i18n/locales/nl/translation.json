@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Onderdelen van de vergadering",
+      "summary": "Samenvatting",
+      "people": "Mensen",
+      "transcript": "Transcript"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Per persoon",
-      "said": "Wat ze zeiden",
+      "inShort": "In het kort",
+      "todo": "Te doen",
+      "addTodo": "Aan To-do toevoegen",
+      "added": "Toegevoegd",
+      "mainPoints": "Hoofdpunten",
       "agreed": "Afgesproken",
       "willDo": "Gaat doen",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Wie is dit? Geef een naam",
+      "talked": "Sprak {{time}} · {{percent}}% van de vergadering",
+      "readWords": "Lees wat ze zeiden · {{count}} keer ›",
       "noSummary": "Nog geen samenvatting voor {{name}}. Die komt met de samenvatting van de vergadering.",
       "tooLittle": "{{name}} zei te weinig voor een samenvatting.",
       "writeSummary": "Samenvatting schrijven",

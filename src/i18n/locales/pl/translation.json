@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Części spotkania",
+      "summary": "Podsumowanie",
+      "people": "Osoby",
+      "transcript": "Transkrypcja"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Według osób",
-      "said": "Co powiedział(a)",
+      "inShort": "W skrócie",
+      "todo": "Do zrobienia",
+      "addTodo": "Dodaj do zadań",
+      "added": "Dodano",
+      "mainPoints": "Główne punkty",
       "agreed": "Uzgodnił(a)",
       "willDo": "Zrobi",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Kto to? Nadaj imię",
+      "talked": "Mówił(a) {{time}} · {{percent}}% spotkania",
+      "readWords": "Czytaj wypowiedzi · {{count}} razy ›",
       "noSummary": "Brak jeszcze podsumowania dla {{name}}. Powstaje z podsumowaniem spotkania.",
       "tooLittle": "{{name}} powiedział(a) za mało na podsumowanie.",
       "writeSummary": "Napisz podsumowanie",

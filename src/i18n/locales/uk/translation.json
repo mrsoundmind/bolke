@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Розділи зустрічі",
+      "summary": "Підсумок",
+      "people": "Люди",
+      "transcript": "Розшифровка"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "За людьми",
-      "said": "Що сказав(ла)",
+      "inShort": "Коротко",
+      "todo": "Завдання",
+      "addTodo": "Додати до завдань",
+      "added": "Додано",
+      "mainPoints": "Головне",
       "agreed": "Погоджено",
       "willDo": "Зробить",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Хто це? Назвати",
+      "talked": "Говорив(ла) {{time}} · {{percent}}% зустрічі",
+      "readWords": "Читати репліки · {{count}} разів ›",
       "noSummary": "Підсумку для {{name}} ще немає. Він пишеться разом із підсумком зустрічі.",
       "tooLittle": "{{name}} сказав(ла) замало для підсумку.",
       "writeSummary": "Написати підсумок",

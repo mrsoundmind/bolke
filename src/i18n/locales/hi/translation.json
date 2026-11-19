@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "मीटिंग के हिस्से",
+      "summary": "सारांश",
+      "people": "लोग",
+      "transcript": "पूरा पाठ"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "हर व्यक्ति",
-      "said": "क्या कहा",
+      "inShort": "संक्षेप में",
+      "todo": "करना है",
+      "addTodo": "टू-डू में जोड़ें",
+      "added": "जोड़ा गया",
+      "mainPoints": "मुख्य बातें",
       "agreed": "किस पर सहमति",
       "willDo": "क्या करेंगे",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "यह कौन है? नाम दें",
+      "talked": "{{time}} बोले · मीटिंग का {{percent}}%",
+      "readWords": "उनकी बातें पढ़ें · {{count}} बार ›",
       "noSummary": "{{name}} का सारांश अभी नहीं है। यह मीटिंग के सारांश के साथ लिखा जाता है।",
       "tooLittle": "{{name}} ने सारांश के लिए बहुत कम बोला।",
       "writeSummary": "उनका सारांश लिखें",

@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Mötets delar",
+      "summary": "Sammanfattning",
+      "people": "Personer",
+      "transcript": "Utskrift"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Per person",
-      "said": "Vad de sa",
+      "inShort": "Kort sagt",
+      "todo": "Att göra",
+      "addTodo": "Lägg till i To-do",
+      "added": "Tillagd",
+      "mainPoints": "Huvudpunkter",
       "agreed": "Kom överens om",
       "willDo": "Ska göra",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Vem är det? Namnge",
+      "talked": "Pratade {{time}} · {{percent}} % av mötet",
+      "readWords": "Läs vad de sa · {{count}} gånger ›",
       "noSummary": "Ingen sammanfattning för {{name}} än. Den skrivs med mötets sammanfattning.",
       "tooLittle": "{{name}} sa för lite för en sammanfattning.",
       "writeSummary": "Skriv sammanfattningen",

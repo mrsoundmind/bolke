@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "أقسام الاجتماع",
+      "summary": "الملخص",
+      "people": "الأشخاص",
+      "transcript": "النص الكامل"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "حسب الشخص",
-      "said": "ما قاله",
+      "inShort": "باختصار",
+      "todo": "المهام",
+      "addTodo": "أضف إلى المهام",
+      "added": "تمت الإضافة",
+      "mainPoints": "النقاط الرئيسية",
       "agreed": "وافق على",
       "willDo": "سيفعل",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "من هذا؟ سمّه",
+      "talked": "تحدث {{time}} · {{percent}}% من الاجتماع",
+      "readWords": "اقرأ كلامه · تحدث {{count}} مرة ›",
       "noSummary": "لا يوجد ملخص لـ {{name}} بعد. يُكتب مع ملخص الاجتماع.",
       "tooLittle": "تحدث {{name}} قليلاً جداً لكتابة ملخص.",
       "writeSummary": "اكتب ملخصه",

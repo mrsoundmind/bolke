@@ -197,5 +197,32 @@ const PERSON_COLORS = [
   "#7FD4F0",
   "#E8D27A",
 ];
+const plainWords = (text: string) =>
+  text
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, ""))
+    .filter((w) => w.length > 2);
+
+/** Who took on an action point: the person whose "Will do" shares most of
+ * its words, if any shares at least half. */
+export const ownerOf = (
+  text: string,
+  cards: { person: number; will_do?: string[] }[],
+): number | null => {
+  const words = plainWords(text);
+  if (words.length === 0) return null;
+  let best: { person: number; score: number } | null = null;
+  for (const card of cards) {
+    for (const item of card.will_do ?? []) {
+      const theirs = new Set(plainWords(item));
+      const score = words.filter((w) => theirs.has(w)).length / words.length;
+      if (score >= 0.5 && (!best || score > best.score))
+        best = { person: card.person, score };
+    }
+  }
+  return best?.person ?? null;
+};
+
 export const colorOf = (id: number) =>
   PERSON_COLORS[(id - 1) % PERSON_COLORS.length];

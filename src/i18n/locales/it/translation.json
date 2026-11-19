@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Sezioni della riunione",
+      "summary": "Riepilogo",
+      "people": "Persone",
+      "transcript": "Trascrizione"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Per persona",
-      "said": "Cosa ha detto",
+      "inShort": "In breve",
+      "todo": "Da fare",
+      "addTodo": "Aggiungi alle attività",
+      "added": "Aggiunto",
+      "mainPoints": "Punti principali",
       "agreed": "Ha concordato",
       "willDo": "Farà",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Chi è? Dagli un nome",
+      "talked": "Ha parlato {{time}} · {{percent}}% della riunione",
+      "readWords": "Leggi cosa ha detto · {{count}} volte ›",
       "noSummary": "Ancora nessun riassunto per {{name}}. Si scrive con quello della riunione.",
       "tooLittle": "{{name}} ha parlato troppo poco per un riassunto.",
       "writeSummary": "Scrivi il riassunto",

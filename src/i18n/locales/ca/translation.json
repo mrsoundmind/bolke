@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Seccions de la reunió",
+      "summary": "Resum",
+      "people": "Persones",
+      "transcript": "Transcripció"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Per persona",
-      "said": "Què ha dit",
+      "inShort": "En resum",
+      "todo": "Per fer",
+      "addTodo": "Afegeix a Tasques",
+      "added": "Afegit",
+      "mainPoints": "Punts principals",
       "agreed": "Ha acordat",
       "willDo": "Farà",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Qui és? Posa-li nom",
+      "talked": "Ha parlat {{time}} · {{percent}}% de la reunió",
+      "readWords": "Llegeix què ha dit · {{count}} vegades ›",
       "noSummary": "Encara no hi ha resum de {{name}}. S'escriu amb el resum de la reunió.",
       "tooLittle": "{{name}} ha dit massa poc per fer-ne un resum.",
       "writeSummary": "Escriu-ne el resum",

@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Bagian rapat",
+      "summary": "Ringkasan",
+      "people": "Orang",
+      "transcript": "Transkrip"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Per orang",
-      "said": "Yang dikatakan",
+      "inShort": "Singkatnya",
+      "todo": "Yang harus dilakukan",
+      "addTodo": "Tambah ke To-do",
+      "added": "Ditambahkan",
+      "mainPoints": "Poin utama",
       "agreed": "Disetujui",
       "willDo": "Akan dilakukan",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Siapa ini? Beri nama",
+      "talked": "Bicara {{time}} · {{percent}}% dari rapat",
+      "readWords": "Baca ucapannya · {{count}} kali ›",
       "noSummary": "Belum ada ringkasan untuk {{name}}. Ditulis bersama ringkasan rapat.",
       "tooLittle": "{{name}} bicara terlalu sedikit untuk diringkas.",
       "writeSummary": "Tulis ringkasannya",

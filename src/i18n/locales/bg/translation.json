@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Части на срещата",
+      "summary": "Резюме",
+      "people": "Хора",
+      "transcript": "Стенограма"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "По хора",
-      "said": "Какво каза",
+      "inShort": "Накратко",
+      "todo": "Задачи",
+      "addTodo": "Добави в задачите",
+      "added": "Добавено",
+      "mainPoints": "Основни точки",
       "agreed": "Съгласи се",
       "willDo": "Ще направи",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Кой е това? Дайте име",
+      "talked": "Говори {{time}} · {{percent}}% от срещата",
+      "readWords": "Прочети думите му · {{count}} пъти ›",
       "noSummary": "Още няма резюме за {{name}}. Пише се заедно с резюмето на срещата.",
       "tooLittle": "{{name}} каза твърде малко за резюме.",
       "writeSummary": "Напиши резюмето",

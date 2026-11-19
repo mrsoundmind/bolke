@@ -33,7 +33,7 @@ import {
   wordCount,
 } from "./noteUtils";
 import { NotePeople } from "./NotePeople";
-import { PersonCards } from "./PersonCards";
+import { colorOf, ownerOf } from "./noteUtils";
 import { listen } from "@tauri-apps/api/event";
 
 /** Typing pauses this long before the text is saved. */
@@ -75,6 +75,14 @@ export const NoteView: React.FC<NoteViewProps> = ({
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [summaryState, setSummaryState] = useState<SummaryState>("idle");
+  // A meeting's page (design/wireframes/MeetingPage.dc.html) is in tabs.
+  const [tab, setTab] = useState<"summary" | "people" | "transcript">(
+    "summary",
+  );
+  const [focus, setFocus] = useState<{ person: number; n: number } | null>(
+    null,
+  );
+  const [added, setAdded] = useState<number[]>([]);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summarySource, setSummarySource] = useState<SummarySource | null>(
     null,
@@ -234,6 +242,7 @@ export const NoteView: React.FC<NoteViewProps> = ({
   if (!note) return null;
 
   const kindLabel = t(`notes.kind.${note.kind}`);
+  const isMeeting = note.kind === "meeting";
   const meta = [
     formatNoteDate(note.created_at, i18n.language),
     formatDuration(note.duration_ms, t),
@@ -336,243 +345,328 @@ export const NoteView: React.FC<NoteViewProps> = ({
         </div>
       )}
 
-      <NotePeople
-        note={note}
-        job={job}
-        onNote={setNote}
-        onSummarize={summarize}
-        summarizing={summaryState === "writing"}
-      />
-
-      <section
-        aria-labelledby="note-summary"
-        className="flex flex-col gap-[14px] px-6 py-[22px] rounded-[24px] bg-linear-160 from-[#1d3fa8] to-[#10225e] border border-[rgba(140,170,255,0.25)]"
-      >
-        <div className="flex justify-between items-center gap-3 flex-wrap">
-          <h2
-            id="note-summary"
-            className="m-0 flex items-center gap-2 text-[15px] font-medium text-[#eaf0ff]"
-          >
-            <Sparkles size={16} aria-hidden="true" />
-            {t("notes.ai.title")}
-          </h2>
-          {summary && summaryState !== "writing" && (
-            <button type="button" className={lightBtn} onClick={summarize}>
-              {t("notes.ai.again")}
+      {isMeeting && (
+        <div
+          role="tablist"
+          aria-label={t("notes.tabs.label")}
+          className="inline-flex self-start gap-1 p-1 rounded-full bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.12)]"
+        >
+          {(["summary", "people", "transcript"] as const).map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+              className={`min-h-[34px] px-[18px] rounded-full text-[14px] font-medium cursor-pointer ${
+                tab === id
+                  ? "bg-[rgba(143,194,255,0.16)] text-white"
+                  : "text-[#9aa7c7] hover:text-white"
+              }`}
+            >
+              {t(`notes.tabs.${id}`)}
             </button>
-          )}
+          ))}
         </div>
+      )}
 
-        {summaryState === "writing" ? (
-          <div className="flex flex-col gap-1">
-            <p className="m-0 text-[14px] text-[#d6e1ff] animate-pulse">
-              {summaryPart
-                ? t("notes.ai.writingPart", summaryPart)
-                : t("notes.ai.writing")}
-            </p>
-            {summaryPart && (
-              <p className="m-0 text-[13px] text-[#a9bdeb]">
-                {t("notes.ai.slowHint")}
-              </p>
+      {(!isMeeting || tab !== "summary") && (
+        <NotePeople
+          note={note}
+          job={job}
+          onNote={setNote}
+          onSummarize={summarize}
+          summarizing={summaryState === "writing"}
+          mode={isMeeting && tab === "people" ? "people" : "transcript"}
+          focus={focus}
+          onReadWords={(person) => {
+            setFocus({ person, n: Date.now() });
+            setTab("transcript");
+          }}
+        />
+      )}
+
+      {(!isMeeting || tab === "summary") && (
+        <section
+          aria-labelledby="note-summary"
+          className="flex flex-col gap-[14px] px-6 py-[22px] rounded-[24px] bg-linear-160 from-[#1d3fa8] to-[#10225e] border border-[rgba(140,170,255,0.25)]"
+        >
+          <div className="flex justify-between items-center gap-3 flex-wrap">
+            <h2
+              id="note-summary"
+              className="m-0 flex items-center gap-2 text-[15px] font-medium text-[#eaf0ff]"
+            >
+              <Sparkles size={16} aria-hidden="true" />
+              {t("notes.ai.title")}
+            </h2>
+            {summary && summaryState !== "writing" && (
+              <button type="button" className={lightBtn} onClick={summarize}>
+                {t("notes.ai.again")}
+              </button>
             )}
           </div>
-        ) : summary ? (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[22px]">
-            <div className="flex flex-col gap-2">
-              <span className="text-[12px] font-semibold tracking-[0.06em] uppercase text-[#a9c2ff]">
-                {t("notes.ai.summary")}
-              </span>
-              <p className="m-0 text-[14px] leading-[1.6] text-[#eaf0ff] select-text whitespace-pre-wrap">
-                {summary.summary}
+
+          {summaryState === "writing" ? (
+            <div className="flex flex-col gap-1">
+              <p className="m-0 text-[14px] text-[#d6e1ff] animate-pulse">
+                {summaryPart
+                  ? t("notes.ai.writingPart", summaryPart)
+                  : t("notes.ai.writing")}
               </p>
-            </div>
-            <div className="flex flex-col gap-[10px]">
-              <span className="text-[12px] font-semibold tracking-[0.06em] uppercase text-[#a9c2ff]">
-                {t("notes.ai.actions")}
-              </span>
-              {(summary.action_points ?? []).length === 0 ? (
-                <p className="m-0 text-[14px] text-[#d6e1ff]">
-                  {t("notes.ai.noActions")}
+              {summaryPart && (
+                <p className="m-0 text-[13px] text-[#a9bdeb]">
+                  {t("notes.ai.slowHint")}
                 </p>
-              ) : (
-                (summary.action_points ?? []).map((point, index) => (
-                  <label
-                    key={index}
-                    className="flex items-start gap-[10px] text-[14px] leading-[1.5] text-[#e2e9fa] cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={point.done}
-                      onChange={(e) => tick(index, e.target.checked)}
-                      className="w-[18px] h-[18px] mt-[2px] shrink-0 accent-[#2f6bff]"
-                    />
-                    <span
-                      className={point.done ? "line-through opacity-70" : ""}
-                    >
-                      {point.text}
-                    </span>
-                  </label>
-                ))
               )}
             </div>
-            {(summary.people ?? []).length > 0 && (
-              <PersonCards cards={summary.people ?? []} people={note.people} />
-            )}
-          </div>
-        ) : note.text_pending ? (
-          <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
-            {t("notes.ai.notReady")}
-          </p>
-        ) : downloading ? (
-          <div className="flex flex-col gap-3">
-            <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
-              {t(
-                downloading.queued ? "notes.ai.queued" : "notes.ai.downloading",
-              )}
-            </p>
-            <div className="flex items-center gap-[14px] flex-wrap">
-              <div
-                role="progressbar"
-                aria-label={t("notes.ai.downloadLabel")}
-                aria-valuenow={download.percent}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                className="flex-[1_1_200px] h-[6px] rounded-[3px] bg-[rgba(5,10,30,0.45)] overflow-hidden"
-              >
-                <span
-                  className="block h-full rounded-[3px] bg-linear-to-r from-[#8fc2ff] to-white transition-[width]"
-                  style={{ width: `${download.percent}%` }}
-                />
+          ) : summary ? (
+            <div
+              className={
+                isMeeting
+                  ? "flex flex-col gap-[22px]"
+                  : "grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[22px]"
+              }
+            >
+              <div className="flex flex-col gap-2">
+                <span className="text-[12px] font-semibold tracking-[0.06em] uppercase text-[#a9c2ff]">
+                  {isMeeting ? t("notes.ai.inShort") : t("notes.ai.summary")}
+                </span>
+                <p
+                  className={`m-0 leading-[1.6] text-[#eaf0ff] select-text whitespace-pre-wrap ${
+                    isMeeting ? "text-[16px]" : "text-[14px]"
+                  }`}
+                >
+                  {summary.summary}
+                </p>
               </div>
-              <span className="text-[13px] text-[#c3d2f5] tabular-nums whitespace-nowrap">
-                {t("notes.ai.downloadProgress", {
-                  percent: download.percent,
-                  done: formatBytes(download.done),
-                  total: formatBytes(downloading.size_bytes),
+              <div className="flex flex-col gap-[10px]">
+                <span className="text-[12px] font-semibold tracking-[0.06em] uppercase text-[#a9c2ff]">
+                  {isMeeting ? t("notes.ai.todo") : t("notes.ai.actions")}
+                </span>
+                {(summary.action_points ?? []).length === 0 ? (
+                  <p className="m-0 text-[14px] text-[#d6e1ff]">
+                    {t("notes.ai.noActions")}
+                  </p>
+                ) : (
+                  (summary.action_points ?? []).map((point, index) => {
+                    const owner = ownerOf(point.text, summary.people ?? []);
+                    const ownerName =
+                      owner == null
+                        ? null
+                        : (note.people?.people.find((p) => p.id === owner)
+                            ?.name ??
+                          t("notes.people.person", { number: owner }));
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-start gap-[10px] flex-wrap text-[14px] leading-[1.5] text-[#e2e9fa]"
+                      >
+                        <label className="flex items-start gap-[10px] flex-[1_1_240px] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={point.done}
+                            onChange={(e) => tick(index, e.target.checked)}
+                            className="w-[18px] h-[18px] mt-[2px] shrink-0 accent-[#2f6bff]"
+                          />
+                          <span
+                            className={
+                              point.done ? "line-through opacity-70" : ""
+                            }
+                          >
+                            {point.text}
+                          </span>
+                        </label>
+                        {ownerName && owner != null && (
+                          <span className="inline-flex items-center gap-[6px] px-[10px] py-[2px] rounded-full bg-[rgba(140,170,255,0.1)] text-[12.5px] text-[#c9d4f2]">
+                            <span
+                              aria-hidden="true"
+                              className="w-2 h-2 rounded-full"
+                              style={{ background: colorOf(owner) }}
+                            />
+                            {ownerName}
+                          </span>
+                        )}
+                        {isMeeting && (
+                          <button
+                            type="button"
+                            disabled={added.includes(index)}
+                            onClick={async () => {
+                              const r = await commands.addTodo(point.text);
+                              if (r.status === "ok")
+                                setAdded((a) => [...a, index]);
+                            }}
+                            className="min-h-7 px-3 rounded-full border border-[rgba(140,170,255,0.25)] text-[12.5px] font-medium text-[#8fb4ff] cursor-pointer hover:text-white disabled:opacity-60 disabled:cursor-default"
+                          >
+                            {added.includes(index)
+                              ? t("notes.ai.added")
+                              : t("notes.ai.addTodo")}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          ) : note.text_pending ? (
+            <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
+              {t("notes.ai.notReady")}
+            </p>
+          ) : downloading ? (
+            <div className="flex flex-col gap-3">
+              <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
+                {t(
+                  downloading.queued
+                    ? "notes.ai.queued"
+                    : "notes.ai.downloading",
+                )}
+              </p>
+              <div className="flex items-center gap-[14px] flex-wrap">
+                <div
+                  role="progressbar"
+                  aria-label={t("notes.ai.downloadLabel")}
+                  aria-valuenow={download.percent}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  className="flex-[1_1_200px] h-[6px] rounded-[3px] bg-[rgba(5,10,30,0.45)] overflow-hidden"
+                >
+                  <span
+                    className="block h-full rounded-[3px] bg-linear-to-r from-[#8fc2ff] to-white transition-[width]"
+                    style={{ width: `${download.percent}%` }}
+                  />
+                </div>
+                <span className="text-[13px] text-[#c3d2f5] tabular-nums whitespace-nowrap">
+                  {t("notes.ai.downloadProgress", {
+                    percent: download.percent,
+                    done: formatBytes(download.done),
+                    total: formatBytes(downloading.size_bytes),
+                  })}
+                </span>
+                <button
+                  type="button"
+                  className={lightBtn}
+                  onClick={() =>
+                    commands.cancelSummaryModelDownload(downloading.id)
+                  }
+                >
+                  {t("notes.ai.cancel")}
+                </button>
+              </div>
+            </div>
+          ) : summarySource === "none" && recommended ? (
+            <div className="flex flex-col gap-3 items-start">
+              <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
+                {t("notes.ai.introDownload", {
+                  size: formatBytes(recommended.size_bytes),
                 })}
-              </span>
+              </p>
+              <div className="flex items-center gap-4 flex-wrap">
+                <button
+                  type="button"
+                  className={primaryBtn}
+                  onClick={() => downloadSummaryModel(recommended.id, t)}
+                >
+                  <Download size={16} aria-hidden="true" />
+                  {t("notes.ai.download", {
+                    size: formatBytes(recommended.size_bytes),
+                  })}
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenPostProcess}
+                  className="text-[13px] font-medium text-[#bfd2ff] underline underline-offset-[3px] cursor-pointer hover:text-white"
+                >
+                  {t("notes.ai.useService")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 items-start">
+              <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
+                {summarySource === "local_model"
+                  ? t("notes.ai.introLocal")
+                  : summarySource === "apple_intelligence"
+                    ? t("notes.ai.introOnDevice")
+                    : t("notes.ai.intro")}
+              </p>
               <button
                 type="button"
                 className={lightBtn}
-                onClick={() =>
-                  commands.cancelSummaryModelDownload(downloading.id)
-                }
+                onClick={summarize}
+                disabled={!text.trim()}
               >
-                {t("notes.ai.cancel")}
+                {t("notes.ai.write")}
               </button>
             </div>
-          </div>
-        ) : summarySource === "none" && recommended ? (
-          <div className="flex flex-col gap-3 items-start">
-            <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
-              {t("notes.ai.introDownload", {
-                size: formatBytes(recommended.size_bytes),
-              })}
-            </p>
-            <div className="flex items-center gap-4 flex-wrap">
-              <button
-                type="button"
-                className={primaryBtn}
-                onClick={() => downloadSummaryModel(recommended.id, t)}
-              >
-                <Download size={16} aria-hidden="true" />
-                {t("notes.ai.download", {
-                  size: formatBytes(recommended.size_bytes),
-                })}
-              </button>
-              <button
-                type="button"
-                onClick={onOpenPostProcess}
-                className="text-[13px] font-medium text-[#bfd2ff] underline underline-offset-[3px] cursor-pointer hover:text-white"
-              >
-                {t("notes.ai.useService")}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3 items-start">
-            <p className="m-0 text-[14px] leading-[1.55] text-[#d6e1ff]">
-              {summarySource === "local_model"
-                ? t("notes.ai.introLocal")
-                : summarySource === "apple_intelligence"
-                  ? t("notes.ai.introOnDevice")
-                  : t("notes.ai.intro")}
-            </p>
-            <button
-              type="button"
-              className={lightBtn}
-              onClick={summarize}
-              disabled={!text.trim()}
-            >
-              {t("notes.ai.write")}
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* With nothing to write it, the card above offers the download. */}
-        {summaryState === "failed" && !noProvider && (
-          <p role="alert" className="m-0 text-[13px] text-[#ffd4cf]">
-            {t("notes.ai.failed", { error: summaryError })}
-          </p>
-        )}
-      </section>
+          {/* With nothing to write it, the card above offers the download. */}
+          {summaryState === "failed" && !noProvider && (
+            <p role="alert" className="m-0 text-[13px] text-[#ffd4cf]">
+              {t("notes.ai.failed", { error: summaryError })}
+            </p>
+          )}
+        </section>
+      )}
 
-      <div className="flex flex-col gap-2">
-        <div className="flex justify-between items-center gap-3">
-          <label htmlFor="note-text" className="text-[14px] font-medium">
-            {t("notes.note.fullText")}
-          </label>
-          <span className="text-[12px] text-ink-3">
-            {note.text_pending
-              ? ""
-              : saving
-                ? t("notes.note.saving")
-                : t("notes.note.saved")}
-          </span>
-        </div>
-        {note.text_pending ? (
-          <div className="flex flex-col gap-3 items-start px-5 py-4 rounded-[20px] bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.12)]">
-            <div className="flex items-center gap-3 w-full">
-              {job && (
-                <span className="flex-[0_1_260px] h-[6px] rounded-[3px] bg-[#1a2244] overflow-hidden">
-                  <span
-                    className="block h-full rounded-[3px] bg-linear-to-r from-[#3a78ff] to-[#8fc2ff] transition-[width]"
-                    style={{ width: `${percent}%` }}
-                  />
+      {(!isMeeting || (tab === "transcript" && !note.people)) && (
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between items-center gap-3">
+            <label htmlFor="note-text" className="text-[14px] font-medium">
+              {t("notes.note.fullText")}
+            </label>
+            <span className="text-[12px] text-ink-3">
+              {note.text_pending
+                ? ""
+                : saving
+                  ? t("notes.note.saving")
+                  : t("notes.note.saved")}
+            </span>
+          </div>
+          {note.text_pending ? (
+            <div className="flex flex-col gap-3 items-start px-5 py-4 rounded-[20px] bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.12)]">
+              <div className="flex items-center gap-3 w-full">
+                {job && (
+                  <span className="flex-[0_1_260px] h-[6px] rounded-[3px] bg-[#1a2244] overflow-hidden">
+                    <span
+                      className="block h-full rounded-[3px] bg-linear-to-r from-[#3a78ff] to-[#8fc2ff] transition-[width]"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </span>
+                )}
+                <span className="text-[13px] text-ink-2">
+                  {job?.state === "running"
+                    ? t("notes.writing", { percent })
+                    : job
+                      ? t("notes.waiting")
+                      : t("notes.note.notWritten")}
                 </span>
+              </div>
+              {!job && note.entry_id != null && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    commands.retryHistoryEntryTranscription(note.entry_id!)
+                  }
+                  className="inline-flex items-center gap-2 min-h-9 px-4 rounded-full border border-edge text-[13px] font-medium text-text cursor-pointer hover:border-[rgba(140,170,255,0.4)]"
+                >
+                  <RotateCcw size={14} aria-hidden="true" />
+                  {t("notes.note.tryAgain")}
+                </button>
               )}
-              <span className="text-[13px] text-ink-2">
-                {job?.state === "running"
-                  ? t("notes.writing", { percent })
-                  : job
-                    ? t("notes.waiting")
-                    : t("notes.note.notWritten")}
-              </span>
             </div>
-            {!job && note.entry_id != null && (
-              <button
-                type="button"
-                onClick={() =>
-                  commands.retryHistoryEntryTranscription(note.entry_id!)
-                }
-                className="inline-flex items-center gap-2 min-h-9 px-4 rounded-full border border-edge text-[13px] font-medium text-text cursor-pointer hover:border-[rgba(140,170,255,0.4)]"
-              >
-                <RotateCcw size={14} aria-hidden="true" />
-                {t("notes.note.tryAgain")}
-              </button>
-            )}
-          </div>
-        ) : (
-          <textarea
-            id="note-text"
-            value={text}
-            onChange={(e) => onTextChange(e.target.value)}
-            placeholder={t("notes.note.textPlaceholder")}
-            rows={14}
-            className="w-full min-h-[260px] resize-y rounded-[20px] border border-[rgba(140,170,255,0.18)] bg-[#0c1226] px-5 py-4 text-[15px] leading-[1.65] text-text placeholder:text-ink-3 select-text focus:outline-none focus:border-accent-soft"
-          />
-        )}
-      </div>
+          ) : (
+            <textarea
+              id="note-text"
+              value={text}
+              onChange={(e) => onTextChange(e.target.value)}
+              placeholder={t("notes.note.textPlaceholder")}
+              rows={14}
+              className="w-full min-h-[260px] resize-y rounded-[20px] border border-[rgba(140,170,255,0.18)] bg-[#0c1226] px-5 py-4 text-[15px] leading-[1.65] text-text placeholder:text-ink-3 select-text focus:outline-none focus:border-accent-soft"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 };

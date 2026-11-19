@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "会议栏目",
+      "summary": "总结",
+      "people": "参会人",
+      "transcript": "全文"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "按人",
-      "said": "说了什么",
+      "inShort": "简要",
+      "todo": "待办",
+      "addTodo": "加入待办",
+      "added": "已加入",
+      "mainPoints": "要点",
       "agreed": "同意了",
       "willDo": "要做的事",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "这是谁？命名",
+      "talked": "发言 {{time}} · 占会议 {{percent}}%",
+      "readWords": "查看发言 · {{count}} 次 ›",
       "noSummary": "还没有 {{name}} 的总结，会和会议总结一起生成。",
       "tooLittle": "{{name}} 说得太少，无法总结。",
       "writeSummary": "生成总结",

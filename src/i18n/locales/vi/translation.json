@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Các phần cuộc họp",
+      "summary": "Tóm tắt",
+      "people": "Người tham gia",
+      "transcript": "Bản ghi"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Theo từng người",
-      "said": "Đã nói",
+      "inShort": "Tóm lại",
+      "todo": "Việc cần làm",
+      "addTodo": "Thêm vào việc cần làm",
+      "added": "Đã thêm",
+      "mainPoints": "Ý chính",
       "agreed": "Đã đồng ý",
       "willDo": "Sẽ làm",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Ai đây? Đặt tên",
+      "talked": "Nói {{time}} · {{percent}}% cuộc họp",
+      "readWords": "Đọc lời của họ · {{count}} lần ›",
       "noSummary": "Chưa có tóm tắt cho {{name}}. Nó được viết cùng tóm tắt cuộc họp.",
       "tooLittle": "{{name}} nói quá ít để tóm tắt.",
       "writeSummary": "Viết tóm tắt",

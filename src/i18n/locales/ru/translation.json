@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Разделы встречи",
+      "summary": "Сводка",
+      "people": "Люди",
+      "transcript": "Расшифровка"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "По людям",
-      "said": "Что сказал(а)",
+      "inShort": "Коротко",
+      "todo": "Задачи",
+      "addTodo": "Добавить в задачи",
+      "added": "Добавлено",
+      "mainPoints": "Главное",
       "agreed": "Согласовано",
       "willDo": "Сделает",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Кто это? Назвать",
+      "talked": "Говорил(а) {{time}} · {{percent}}% встречи",
+      "readWords": "Читать реплики · {{count}} раз ›",
       "noSummary": "Сводки для {{name}} пока нет. Она пишется вместе со сводкой встречи.",
       "tooLittle": "{{name}} сказал(а) слишком мало для сводки.",
       "writeSummary": "Написать сводку",

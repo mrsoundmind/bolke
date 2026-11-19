@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "会議のセクション",
+      "summary": "要約",
+      "people": "参加者",
+      "transcript": "書き起こし"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "人ごと",
-      "said": "話したこと",
+      "inShort": "要点",
+      "todo": "やること",
+      "addTodo": "To-do に追加",
+      "added": "追加しました",
+      "mainPoints": "主なポイント",
       "agreed": "合意したこと",
       "willDo": "やること",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "誰ですか？名前を付ける",
+      "talked": "{{time}} 発言 · 会議の {{percent}}%",
+      "readWords": "発言を読む · {{count}} 回 ›",
       "noSummary": "{{name}} の要約はまだありません。会議の要約と一緒に作られます。",
       "tooLittle": "{{name}} の発言が少なすぎて要約できません。",
       "writeSummary": "要約を書く",

@@ -1055,6 +1055,12 @@
     "shortcutGroup": "Shortcut"
   },
   "notes": {
+    "tabs": {
+      "label": "Mødets dele",
+      "summary": "Resumé",
+      "people": "Personer",
+      "transcript": "Udskrift"
+    },
     "title": "Notes",
     "subtitle": "Your ideas, meetings and notes, written out in full.",
     "writeNote": "Write a note",
@@ -1141,8 +1147,11 @@
       "summary": "Summary",
       "actions": "Action points",
       "noActions": "No action points.",
-      "byPerson": "Pr. person",
-      "said": "Hvad de sagde",
+      "inShort": "Kort fortalt",
+      "todo": "To-do",
+      "addTodo": "Føj til To-do",
+      "added": "Tilføjet",
+      "mainPoints": "Hovedpunkter",
       "agreed": "Aftalt",
       "willDo": "Vil gøre",
       "failed": "Couldn't write the summary: {{error}}"
@@ -1178,6 +1187,9 @@
       "failed": "Couldn't find who said what",
       "person": "Person {{number}}",
       "everyone": "Everyone",
+      "nameThem": "Hvem er det? Giv navn",
+      "talked": "Talte {{time}} · {{percent}}% af mødet",
+      "readWords": "Læs hvad de sagde · {{count}} gange ›",
       "noSummary": "Endnu intet resumé for {{name}}. Det skrives med mødets resumé.",
       "tooLittle": "{{name}} sagde for lidt til et resumé.",
       "writeSummary": "Skriv resuméet",

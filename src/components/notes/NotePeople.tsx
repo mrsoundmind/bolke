@@ -7,7 +7,6 @@ import type { ActiveJobStatus } from "@/stores/transcriptionJobsStore";
 import { notify } from "@/stores/noticeStore";
 import { copyToClipboard } from "../settings/history/clipboard";
 import { colorOf, formatBytes, formatDuration } from "./noteUtils";
-import { PersonCard } from "./PersonCards";
 
 /** Matches MIN_PERSON_TALK_MS in commands/notes.rs: less gets no summary. */
 const MIN_SUMMARY_TALK_MS = 15_000;
@@ -68,6 +67,12 @@ interface NotePeopleProps {
   /** Writes the note's summary, with a card for each person. */
   onSummarize: () => void;
   summarizing: boolean;
+  /** "people": a list and the picked person's summary; "transcript": who
+   * said what, line by line. */
+  mode: "people" | "transcript";
+  /** Shows only this person's lines (from "Read their words"). */
+  focus?: { person: number; n: number } | null;
+  onReadWords?: (person: number) => void;
 }
 
 /** Who said what in a meeting (design/wireframes/MeetingSpeakers.dc.html):
@@ -78,6 +83,9 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
   onNote,
   onSummarize,
   summarizing,
+  mode,
+  focus,
+  onReadWords,
 }) => {
   const { t } = useTranslation();
   const { models, progress } = useSpeakerModels();
@@ -86,7 +94,12 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
   const [knownNames, setKnownNames] = useState<string[]>([]);
   const [typed, setTyped] = useState("");
   const [copied, setCopied] = useState(false);
+  const [picked, setPicked] = useState<number | null>(null);
   const people = note.people;
+
+  useEffect(() => {
+    if (focus) setWho(focus.person);
+  }, [focus]);
 
   useEffect(() => {
     if (naming == null) return;
@@ -284,6 +297,247 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
   const firstWords = (id: number) =>
     people.lines.find((l) => l.person === id)?.text.slice(0, 120);
 
+  const namingForm = named ? (
+    <div
+      role="dialog"
+      aria-labelledby="name-person"
+      className="flex flex-col gap-3 px-4 py-[14px] rounded-[18px] bg-[#070a14] border border-[rgba(140,170,255,0.2)]"
+    >
+      <h3 id="name-person" className="m-0 text-[15px] font-medium">
+        {t("notes.people.whoIs", { name: nameOf(naming) })}
+      </h3>
+      {firstWords(naming) && (
+        <p className="m-0 text-[13px] leading-[1.5] text-[#9aa7c7]">
+          {t("notes.people.firstWords")}{" "}
+          <i className="text-[#d6e1ff]">“{firstWords(naming)}”</i>
+        </p>
+      )}
+      {choices.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {choices.map((n) => (
+            <button
+              key={n}
+              type="button"
+              className={smallBtn}
+              onClick={() => name(naming, n)}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      )}
+      <form
+        className="flex gap-2 flex-wrap"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (typed.trim()) name(naming, typed);
+        }}
+      >
+        <input
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+          placeholder={t("notes.people.someoneElse")}
+          aria-label={t("notes.people.someoneElse")}
+          autoFocus={choices.length === 0}
+          className="flex-[1_1_200px] min-h-9 px-[14px] rounded-full border border-[rgba(140,170,255,0.3)] bg-[#0c1226] text-[14px] text-text placeholder:text-ink-3 focus:outline-none focus:border-accent-soft"
+        />
+        <button type="submit" className={smallBtn} disabled={!typed.trim()}>
+          {t("notes.people.save")}
+        </button>
+        <button
+          type="button"
+          className={smallBtn}
+          onClick={() => {
+            setNaming(null);
+            setTyped("");
+          }}
+        >
+          {t("notes.ai.cancel")}
+        </button>
+      </form>
+      <p className="m-0 text-[12px] text-[#8d9ac0]">
+        {t("notes.people.sameNameHint")}
+      </p>
+    </div>
+  ) : null;
+
+  if (mode === "people") {
+    const total = people.people.reduce((sum, p) => sum + p.talk_ms, 0) || 1;
+    // Named people first, then by how much they talked.
+    const order = [...people.people].sort(
+      (a, b) => Number(!a.name) - Number(!b.name) || b.talk_ms - a.talk_ms,
+    );
+    const current = order.find((p) => p.id === picked) ?? order[0] ?? undefined;
+    if (!current) return null;
+    const card = note.summary?.people?.find((c) => c.person === current.id);
+    const turns = people.lines.filter(
+      (l, i) =>
+        l.person === current.id &&
+        (i === 0 || people.lines[i - 1].person !== current.id),
+    ).length;
+    const tooLittle = current.talk_ms < MIN_SUMMARY_TALK_MS;
+    const label =
+      "text-[11.5px] font-semibold tracking-[0.07em] uppercase text-[#8fb4ff]";
+    const points = (items: string[] | undefined) => (
+      <ul className="m-0 p-0 list-none flex flex-col gap-[9px]">
+        {(items ?? []).map((item, i) => (
+          <li
+            key={i}
+            className="flex gap-[10px] text-[14.5px] leading-[1.5] text-[#d6e1ff] select-text"
+          >
+            <span
+              aria-hidden="true"
+              className="w-[5px] h-[5px] mt-[9px] rounded-full shrink-0 bg-[#8fb4ff]"
+            />
+            {item}
+          </li>
+        ))}
+      </ul>
+    );
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 items-start">
+        <div
+          role="list"
+          className="flex md:flex-col gap-1 p-2 rounded-[22px] bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.12)] overflow-x-auto"
+        >
+          {order.map((p) => {
+            const on = p.id === current.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                role="listitem"
+                aria-pressed={on}
+                onClick={() => setPicked(p.id)}
+                className={`flex flex-col gap-[7px] min-w-[150px] md:min-w-0 px-[14px] py-3 rounded-[16px] text-start cursor-pointer ${
+                  on
+                    ? "bg-[rgba(143,194,255,0.12)]"
+                    : "hover:bg-[rgba(143,194,255,0.06)]"
+                }`}
+              >
+                <span className="flex items-center gap-2 text-[14.5px] font-medium text-[#eaf0ff]">
+                  <span
+                    aria-hidden="true"
+                    className="w-[9px] h-[9px] rounded-full shrink-0"
+                    style={{ background: colorOf(p.id) }}
+                  />
+                  <span className="truncate">{nameOf(p.id)}</span>
+                  <small className="ms-auto text-[12px] font-normal text-[#8d9ac0] tabular-nums">
+                    {formatDuration(p.talk_ms, t)}
+                  </small>
+                </span>
+                <span className="block h-1 rounded-sm bg-[rgba(140,170,255,0.12)]">
+                  <span
+                    className="block h-full rounded-sm"
+                    style={{
+                      width: `${Math.max(2, Math.round((p.talk_ms / total) * 100))}%`,
+                      background: colorOf(p.id),
+                    }}
+                  />
+                </span>
+                {!p.name && (
+                  <span className="text-[12px] text-[#8fb4ff]">
+                    {t("notes.people.nameThem")}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <section
+          aria-labelledby="person-name"
+          className="flex flex-col gap-[18px] px-6 py-[22px] rounded-[22px] bg-[rgba(14,20,44,0.8)] border border-[rgba(140,170,255,0.12)] min-w-0"
+        >
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h2 id="person-name" className="m-0 text-[22px] font-medium">
+              {nameOf(current.id)}
+            </h2>
+            <span className="text-[13px] text-[#8d9ac0]">
+              {t("notes.people.talked", {
+                time: formatDuration(current.talk_ms, t),
+                percent: Math.round((current.talk_ms / total) * 100),
+              })}
+            </span>
+            <button
+              type="button"
+              onClick={() => setNaming(current.id)}
+              className="ms-auto text-[13px] font-medium text-[#8fb4ff] underline underline-offset-[3px] cursor-pointer hover:text-white"
+            >
+              {current.name ? t("notes.people.rename") : t("notes.people.who")}
+            </button>
+          </div>
+
+          {naming === current.id && namingForm}
+
+          {card ? (
+            <>
+              {card.gist && (
+                <p
+                  className="m-0 ps-[14px] border-s-[3px] text-[17px] leading-[1.55] text-[#eaf0ff] select-text"
+                  style={{ borderColor: colorOf(current.id) }}
+                >
+                  {card.gist}
+                </p>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-[22px]">
+                {(card.said ?? []).length > 0 && (
+                  <div className="flex flex-col gap-[10px]">
+                    <span className={label}>{t("notes.ai.mainPoints")}</span>
+                    {points(card.said)}
+                  </div>
+                )}
+                <div className="flex flex-col gap-[18px]">
+                  {(card.agreed ?? []).length > 0 && (
+                    <div className="flex flex-col gap-[10px]">
+                      <span className={label}>{t("notes.ai.agreed")}</span>
+                      {points(card.agreed)}
+                    </div>
+                  )}
+                  {(card.will_do ?? []).length > 0 && (
+                    <div className="flex flex-col gap-[10px]">
+                      <span className={label}>{t("notes.ai.willDo")}</span>
+                      {points(card.will_do)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-[14px] text-[#c9d4f2]">
+                {summarizing
+                  ? t("notes.ai.writing")
+                  : tooLittle
+                    ? t("notes.people.tooLittle", { name: nameOf(current.id) })
+                    : t("notes.people.noSummary", { name: nameOf(current.id) })}
+              </span>
+              {!summarizing && !tooLittle && (
+                <button
+                  type="button"
+                  className={smallBtn}
+                  onClick={onSummarize}
+                >
+                  {t("notes.people.writeSummary")}
+                </button>
+              )}
+            </div>
+          )}
+
+          {onReadWords && (
+            <button
+              type="button"
+              onClick={() => onReadWords(current.id)}
+              className="self-start p-0 bg-transparent border-0 text-[13.5px] text-[#8fb4ff] cursor-pointer hover:text-white"
+            >
+              {t("notes.people.readWords", { count: turns })}
+            </button>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   return (
     <section aria-labelledby="note-people" className={frame}>
       <div className="flex justify-between items-center gap-3 flex-wrap">
@@ -351,102 +605,7 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
         ))}
       </div>
 
-      {named && (
-        <div
-          role="dialog"
-          aria-labelledby="name-person"
-          className="flex flex-col gap-3 px-4 py-[14px] rounded-[18px] bg-[#070a14] border border-[rgba(140,170,255,0.2)]"
-        >
-          <h3 id="name-person" className="m-0 text-[15px] font-medium">
-            {t("notes.people.whoIs", { name: nameOf(naming) })}
-          </h3>
-          {firstWords(naming) && (
-            <p className="m-0 text-[13px] leading-[1.5] text-[#9aa7c7]">
-              {t("notes.people.firstWords")}{" "}
-              <i className="text-[#d6e1ff]">“{firstWords(naming)}”</i>
-            </p>
-          )}
-          {choices.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {choices.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className={smallBtn}
-                  onClick={() => name(naming, n)}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          )}
-          <form
-            className="flex gap-2 flex-wrap"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (typed.trim()) name(naming, typed);
-            }}
-          >
-            <input
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-              placeholder={t("notes.people.someoneElse")}
-              aria-label={t("notes.people.someoneElse")}
-              autoFocus={choices.length === 0}
-              className="flex-[1_1_200px] min-h-9 px-[14px] rounded-full border border-[rgba(140,170,255,0.3)] bg-[#0c1226] text-[14px] text-text placeholder:text-ink-3 focus:outline-none focus:border-accent-soft"
-            />
-            <button type="submit" className={smallBtn} disabled={!typed.trim()}>
-              {t("notes.people.save")}
-            </button>
-            <button
-              type="button"
-              className={smallBtn}
-              onClick={() => {
-                setNaming(null);
-                setTyped("");
-              }}
-            >
-              {t("notes.ai.cancel")}
-            </button>
-          </form>
-          <p className="m-0 text-[12px] text-[#8d9ac0]">
-            {t("notes.people.sameNameHint")}
-          </p>
-        </div>
-      )}
-
-      {selected &&
-        (() => {
-          // Their summary, from the note's AI summary.
-          const card = note.summary?.people?.find(
-            (c) => c.person === selected.id,
-          );
-          if (card)
-            return <PersonCard card={card} name={nameOf(selected.id)} />;
-          const tooLittle = selected.talk_ms < MIN_SUMMARY_TALK_MS;
-          return (
-            <div className="flex items-center justify-between gap-3 flex-wrap px-4 py-3 rounded-[18px] bg-[rgba(10,18,48,0.45)] border border-[rgba(140,170,255,0.18)]">
-              <span className="text-[13px] text-[#c9d4f2]">
-                {summarizing
-                  ? t("notes.ai.writing")
-                  : tooLittle
-                    ? t("notes.people.tooLittle", { name: nameOf(selected.id) })
-                    : t("notes.people.noSummary", {
-                        name: nameOf(selected.id),
-                      })}
-              </span>
-              {!summarizing && !tooLittle && (
-                <button
-                  type="button"
-                  className={smallBtn}
-                  onClick={onSummarize}
-                >
-                  {t("notes.people.writeSummary")}
-                </button>
-              )}
-            </div>
-          );
-        })()}
+      {namingForm}
 
       <div className="flex flex-col gap-[2px] max-h-[480px] overflow-y-auto">
         {selected && (
