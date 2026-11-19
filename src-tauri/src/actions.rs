@@ -42,7 +42,7 @@ pub enum TranscriptionOutcome {
     Silent,
     /// Transcribing or pasting failed.
     Failed,
-    /// The text was saved to Notes as an idea, not typed.
+    /// The text was saved to Notes as an idea, or to To-do, not typed.
     Saved,
 }
 
@@ -164,6 +164,25 @@ async fn save_idea(
         return;
     }
     let hm = app.state::<Arc<HistoryManager>>();
+    // "Remind me…" goes to To-do, its recording to History like dictation.
+    if crate::reminders::catch(app, &text, crate::reminders::Heard::Idea) {
+        if let Some(file_name) = recording {
+            if let Err(e) = hm.save_entry(
+                file_name,
+                transcription,
+                false,
+                processed.post_processed_text,
+                processed.post_process_prompt,
+                language,
+            ) {
+                error!("Failed to save the reminder's recording: {e}");
+            }
+        }
+        notices::clear(app, NoticeSource::Dictation);
+        set_tray_state(app, TrayIconState::Idle);
+        emit_transcription_complete(app, TranscriptionOutcome::Saved, sample_count, stop_time);
+        return;
+    }
     // Kept as a file entry, which History's clean-up never deletes, so the
     // note keeps its audio.
     let entry_id = recording.and_then(|file_name| {
@@ -981,6 +1000,20 @@ impl ShortcutAction for TranscribeAction {
 
                             if final_text.is_empty() {
                                 finish_without_text(&ah, input_silent, sample_count, stop_time);
+                            } else if crate::reminders::catch(
+                                &ah,
+                                &final_text,
+                                crate::reminders::Heard::Dictation,
+                            ) {
+                                // Said as a reminder: kept in To-do, not typed.
+                                notices::clear(&ah, NoticeSource::Dictation);
+                                set_tray_state(&ah, TrayIconState::Idle);
+                                emit_transcription_complete(
+                                    &ah,
+                                    TranscriptionOutcome::Saved,
+                                    sample_count,
+                                    stop_time,
+                                );
                             } else {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();

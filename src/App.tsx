@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { platform } from "@tauri-apps/plugin-os";
+import { listen } from "@tauri-apps/api/event";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -31,6 +32,7 @@ import { FileDropOverlay } from "./components/FileDropOverlay";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { HomePage } from "./components/home/HomePage";
 import { NotesPage } from "./components/notes/NotesPage";
+import { TodoPage } from "./components/todo/TodoPage";
 import { PageHeader } from "./components/shared/PageHeader";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
@@ -72,6 +74,9 @@ const renderSettingsContent = (
         onOpenSettings={() => onSectionChange("general")}
       />
     );
+  }
+  if (section === "todo") {
+    return <TodoPage />;
   }
   if (section === "general" || section === "history") {
     const Page = SECTIONS_CONFIG[section].component;
@@ -118,6 +123,13 @@ function App() {
   const [migrationModelId, setMigrationModelId] = useState<string | null>(null);
   const [currentSection, setCurrentSection] = useState<SidebarSection>("home");
   const showHistory = useCallback(() => setCurrentSection("history"), []);
+  // "Change" in the reminder bubble opens To-do.
+  useEffect(() => {
+    const unlisten = listen("open-todo", () => setCurrentSection("todo"));
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(

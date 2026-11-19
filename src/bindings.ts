@@ -1128,6 +1128,78 @@ async setActionPointDone(id: number, index: number, done: boolean) : Promise<Res
     else return { status: "error", error: e  as any };
 }
 },
+async listTodos() : Promise<Result<TodoList, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_todos") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Adds a typed to-do; a time in it ("pay rent on Friday") sets a reminder.
+ */
+async addTodo(text: string) : Promise<Result<Todo, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("add_todo", { text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setTodoText(id: number, text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_todo_text", { id, text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Sets when to remind, in seconds since the Unix epoch, or clears it.
+ */
+async setTodoDue(id: number, dueAt: number | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_todo_due", { id, dueAt }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setTodoDone(id: number, done: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_todo_done", { id, done }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteTodo(id: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_todo", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Types the dictated words the bubble took as a reminder, and drops it.
+ */
+async typeReminderInstead(id: number) : Promise<void> {
+    await TAURI_INVOKE("type_reminder_instead", { id });
+},
+/**
+ * Closes the reminder bubble.
+ */
+async dismissReminder() : Promise<void> {
+    await TAURI_INVOKE("dismiss_reminder");
+},
+/**
+ * Opens To-do in the main window, from the bubble.
+ */
+async openTodo(id: number) : Promise<void> {
+    await TAURI_INVOKE("open_todo", { id });
+},
 /**
  * Starts or stops recording an idea, like pressing the idea shortcut.
  */
@@ -1618,6 +1690,10 @@ export type MeetingStatus = { recording: boolean; title: string; project_id: num
  * The call's sound is being recorded too.
  */
 call: boolean }
+/**
+ * An action point from a meeting's summary.
+ */
+export type MeetingTodo = { note_id: number; meeting: string; index: number; text: string; done: boolean; created_at: number }
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**
@@ -1945,6 +2021,23 @@ export type SummarySource =
  * and `Dark` force one of the two palettes Bolke already ships.
  */
 export type Theme = "system" | "light" | "dark"
+/**
+ * A to-do, with a reminder when it has a time.
+ */
+export type Todo = { id: number; text: string; 
+/**
+ * When to remind, in seconds since the Unix epoch.
+ */
+due_at: number | null; done_at: number | null; 
+/**
+ * When the reminder went off; cleared when the time changes.
+ */
+rung_at: number | null; 
+/**
+ * The words it was made from, when it was said.
+ */
+spoken: string | null; created_at: number }
+export type TodoList = { todos: Todo[]; from_meetings: MeetingTodo[] }
 export type TranscribeAcceleratorSetting = "auto" | "cpu" | "gpu"
 /**
  * Emitted when a dictation finishes (not on cancel); onboarding uses it to measure speed.
@@ -1988,7 +2081,7 @@ export type TranscriptionOutcome =
  */
 "failed" | 
 /**
- * The text was saved to Notes as an idea, not typed.
+ * The text was saved to Notes as an idea, or to To-do, not typed.
  */
 "saved"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"

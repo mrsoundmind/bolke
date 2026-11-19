@@ -59,6 +59,19 @@ static MIGRATIONS: &[M] = &[
         updated_at INTEGER NOT NULL
     );",
     ),
+    // To-dos and reminders (see `managers::todos`).
+    M::up(
+        "CREATE TABLE IF NOT EXISTS todos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT NOT NULL,
+        due_at INTEGER,
+        done_at INTEGER,
+        rung_at INTEGER,
+        spoken TEXT,
+        created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS todos_due ON todos(due_at);",
+    ),
 ];
 
 /// A known voice this alike is taken to be that person.
@@ -226,13 +239,13 @@ impl NotesManager {
         Ok(manager)
     }
 
-    fn connection(&self) -> Result<Connection> {
+    pub(crate) fn connection(&self) -> Result<Connection> {
         let conn = Connection::open(&self.db_path)?;
         conn.execute_batch("PRAGMA foreign_keys = ON;")?;
         Ok(conn)
     }
 
-    fn now() -> i64 {
+    pub(crate) fn now() -> i64 {
         Utc::now().timestamp()
     }
 
@@ -701,7 +714,7 @@ fn title_from_text(text: &str) -> String {
 }
 
 /// A stored summary: JSON, or plain text from before it had action points.
-fn parse_summary(stored: Option<String>) -> Option<NoteSummary> {
+pub(crate) fn parse_summary(stored: Option<String>) -> Option<NoteSummary> {
     let stored = stored?;
     Some(serde_json::from_str(&stored).unwrap_or(NoteSummary {
         summary: stored,

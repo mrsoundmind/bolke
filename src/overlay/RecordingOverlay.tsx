@@ -15,6 +15,7 @@ import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { noticeDisplay } from "@/lib/notices";
 import type { ModelStateEvent } from "@/lib/types/events";
 import { getLanguageDirection } from "@/lib/utils/rtl";
+import { formatDue, type ReminderBubble } from "@/lib/todos";
 
 type OverlayState =
   | "recording"
@@ -27,7 +28,10 @@ type OverlayState =
   | "idea_recording"
   | "idea_transcribing"
   | "idea_processing"
-  | "idea_saved";
+  | "idea_saved"
+  // A reminder just set from what was said, or one whose time has come.
+  | "reminder_set"
+  | "reminder_due";
 
 const isIdeaState = (state: OverlayState) => state.startsWith("idea_");
 
@@ -87,6 +91,7 @@ const RecordingOverlay: React.FC = () => {
   // while overflowing, so the resting first line stays crisp flush under the pill.
   const [overflowing, setOverflowing] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [reminder, setReminder] = useState<ReminderBubble | null>(null);
   const [noticeWidth, setNoticeWidth] = useState<number>();
   const noticeProbeRef = useRef<HTMLSpanElement>(null);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -105,6 +110,11 @@ const RecordingOverlay: React.FC = () => {
         clearTimeout(fadeTimerRef.current);
         setNotice(event.payload);
       });
+
+      const unlistenReminder = await listen<ReminderBubble>(
+        "reminder-overlay",
+        (event) => setReminder(event.payload),
+      );
 
       const unlistenShow = await listen("show-overlay", async (event) => {
         const overlayState = event.payload as OverlayState;
@@ -217,6 +227,7 @@ const RecordingOverlay: React.FC = () => {
 
       return () => {
         unlistenNotice();
+        unlistenReminder();
         unlistenShow();
         unlistenHide();
         unlistenReady();
@@ -437,6 +448,115 @@ const RecordingOverlay: React.FC = () => {
                   true,
                 )
               : listeningRow(open, true)}
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Reminder bubble (design/wireframes/ReminderFlow): a bell, what was
+  // understood, and what can be done about it.
+  if (
+    (state === "reminder_set" || state === "reminder_due") &&
+    reminder &&
+    !shownNotice
+  ) {
+    const due = state === "reminder_due";
+    const when =
+      reminder.due_at != null
+        ? formatDue(reminder.due_at, i18n.language, t)
+        : null;
+    const title = due
+      ? reminder.text
+      : when
+        ? t("overlay.reminderSet")
+        : t("overlay.todoAdded");
+    const detail = due
+      ? (when ?? "")
+      : when
+        ? `${reminder.text} · ${when}`
+        : reminder.text;
+    const close = () => commands.dismissReminder();
+    return (
+      <div
+        dir={direction}
+        className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
+      >
+        <div className="scard compact reminder">
+          <div className="sbase sreminder" role="status">
+            <span className="sbell" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M10 20.5a2 2 0 0 0 4 0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <span className="sreminder-text">
+              <span className="sreminder-title">{title}</span>
+              {detail && <span className="sreminder-when">{detail}</span>}
+            </span>
+            {due ? (
+              <>
+                <button
+                  className="sreminder-btn main"
+                  onClick={async () => {
+                    await commands.setTodoDone(reminder.id, true);
+                    close();
+                  }}
+                >
+                  {t("overlay.reminderDone")}
+                </button>
+                <button
+                  className="sreminder-btn"
+                  onClick={async () => {
+                    const later = Math.floor(Date.now() / 1000) + 10 * 60;
+                    await commands.setTodoDue(reminder.id, later);
+                    close();
+                  }}
+                >
+                  {t("overlay.reminderSnooze")}
+                </button>
+              </>
+            ) : reminder.can_type ? (
+              <button
+                className="sreminder-btn"
+                onClick={() => commands.typeReminderInstead(reminder.id)}
+              >
+                {t("overlay.reminderTypeInstead")}
+              </button>
+            ) : (
+              <button
+                className="sreminder-btn"
+                onClick={() => commands.openTodo(reminder.id)}
+              >
+                {t("overlay.reminderChange")}
+              </button>
+            )}
+            <button
+              className="sx"
+              aria-label={t("overlay.reminderClose")}
+              onClick={close}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M4 4 L12 12 M12 4 L4 12"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     );

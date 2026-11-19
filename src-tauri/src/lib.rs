@@ -24,6 +24,7 @@ mod paste_tx;
 pub mod portable;
 #[cfg(target_os = "linux")]
 mod primary_selection;
+mod reminders;
 mod secure_input;
 mod settings;
 mod shortcut;
@@ -275,6 +276,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // A summary model queued in setup carries on after a quit.
     summary_models.start_queued();
     tauri::async_runtime::spawn(commands::notes::rescue_meetings(app_handle.clone()));
+    reminders::start(app_handle);
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -877,6 +879,15 @@ pub fn run(cli_args: CliArgs) {
             commands::notes::move_note,
             commands::notes::delete_note,
             commands::notes::set_action_point_done,
+            commands::todos::list_todos,
+            commands::todos::add_todo,
+            commands::todos::set_todo_text,
+            commands::todos::set_todo_due,
+            commands::todos::set_todo_done,
+            commands::todos::delete_todo,
+            commands::todos::type_reminder_instead,
+            commands::todos::dismiss_reminder,
+            commands::todos::open_todo,
             commands::notes::toggle_idea_recording,
             commands::notes::import_audio_note,
             commands::notes::summarize_note,

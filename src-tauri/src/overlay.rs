@@ -59,6 +59,16 @@ const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 // to your idea", so it needs more width. Actual is up to 320 wide.
 const OVERLAY_IDEA_WIDTH: f64 = 340.0;
 
+// Reminder bubble (`reminder_*` states): a bell, the to-do or its time, and
+// a button or three.
+const OVERLAY_REMINDER_WIDTH: f64 = 480.0;
+
+/// How long "Reminder set" shows, and longer when it offers to type the words.
+const REMINDER_SET_HOLD: Duration = Duration::from_millis(3500);
+const REMINDER_TYPE_HOLD: Duration = Duration::from_secs(7);
+/// How long a reminder that's due stays up, waiting for Done or a snooze.
+const REMINDER_DUE_HOLD: Duration = Duration::from_secs(60);
+
 /// How long "Saved to Notes" shows before the bubble fades.
 const IDEA_SAVED_HOLD: Duration = Duration::from_millis(1400);
 
@@ -88,6 +98,8 @@ fn overlay_dimensions(state: &str) -> (f64, f64) {
         (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
     } else if state.starts_with("idea_") {
         (OVERLAY_IDEA_WIDTH, OVERLAY_HEIGHT)
+    } else if state.starts_with("reminder_") {
+        (OVERLAY_REMINDER_WIDTH, OVERLAY_HEIGHT)
     } else {
         (OVERLAY_WIDTH, OVERLAY_HEIGHT)
     }
@@ -587,6 +599,56 @@ pub fn show_idea_saved_overlay(app_handle: &AppHandle) {
             }
         });
     });
+}
+
+/// Which reminder bubble to show.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ReminderOverlay {
+    /// Just made from what was said.
+    Set,
+    /// Its time has come.
+    Due,
+}
+
+/// The show generation of the reminder bubble on screen, if one is.
+static REMINDER_GENERATION: AtomicU64 = AtomicU64::new(u64::MAX);
+
+/// Shows a reminder in the bubble for a while, unless a session takes the
+/// overlay first.
+pub fn show_reminder_overlay(
+    app_handle: &AppHandle,
+    bubble: &crate::reminders::ReminderBubble,
+    kind: ReminderOverlay,
+) {
+    if settings::get_settings(app_handle).overlay_style == OverlayStyle::None {
+        return;
+    }
+    let (state, hold) = match kind {
+        ReminderOverlay::Set if bubble.can_type => ("reminder_set", REMINDER_TYPE_HOLD),
+        ReminderOverlay::Set => ("reminder_set", REMINDER_SET_HOLD),
+        ReminderOverlay::Due => ("reminder_due", REMINDER_DUE_HOLD),
+    };
+    OVERLAY_SESSION_SHOWING.store(false, Ordering::SeqCst);
+    OVERLAY_SESSION_LIVE.store(false, Ordering::SeqCst);
+    let handle = app_handle.clone();
+    let bubble = bubble.clone();
+    let _ = app_handle.run_on_main_thread(move || {
+        let _ = handle.emit_to("recording_overlay", "reminder-overlay", &bubble);
+        show_overlay_state_on_main(&handle, state);
+        let shown = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+        REMINDER_GENERATION.store(shown, Ordering::SeqCst);
+        std::thread::spawn(move || {
+            std::thread::sleep(hold);
+            if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) == shown {
+                hide_recording_overlay(&handle);
+            }
+        });
+    });
+}
+
+/// Whether the reminder bubble is what the overlay shows now.
+pub fn is_reminder_showing() -> bool {
+    REMINDER_GENERATION.load(Ordering::SeqCst) == OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst)
 }
 
 fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {

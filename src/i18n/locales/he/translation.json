@@ -26,7 +26,8 @@
     "onDeviceTitle": "100% on-device",
     "onDeviceBody": "Your voice never leaves this Mac. No account, no cloud.",
     "notes": "Notes",
-    "meetings": "Meetings"
+    "meetings": "Meetings",
+    "todo": "To-do"
   },
   "onboarding": {
     "customModelDescription": "לא נתמך באופן רשמי",
@@ -992,7 +993,14 @@
     "loadingModel": "טוען מודל...",
     "ideaListening": "Listening to your idea",
     "ideaWriting": "Writing…",
-    "ideaSaved": "Saved to Notes"
+    "ideaSaved": "Saved to Notes",
+    "reminderSet": "Reminder set",
+    "todoAdded": "Added to To-do",
+    "reminderDone": "Done",
+    "reminderSnooze": "In 10 min",
+    "reminderTypeInstead": "Type it instead",
+    "reminderChange": "Change",
+    "reminderClose": "Close"
   },
   "secureInput": {
     "blockedWithCulprit_one": "ייתכן ש-{{name}} חוסם קיצור דרך אחד",
@@ -1175,5 +1183,45 @@
     "addRecording": "Add a recording",
     "all": "All meetings",
     "empty": "No meetings yet. Record one, or add a recording of one."
+  },
+  "todo": {
+    "title": "To-do",
+    "subtitle": "Things to do and reminders. Say it once, and Bolke remembers.",
+    "add": "Add a to-do",
+    "addButton": "Add",
+    "addPlaceholder": "Pay rent on Friday, buy milk, call Priya at 5…",
+    "addFailed": "Couldn't add the to-do",
+    "sayIt": "Press <keys/> anywhere and say “remind me…”",
+    "sayItNoKeys": "Press your idea or dictation shortcut and say “remind me…”",
+    "sayItExamples": "“Remind me to call Priya tomorrow at 5.” “Kal subah 9 baje yaad dilana, domain kharidna hai.” Dictation works too, when you start with “remind me”.",
+    "filter": {
+      "all": "All",
+      "today": "Today",
+      "meetings": "From meetings",
+      "done": "Done"
+    },
+    "group": {
+      "late": "Overdue",
+      "today": "Today",
+      "later": "Later",
+      "anytime": "No date",
+      "done": "Done"
+    },
+    "empty": "Nothing to do. Say “remind me…” with either shortcut, or add one here.",
+    "emptyDone": "Nothing done yet.",
+    "markDone": "Done: {{text}}",
+    "editText": "Edit the to-do",
+    "when": "When to remind you",
+    "setTime": "Set",
+    "noReminder": "No reminder",
+    "cancel": "Cancel",
+    "changeTime": "Change the time",
+    "remindMe": "Remind me",
+    "youSaidIt": "You said it · {{when}}",
+    "fromMeeting": "From {{meeting}}",
+    "delete": "Delete",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday"
   }
 }

@@ -6,6 +6,7 @@ import {
   History,
   Home,
   Info,
+  ListChecks,
   Lock,
   NotebookPen,
   Settings,
@@ -64,6 +65,13 @@ export const SECTIONS_CONFIG = {
   meetings: {
     labelKey: "sidebar.meetings",
     icon: Users,
+    group: "main",
+    component: null,
+    enabled: () => true,
+  },
+  todo: {
+    labelKey: "sidebar.todo",
+    icon: ListChecks,
     group: "main",
     component: null,
     enabled: () => true,
