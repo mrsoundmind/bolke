@@ -19,53 +19,105 @@
   <a href="#install-on-mac"><b>Mac</b></a> &nbsp;·&nbsp;
   <a href="#install-on-windows"><b>Windows</b></a> &nbsp;·&nbsp;
   <a href="#install-on-linux"><b>Linux</b></a> &nbsp;·&nbsp;
-  <a href="#features"><b>Features</b></a> &nbsp;·&nbsp;
-  <a href="#notes-meetings-and-reminders"><b>Meetings</b></a> &nbsp;·&nbsp;
-  <a href="#screenshots"><b>Screenshots</b></a> &nbsp;·&nbsp;
-  <a href="#logo-and-colours"><b>Logo</b></a> &nbsp;·&nbsp;
+  <a href="#what-bolke-does"><b>What it does</b></a> &nbsp;·&nbsp;
+  <a href="#meetings-who-said-what"><b>Meetings</b></a> &nbsp;·&nbsp;
+  <a href="#reminders-and-to-dos"><b>Reminders</b></a> &nbsp;·&nbsp;
   <a href="#building-it-yourself"><b>Build it</b></a>
 </p>
 
 <br>
 
-**Bolke** (बोलके, "by speaking") is private voice dictation for your computer. Hold a shortcut, speak, and your words are typed into whatever app you're using.
+<h3 align="center">Talk to your computer. It types, it takes notes, and it remembers for you.</h3>
 
-Everything runs on your own computer. Your voice never leaves it: no account, no cloud.
+<p align="center">Free, open source, and private: your voice never leaves your computer.</p>
+
+<br>
+
+**Bolke** (बोलके, "by speaking") turns your voice into text on Mac, Windows and Linux.
+
+- **Dictate:** hold a shortcut, speak, let go. Your words are typed into whatever app you're using: email, chat, documents, the browser.
+- **Capture ideas:** a second shortcut saves what you say as a note instead of typing it.
+- **Record meetings:** Bolke writes the meeting out and shows who said what.
+- **Set reminders:** say "remind me to call Priya at 5" and Bolke rings you at 5.
+
+Everything runs on your own computer. There's no account, no subscription and no cloud. After the first download it works offline.
 
 <p align="center">
   <img src=".github/assets/in-action.png" alt="Bolke typing a dictated message into a notes window, with its live recording bubble at the bottom of the screen" width="100%">
 </p>
 
-## How it works
+## What Bolke does
 
-1. 🎙️ **Hold** the shortcut and speak.
-2. ✋ **Let go.** Bolke turns your speech into text, on your computer.
-3. ⌨️ **Done.** The text is typed where your cursor is.
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🎙️ Dictation</h3>
+      Hold the shortcut, speak and let go. Bolke types your words where your cursor is, in any app. A small bubble shows the words as you speak.
+    </td>
+    <td width="50%" valign="top">
+      <h3>💡 Notes and ideas</h3>
+      Press the idea shortcut anywhere and say what's on your mind. It's saved in Notes, not typed. Write notes too, and sort them into projects.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>👥 Meetings, with who said what</h3>
+      Record a call or a meeting room, or add a recording you already have. Bolke writes every line and who said it, and remembers voices you've named.
+    </td>
+    <td width="50%" valign="top">
+      <h3>⏰ Reminders and to-dos</h3>
+      Say "remind me…" with either shortcut. Bolke works out the time, rings you then, and keeps a to-do list, including the action points from your meetings.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>✨ AI summaries</h3>
+      Get a short summary and the action points for any note or meeting, written on your computer by a free AI model.
+    </td>
+    <td width="50%" valign="top">
+      <h3>🔒 Private by design</h3>
+      Speech recognition, speaker names, summaries and reminders all run on your computer. Nothing you say is uploaded.
+    </td>
+  </tr>
+</table>
 
-|     Mac     |     Windows      |         Linux          |
-| :---------: | :--------------: | :--------------------: |
-| **⌥ Space** | **Ctrl + Space** | **Ctrl + Alt + Space** |
+### The shortcuts
 
-## Features
+|                    |     Mac     |     Windows      |         Linux          |
+| ------------------ | :---------: | :--------------: | :--------------------: |
+| **Dictate** (hold) | **⌥ Space** | **Ctrl + Space** | **Ctrl + Alt + Space** |
+| **Save an idea**   |  **⌥ ⇧ I**  | **Alt + ⇧ + I**  |   **Ctrl + Alt + I**   |
 
-- 🔒 **Private.** Speech recognition runs on your computer. Nothing you say is uploaded.
-- ✈️ **Works offline.** After the first model download, no internet is needed.
-- 🌍 **Many languages.** Choose from over 20 speech models, from small and fast to large and accurate.
-- ⌨️ **Types anywhere.** Email, chat, documents, the browser: wherever your cursor is.
-- 🕘 **History.** Look back at what you dictated, copy it again, or replay the recording.
-- 🎛️ **Your shortcut.** Hold to talk, or press once to start and again to stop.
-- 💡 **Notes and ideas.** A second shortcut saves what you say as an idea instead of typing it. Write notes too, and sort them into projects.
-- 👥 **Meetings, with who said what.** Record a call or a room. Bolke writes it all out and shows who said each line. Name a voice once and it knows that person in the next meeting. On Linux it also records the other people on the call.
-- ✨ **AI summaries.** A short summary and the action points for any note or meeting, written on your computer by a free model.
-- ⏰ **Reminders and to-dos.** Say "remind me to call Priya at 5" with either shortcut, and Bolke rings you then. Works in English and Hinglish ("kal subah 9 baje yaad dilana…"). Action points from meetings show up in your to-do list.
-- 💸 **Free and open source.** No account, no subscription, MIT licensed.
+Hold a shortcut to talk, or tap it once to keep listening and tap again to stop. You can change both in Bolke's settings.
 
-## Notes, meetings and reminders
+## Meetings: who said what
 
 <p align="center">
   <img src=".github/assets/screenshot-meeting-speakers.png" alt="A meeting written out line by line, with each person's name and colour, and how long each of them talked" width="85%">
-  <br><sub><b>Who said what:</b> every line of the meeting, with the person who said it. Tap a name to see only their lines.</sub>
 </p>
+
+- **Every line, with its speaker.** Each person gets a name and a colour, and you can see how long each of them talked.
+- **Tap a name** to see only what that person said.
+- **Name a voice once.** Bolke remembers it and knows that person in your next meeting.
+- **Summary and action points** at the press of a button. The action points go to your to-do list.
+- **Calls and rooms.** Bolke records through your microphone. On Linux it also records the other people on the call, straight from the computer's sound.
+- **Already have a recording?** Click **Add a recording** and Bolke writes it out the same way.
+
+## Reminders and to-dos
+
+<p align="center">
+  <img src=".github/assets/bubble-reminder.png" alt="The reminder bubble, with Done and In 10 min buttons" width="70%">
+</p>
+
+1. Press either shortcut and say "remind me…", for example: _"Remind me to send the invoice tomorrow at 6."_
+2. Bolke shows a small bubble with the reminder and its time. Nothing is typed. If you used the dictation shortcut and meant to type those words, click **Type it instead**.
+3. At that time you get a notification with a sound, and the bubble comes back with **Done** and **In 10 min**.
+
+Bolke understands everyday ways of saying a time: _in 20 minutes_, _tonight_, _tomorrow at 9_, _on Friday_, _at 5:30_. It understands Hinglish too: _"kal subah 9 baje yaad dilana, domain kharidna hai."_
+
+Say it without a time (_"remind me to buy a pop filter"_) and it's added to your to-do list with no time. You can also type to-dos, change their time, or tick them off on the **To-do** tab.
+
+## Screenshots
 
 <table>
   <tr>
@@ -78,32 +130,12 @@ Everything runs on your own computer. Your voice never leaves it: no account, no
   </tr>
   <tr>
     <td width="50%"><img src=".github/assets/screenshot-todo.png" alt="The To-do tab, with overdue, today and later reminders"></td>
-    <td width="50%" align="center" valign="middle">
-      <img src=".github/assets/bubble-reminder.png" alt="The reminder bubble, with Done and In 10 min buttons" width="100%">
-    </td>
+    <td width="50%"><img src=".github/assets/screenshot-home.png" alt="Bolke's home screen"></td>
   </tr>
   <tr>
     <td align="center"><sub><b>To-do:</b> what you asked Bolke to remember, and when</sub></td>
-    <td align="center"><sub><b>Reminder:</b> rings at the time, with Done or In 10 min</sub></td>
+    <td align="center"><sub><b>Home:</b> your shortcut and recent dictations at a glance</sub></td>
   </tr>
-</table>
-
-**Reminders, step by step**
-
-1. Press either shortcut and say "remind me…", for example: _"Remind me to send the invoice tomorrow at 6."_
-2. Bolke shows a small bubble with the reminder and its time. Nothing is typed. If you used the dictation shortcut and meant to type those words, click **Type it instead**.
-3. At that time you get a notification with a sound, and the bubble comes back with **Done** and **In 10 min**.
-
-Say it without a time ("remind me to buy a pop filter") and it's added to your to-do list with no time. Everything is kept on your computer.
-
-## Screenshots
-
-<p align="center">
-  <img src=".github/assets/screenshot-home.png" alt="Bolke's home screen" width="85%">
-  <br><sub><b>Home:</b> your shortcut, your model and recent dictations at a glance</sub>
-</p>
-
-<table>
   <tr>
     <td width="50%"><img src=".github/assets/screenshot-welcome.png" alt="First-run welcome screen, choosing languages"></td>
     <td width="50%"><img src=".github/assets/screenshot-models.png" alt="The Models screen, with speed, accuracy and size for each model"></td>
@@ -117,8 +149,8 @@ Say it without a time ("remind me to buy a pop filter") and it's added to your t
     <td width="50%"><img src=".github/assets/screenshot-settings.png" alt="Bolke's settings"></td>
   </tr>
   <tr>
-    <td align="center"><sub><b>History:</b> everything you've dictated</sub></td>
-    <td align="center"><sub><b>Settings:</b> shortcut, microphone and sounds</sub></td>
+    <td align="center"><sub><b>History:</b> everything you've dictated, ready to copy or replay</sub></td>
+    <td align="center"><sub><b>Settings:</b> shortcuts, microphone and sounds</sub></td>
   </tr>
   <tr>
     <td width="50%"><img src=".github/assets/screenshot-advanced.png" alt="Advanced settings"></td>
@@ -132,6 +164,14 @@ Say it without a time ("remind me to buy a pop filter") and it's added to your t
     <td align="center"><sub><b>Recording bubble:</b> floats over your work while you speak</sub></td>
   </tr>
 </table>
+
+## Why Bolke
+
+- 🔒 **Your words stay yours.** Speech recognition runs on your computer. There's no account, and nothing is sent anywhere.
+- ✈️ **Works offline.** After the first model download, Bolke needs no internet.
+- 🌍 **Many languages.** Choose from over 20 speech models, from small and fast to large and accurate. Bolke can also turn speech in another language into English text.
+- ⚡ **Fast.** Bolke uses your computer's graphics chip when it can, so the text appears moments after you stop.
+- 💸 **Free and open source.** No subscription, no limits, MIT licensed.
 
 ## Platforms
 
@@ -166,7 +206,7 @@ To uninstall, quit Bolke from the menu bar and drag it from Applications to the 
 3. Follow the installer, then open **Bolke** from the Start menu.
 4. The first time, Bolke asks for microphone access and downloads a speech model. After that it works offline.
 
-To dictate, hold **Ctrl + Space**, speak, and let go. You can change the shortcut in Bolke's settings. Your words are typed where your cursor is.
+To dictate, hold **Ctrl + Space**, speak, and let go. Your words are typed where your cursor is.
 
 To uninstall, go to **Settings → Apps → Installed apps**, find **Bolke** and click **Uninstall**.
 
@@ -204,15 +244,18 @@ To dictate, hold **Ctrl + Alt + Space**, speak, and let go.
 
 To uninstall: `sudo apt remove bolke` (Ubuntu and Debian), `sudo dnf remove Bolke` (Fedora) or `sudo zypper remove Bolke` (openSUSE). For the AppImage, delete the file.
 
-### Linux setup
+## If something doesn't work
+
+### On Linux
 
 Shortcuts and typing work differently on each Linux desktop.
 
 - **The shortcut doesn't work (common on Wayland):** add a shortcut in your desktop's keyboard settings that runs `Bolke --toggle-transcription`. Press it once to start and again to stop.
 - **Text isn't typed into other apps:** install a typing helper. On Wayland, install `wtype` (or `dotool` or `ydotool` on GNOME and KDE). On X11, install `xdotool`. Then restart Bolke.
 - **No microphone:** allow microphone access in your system's sound or privacy settings.
+- **Reminders make no sound:** install `libnotify-bin` (for the notification) and `gnome-session-canberra` or `libcanberra-gtk3-module` (for the sound).
 
-## If the shortcut stops working on Mac
+### On Mac: the shortcut stops working
 
 macOS turns on **Secure Input** while you type a password, and some apps (password managers, terminals) leave it on. While it's on, no app can see your shortcut.
 
