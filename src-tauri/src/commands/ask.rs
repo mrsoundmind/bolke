@@ -332,9 +332,22 @@ const COMMON: [&str; 60] = [
     "get",
 ];
 
-/// A word's first letters, so "decide", "decided" and "decision" match.
+/// A word's first letters without its ending, so "decide", "decided" and
+/// "decision" match, and "fill" matches "filled".
 fn stem(word: &str) -> String {
-    word.chars().take(5).collect()
+    let mut w = word;
+    // "meetings" -> "meeting" -> "meet".
+    for _ in 0..2 {
+        let Some(root) = ["ing", "ed", "es", "s"]
+            .iter()
+            .find_map(|end| w.strip_suffix(end))
+            .filter(|root| root.chars().count() >= 3)
+        else {
+            break;
+        };
+        w = root;
+    }
+    w.chars().take(5).collect()
 }
 
 fn key_stems(text: &str) -> Vec<String> {
@@ -737,6 +750,9 @@ mod tests {
         let short = shortened(&long);
         assert!(short.ends_with('…'));
         assert!(short.chars().count() <= QUOTE_CHARS + 1);
+        assert_eq!(stem("filled"), stem("fill"));
+        assert_eq!(stem("decided"), stem("decide"));
+        assert_eq!(stem("meetings"), stem("meeting"));
         assert_eq!(clock(65_000), "1:05");
         assert_eq!(clock(3_725_000), "1:02:05");
     }
@@ -847,9 +863,11 @@ mod ask_eval {
         let (mut right, mut sure_and_wrong) = (0, 0);
         tauri::async_runtime::block_on(async {
             for case in &cases {
+                let started = std::time::Instant::now();
                 let c = answer(&writer, &note, &passages, &[], &case.q)
                     .await
                     .unwrap();
+                let secs = started.elapsed().as_secs_f32();
                 let a = c.answer.to_lowercase();
                 let ok = if case.trap {
                     didnt_come_up(&a)
@@ -862,9 +880,10 @@ mod ask_eval {
                     sure_and_wrong += 1;
                 }
                 println!(
-                    "\n[{}] {}\n  A: {}\n  check: {:?}  quotes: {}\n  truth: {}",
+                    "\n[{}] {} ({:.1}s)\n  A: {}\n  check: {:?}  quotes: {}\n  truth: {}",
                     if ok { "RIGHT" } else { "WRONG" },
                     case.q,
+                    secs,
                     c.answer,
                     c.check,
                     c.quotes.len(),
