@@ -135,6 +135,9 @@ pub struct NoteSummary {
 pub struct PersonSummary {
     /// The person's id in the note's `people`.
     pub person: u32,
+    /// One sentence on what they mainly cared about or argued.
+    #[serde(default)]
+    pub gist: String,
     #[serde(default)]
     pub said: Vec<String>,
     #[serde(default)]

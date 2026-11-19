@@ -330,13 +330,31 @@ sentences, and a list of action points: things someone said they or others \
 will do. Each action point is one short sentence. If there are none, give an \
 empty list. Reply only with JSON: {\"summary\": \"...\", \"action_points\": [\"...\"]}";
 
-const PERSON_PROMPT: &str = "You read what one person said in a meeting, with a \
-short summary of the whole meeting for context. Write in the same language as \
-their words, about them in the third person, without their name. Give: said, \
-the main points of what they said, up to six; agreed, decisions or plans they \
-agreed to; will_do, things they said they will do. Each item is one short \
-sentence. Use an empty list when there is nothing. Reply only with JSON: \
-{\"said\": [\"...\"], \"agreed\": [\"...\"], \"will_do\": [\"...\"]}";
+/// First pass over one person's words, part by part: short notes.
+const PERSON_NOTES_PROMPT: &str = "The user message is what one person said in \
+a meeting. Take short notes on it in your own words, in the same language. \
+Never copy their sentences. Never write \"I\" or a name: start each note with \
+a verb such as Wants, Thinks, Asked, Explained, Worried. said: up to 4 main \
+points, each under 15 words. agreed: what they agreed to, or an empty list. \
+will_do: tasks they took on, each under 12 words, or an empty list. Reply \
+only with JSON with the keys said, agreed and will_do, each a list of strings.";
+
+/// Second pass: the notes boiled down to a card.
+const PERSON_CARD_PROMPT: &str = "The user message is notes on what one person \
+said in a meeting. Combine them into a short card, in the same language. \
+gist: one sentence under 30 words on what this person mainly cared about or \
+argued. said: the 4 most important points, each under 15 words, none \
+repeating. agreed: up to 3. will_do: up to 3 tasks. Never write \"I\" or a \
+name: start with a verb. Reply only with JSON with the keys gist (a string), \
+said, agreed and will_do (lists of strings).";
+
+/// How much of each a card keeps, however much comes back.
+const MAX_SAID: usize = 4;
+const MAX_AGREED: usize = 3;
+const MAX_WILL_DO: usize = 3;
+/// Longer than this isn't a note; it's their words copied.
+const MAX_ITEM_CHARS: usize = 140;
+const MAX_GIST_CHARS: usize = 260;
 
 /// People who talked less than this get no card of their own.
 const MIN_PERSON_TALK_MS: i64 = 15_000;
@@ -562,47 +580,172 @@ async fn summarize_with_people(
         return Ok(summary);
     }
     // Someone who talked a long time is read in parts, like a long note.
-    let context: String = summary.summary.chars().take(1_500).collect();
-    let room = writer
-        .part_chars()
-        .saturating_sub(context.chars().count() + 100)
-        .max(1_000);
-    let jobs: Vec<(u32, Vec<String>)> = speakers
+    let room = writer.part_chars().saturating_sub(400).max(1_000);
+    let jobs: Vec<(u32, String, Vec<String>)> = speakers
         .into_iter()
-        .map(|(id, words)| (id, split_into_parts(&words, room)))
+        .map(|(id, words)| {
+            let parts = split_into_parts(&words, room);
+            (id, words, parts)
+        })
         .collect();
-    let count: u32 = jobs.iter().map(|(_, parts)| parts.len() as u32).sum();
+    // Each part, then one pass per person to boil it down.
+    let count: u32 = jobs
+        .iter()
+        .map(|(_, _, parts)| parts.len() as u32 + 1)
+        .sum();
     let mut done = 0;
-    for (id, parts) in jobs {
-        let mut card = PersonSummary {
-            person: id,
-            ..Default::default()
-        };
-        for part in parts {
-            done += 1;
-            let _ = app.emit(
-                "summary-progress",
-                SummaryProgress {
-                    note_id,
-                    part: done,
-                    parts: count,
-                },
-            );
-            let input = format!("Meeting summary:\n{context}\n\nWhat this person said:\n{part}");
-            match writer.ask(PERSON_PROMPT, person_schema(), input).await {
-                Ok(reply) => match parse_person_reply(id, &reply) {
-                    Some(more) => merge_person(&mut card, more),
-                    None => debug!("Part of person {id}'s summary came back empty"),
-                },
-                // One person failing shouldn't lose the whole summary.
-                Err(e) => warn!("Failed to summarize part of person {id}'s words: {e}"),
-            }
-        }
-        if !(card.said.is_empty() && card.agreed.is_empty() && card.will_do.is_empty()) {
+    let mut progress = |app: &AppHandle| {
+        done += 1;
+        let _ = app.emit(
+            "summary-progress",
+            SummaryProgress {
+                note_id,
+                part: done,
+                parts: count,
+            },
+        );
+    };
+    for (id, words, parts) in jobs {
+        if let Some(card) = write_person_card(writer, id, &words, parts, || progress(app)).await {
             summary.people.push(card);
         }
     }
     Ok(summary)
+}
+
+/// One person's card: notes on each part of their words, then those notes
+/// boiled down. `on_step` runs before each call to the AI.
+async fn write_person_card(
+    writer: &Writer,
+    id: u32,
+    words: &str,
+    parts: Vec<String>,
+    mut on_step: impl FnMut(),
+) -> Option<PersonSummary> {
+    let mut notes = PersonSummary {
+        person: id,
+        ..Default::default()
+    };
+    for part in parts {
+        on_step();
+        match writer
+            .ask(PERSON_NOTES_PROMPT, person_schema(false), part)
+            .await
+        {
+            Ok(reply) => match parse_person_reply(id, &reply, words) {
+                Some(more) => merge_person(&mut notes, more),
+                None => debug!("Part of person {id}'s notes came back empty"),
+            },
+            // One person failing shouldn't lose the whole summary.
+            Err(e) => warn!("Failed to take notes on person {id}'s words: {e}"),
+        }
+    }
+    on_step();
+    if notes.said.is_empty() && notes.agreed.is_empty() && notes.will_do.is_empty() {
+        return None;
+    }
+    let card = match writer
+        .ask(PERSON_CARD_PROMPT, person_schema(true), notes_text(&notes))
+        .await
+    {
+        Ok(reply) => parse_person_reply(id, &reply, words),
+        Err(e) => {
+            warn!("Failed to boil down person {id}'s notes: {e}");
+            None
+        }
+    };
+    Some(trimmed(card.unwrap_or(notes)))
+}
+
+/// The notes as the second pass reads them.
+fn notes_text(notes: &PersonSummary) -> String {
+    let list = |title: &str, items: &[String]| {
+        let mut text = format!("{title}:\n");
+        for item in items {
+            text.push_str(&format!("- {item}\n"));
+        }
+        text
+    };
+    [
+        list("said", &notes.said),
+        list("agreed", &notes.agreed),
+        list("will_do", &notes.will_do),
+    ]
+    .join("\n")
+}
+
+/// A card cut to what fits, whatever came back.
+fn trimmed(mut card: PersonSummary) -> PersonSummary {
+    card.said.truncate(MAX_SAID);
+    card.agreed.truncate(MAX_AGREED);
+    card.will_do.truncate(MAX_WILL_DO);
+    card
+}
+
+/// Lower-case words, for spotting copied sentences.
+fn plain_words(text: &str) -> String {
+    text.split_whitespace()
+        .map(|w| {
+            w.trim_matches(|c: char| !c.is_alphanumeric())
+                .to_lowercase()
+        })
+        .filter(|w| !w.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// One note tidied: written about them, not by them, and not their words
+/// copied. `None` when there's nothing usable.
+fn tidy_note(item: &str, their_words: &str, limit: usize) -> Option<String> {
+    let mut item = item
+        .trim()
+        .trim_start_matches(['-', '•', '*'])
+        .trim()
+        .trim_matches('"')
+        .trim()
+        .to_string();
+    // Pieces of JSON a small model left in.
+    if item.is_empty() || item.contains(['[', ']', '{', '}']) || item.contains("\":") {
+        return None;
+    }
+    // "I said that X" -> "X"; "I will send it" -> "Send it".
+    let lower = item.to_lowercase();
+    for start in [
+        "i said that ",
+        "i mentioned that ",
+        "i emphasized that ",
+        "i noted that ",
+        "i added that ",
+        "i highlighted ",
+        "i suggested ",
+        "i discussed ",
+        "i think ",
+        "i feel ",
+        "i will ",
+        "i'll ",
+        "we will ",
+        "i ",
+    ] {
+        if lower.starts_with(start) {
+            item = item[start.len()..].trim().to_string();
+            break;
+        }
+    }
+    let mut chars = item.chars();
+    item = match chars.next() {
+        Some(c) => c.to_uppercase().chain(chars).collect(),
+        None => return None,
+    };
+    item = item.trim_end_matches(['.', ';', ',']).to_string();
+    if item.chars().count() > limit {
+        return None;
+    }
+    // Eight or more of their words in a row is a quote, not a note.
+    let plain = plain_words(&item);
+    if plain.split(' ').count() >= 8 && their_words.contains(&plain) {
+        return None;
+    }
+    Some(item)
 }
 
 /// Adds a part's points to a person's card, skipping repeats.
@@ -650,20 +793,35 @@ fn summary_schema() -> serde_json::Value {
     })
 }
 
-fn person_schema() -> serde_json::Value {
+fn person_schema(gist: bool) -> serde_json::Value {
     let list = serde_json::json!({ "type": "array", "items": { "type": "string" } });
-    serde_json::json!({
-        "type": "object",
-        "properties": { "said": list, "agreed": list, "will_do": list },
-        "required": ["said", "agreed", "will_do"],
-        "additionalProperties": false
-    })
+    if gist {
+        serde_json::json!({
+            "type": "object",
+            "properties": {
+                "gist": { "type": "string" },
+                "said": list, "agreed": list, "will_do": list
+            },
+            "required": ["gist", "said", "agreed", "will_do"],
+            "additionalProperties": false
+        })
+    } else {
+        serde_json::json!({
+            "type": "object",
+            "properties": { "said": list, "agreed": list, "will_do": list },
+            "required": ["said", "agreed", "will_do"],
+            "additionalProperties": false
+        })
+    }
 }
 
-/// Reads a person's JSON card; `None` when it has nothing in it.
-fn parse_person_reply(person: u32, reply: &str) -> Option<PersonSummary> {
+/// Reads a person's JSON card, tidying each note against `their_words`;
+/// `None` when nothing usable is in it.
+fn parse_person_reply(person: u32, reply: &str, their_words: &str) -> Option<PersonSummary> {
     #[derive(serde::Deserialize)]
     struct Reply {
+        #[serde(default)]
+        gist: String,
         #[serde(default)]
         said: Vec<String>,
         #[serde(default)]
@@ -673,15 +831,23 @@ fn parse_person_reply(person: u32, reply: &str) -> Option<PersonSummary> {
     }
     let json = json_body(reply);
     let reply: Reply = serde_json::from_str(json).ok()?;
+    let their_words = plain_words(their_words);
     let clean = |items: Vec<String>| -> Vec<String> {
-        items
-            .into_iter()
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect()
+        let mut kept: Vec<String> = Vec::new();
+        for item in items {
+            if let Some(note) = tidy_note(&item, &their_words, MAX_ITEM_CHARS) {
+                if !kept.iter().any(|k| k.eq_ignore_ascii_case(&note)) {
+                    kept.push(note);
+                }
+            }
+        }
+        kept
     };
     let card = PersonSummary {
         person,
+        gist: tidy_note(&reply.gist, &their_words, MAX_GIST_CHARS)
+            .map(|g| format!("{g}."))
+            .unwrap_or_default(),
         said: clean(reply.said),
         agreed: clean(reply.agreed),
         will_do: clean(reply.will_do),
@@ -997,15 +1163,41 @@ mod tests {
 
     #[test]
     fn person_cards_are_read_and_empty_ones_dropped() {
+        let words = "So the deck is long and we should cut it. I will send the deck by Friday.";
         let reply = r#"<think>x</think>```json
-{"said":[" Deck is long ",""],"agreed":[],"will_do":["Send the deck by Friday"]}
+{"gist":"Wants a shorter deck","said":[" Deck is long ","","will_do]: [","I said that the deck needs cutting"],"agreed":[],"will_do":["I will send the deck by Friday"]}
 ```"#;
-        let card = parse_person_reply(2, reply).unwrap();
+        let card = parse_person_reply(2, reply, words).unwrap();
         assert_eq!(card.person, 2);
-        assert_eq!(card.said, vec!["Deck is long"]);
+        assert_eq!(card.gist, "Wants a shorter deck.");
+        assert_eq!(card.said, vec!["Deck is long", "The deck needs cutting"]);
         assert_eq!(card.will_do, vec!["Send the deck by Friday"]);
-        assert!(parse_person_reply(1, r#"{"said":[],"agreed":[],"will_do":[]}"#).is_none());
-        assert!(parse_person_reply(1, "not json").is_none());
+        assert!(parse_person_reply(1, r#"{"said":[],"agreed":[],"will_do":[]}"#, "").is_none());
+        assert!(parse_person_reply(1, "not json", "").is_none());
+    }
+
+    #[test]
+    fn copied_sentences_and_long_items_are_not_notes() {
+        let words = plain_words(
+            "Unless we write down the whole plan first, we should not start building it, right?",
+        );
+        assert_eq!(
+            tidy_note(
+                "Unless we write down the whole plan first we should not start building",
+                &words,
+                MAX_ITEM_CHARS
+            ),
+            None
+        );
+        assert_eq!(
+            tidy_note(
+                "Wants the whole process mapped first",
+                &words,
+                MAX_ITEM_CHARS
+            ),
+            Some("Wants the whole process mapped first".into())
+        );
+        assert_eq!(tidy_note(&"word ".repeat(40), &words, MAX_ITEM_CHARS), None);
     }
 
     #[test]
@@ -1053,5 +1245,40 @@ mod tests {
         let prose = "Just a sentence.";
         assert_eq!(parse_summary_reply(prose).unwrap().summary, prose);
         assert!(parse_summary_reply("  ").is_err());
+    }
+}
+
+/// Writes the person cards for a real meeting with a running summary
+/// helper: `BOLKE_HELPER=http://127.0.0.1:PORT/v1 BOLKE_NOTE=12 cargo test
+/// --lib person_cards_live -- --ignored --nocapture`
+#[cfg(test)]
+mod person_cards_live {
+    use super::*;
+
+    #[test]
+    #[ignore]
+    fn person_cards_live() {
+        let base_url = std::env::var("BOLKE_HELPER").unwrap();
+        let note: i64 = std::env::var("BOLKE_NOTE").unwrap().parse().unwrap();
+        let db = std::path::PathBuf::from(std::env::var("HOME").unwrap())
+            .join("Library/Application Support/app.bolke.desktop/notes.db");
+        let conn =
+            rusqlite::Connection::open_with_flags(db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+                .unwrap();
+        let people: String = conn
+            .query_row("SELECT people FROM notes WHERE id = ?1", [note], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        let people: NotePeople = serde_json::from_str(&people).unwrap();
+        let writer = Writer::Local { base_url };
+        let room = writer.part_chars().saturating_sub(400).max(1_000);
+        tauri::async_runtime::block_on(async {
+            for (id, words) in people_to_summarize(&people) {
+                let parts = split_into_parts(&words, room);
+                let card = write_person_card(&writer, id, &words, parts, || {}).await;
+                println!("\n== person {id} ==\n{card:#?}");
+            }
+        });
     }
 }
