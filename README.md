@@ -20,6 +20,7 @@
   <a href="#install-on-windows"><b>Windows</b></a> &nbsp;·&nbsp;
   <a href="#install-on-linux"><b>Linux</b></a> &nbsp;·&nbsp;
   <a href="#features"><b>Features</b></a> &nbsp;·&nbsp;
+  <a href="#notes-meetings-and-reminders"><b>Meetings</b></a> &nbsp;·&nbsp;
   <a href="#screenshots"><b>Screenshots</b></a> &nbsp;·&nbsp;
   <a href="#logo-and-colours"><b>Logo</b></a> &nbsp;·&nbsp;
   <a href="#building-it-yourself"><b>Build it</b></a>
@@ -53,7 +54,47 @@ Everything runs on your own computer. Your voice never leaves it: no account, no
 - ⌨️ **Types anywhere.** Email, chat, documents, the browser: wherever your cursor is.
 - 🕘 **History.** Look back at what you dictated, copy it again, or replay the recording.
 - 🎛️ **Your shortcut.** Hold to talk, or press once to start and again to stop.
+- 💡 **Notes and ideas.** A second shortcut saves what you say as an idea instead of typing it. Write notes too, and sort them into projects.
+- 👥 **Meetings, with who said what.** Record a call or a room. Bolke writes it all out and shows who said each line. Name a voice once and it knows that person in the next meeting. On Linux it also records the other people on the call.
+- ✨ **AI summaries.** A short summary and the action points for any note or meeting, written on your computer by a free model.
+- ⏰ **Reminders and to-dos.** Say "remind me to call Priya at 5" with either shortcut, and Bolke rings you then. Works in English and Hinglish ("kal subah 9 baje yaad dilana…"). Action points from meetings show up in your to-do list.
 - 💸 **Free and open source.** No account, no subscription, MIT licensed.
+
+## Notes, meetings and reminders
+
+<p align="center">
+  <img src=".github/assets/screenshot-meeting-speakers.png" alt="A meeting written out line by line, with each person's name and colour, and how long each of them talked" width="85%">
+  <br><sub><b>Who said what:</b> every line of the meeting, with the person who said it. Tap a name to see only their lines.</sub>
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src=".github/assets/screenshot-notes.png" alt="The Notes tab, with ideas and written notes sorted into projects"></td>
+    <td width="50%"><img src=".github/assets/screenshot-meetings.png" alt="The Meetings tab, listing meetings with the people in each one"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Notes:</b> spoken ideas and written notes, in projects</sub></td>
+    <td align="center"><sub><b>Meetings:</b> every meeting, with who was there</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src=".github/assets/screenshot-todo.png" alt="The To-do tab, with overdue, today and later reminders"></td>
+    <td width="50%" align="center" valign="middle">
+      <img src=".github/assets/bubble-reminder.png" alt="The reminder bubble, with Done and In 10 min buttons" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>To-do:</b> what you asked Bolke to remember, and when</sub></td>
+    <td align="center"><sub><b>Reminder:</b> rings at the time, with Done or In 10 min</sub></td>
+  </tr>
+</table>
+
+**Reminders, step by step**
+
+1. Press either shortcut and say "remind me…", for example: _"Remind me to send the invoice tomorrow at 6."_
+2. Bolke shows a small bubble with the reminder and its time. Nothing is typed. If you used the dictation shortcut and meant to type those words, click **Type it instead**.
+3. At that time you get a notification with a sound, and the bubble comes back with **Done** and **In 10 min**.
+
+Say it without a time ("remind me to buy a pop filter") and it's added to your to-do list with no time. Everything is kept on your computer.
 
 ## Screenshots
 
@@ -205,6 +246,8 @@ Built with [Tauri](https://tauri.app) (Rust and React).
 MIT. See [LICENSE](LICENSE).
 
 Bolke includes its own copies of a few open-source libraries, kept under their original licences: the keyboard, microphone and audio libraries in `src-tauri/crates/` and the model list in `packages/models/`. Each folder has its licence file.
+
+The AI models Bolke downloads keep their own licences. For meetings: NVIDIA's Sortformer (NVIDIA Open Model License) hears who is talking when, and NVIDIA's TitaNet (CC-BY-4.0) recognises voices it has met before. Summaries are written by Qwen3 (Apache 2.0).
 
 <br>
 
