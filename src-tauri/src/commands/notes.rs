@@ -1390,8 +1390,7 @@ mod tests {
 
     #[test]
     fn the_check_leaves_out_quotes_call_talk_and_repeats() {
-        let words =
-            plain_words("Sorry, your voice is cracking. Can you see my screen now?");
+        let words = plain_words("Sorry, your voice is cracking. Can you see my screen now?");
         // Quotes, the call itself, and lines written as the speaker.
         assert!(not_a_note("Sorry, your voice is cracking", &words).is_some());
         assert!(not_a_note("Wants to rejoin but voices are cracking", &words).is_some());
