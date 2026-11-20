@@ -116,6 +116,28 @@ pub fn remove(wav: &Path) {
     let _ = std::fs::remove_file(sidecar_for(wav));
 }
 
+/// Whether a meeting is recording and nothing but the screen has told
+/// Bolke names yet (the add-on, when there, is better).
+pub fn wants_screen() -> bool {
+    collecting()
+        .as_ref()
+        .is_some_and(|c| c.names.platform.is_empty() || c.names.platform.starts_with("screen"))
+}
+
+/// Adds what Bolke saw in the call window: `speaking` holds stretches of
+/// talking in ms since the Unix epoch.
+pub fn add_from_screen(app: &str, people: Vec<String>, speaking: Vec<(String, i64, i64)>) -> bool {
+    take_report(Report {
+        platform: format!("screen-{app}"),
+        people,
+        self_name: None,
+        speaking: speaking
+            .into_iter()
+            .map(|(name, start, end)| ReportSpeech { name, start, end })
+            .collect(),
+    })
+}
+
 /// Adds a report to the meeting being recorded. Returns whether one is.
 fn take_report(report: Report) -> bool {
     let mut guard = collecting();

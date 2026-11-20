@@ -2,6 +2,10 @@ fn main() {
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     build_apple_intelligence_bridge();
 
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        build_call_screen_bridge();
+    }
+
     generate_tray_translations();
 
     // Linux ships transcribe-cpp as a shared libtranscribe + loadable ggml
@@ -548,6 +552,104 @@ fn build_apple_intelligence_bridge() {
         println!("cargo:rustc-link-arg=FoundationModels");
     }
 
+    println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
+}
+
+/// Builds swift/call_screen.swift: looking at the call window for whose tile
+/// lights up (src/call_screen.rs). Needs only the frameworks every macOS SDK
+/// has, so it builds with the Command Line Tools too.
+fn build_call_screen_bridge() {
+    use std::env;
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    const SOURCE: &str = "swift/call_screen.swift";
+    println!("cargo:rerun-if-changed={SOURCE}");
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+    let object = out_dir.join("call_screen.o");
+    let lib = out_dir.join("libcall_screen.a");
+    let sdk = env::var("SDKROOT").unwrap_or_else(|_| {
+        String::from_utf8(
+            Command::new("xcrun")
+                .args(["--sdk", "macosx", "--show-sdk-path"])
+                .output()
+                .expect("Failed to locate macOS SDK")
+                .stdout,
+        )
+        .expect("SDK path is not valid UTF-8")
+        .trim()
+        .to_string()
+    });
+    let swiftc = env::var("SWIFTC").unwrap_or_else(|_| {
+        String::from_utf8(
+            Command::new("xcrun")
+                .args(["--find", "swiftc"])
+                .output()
+                .expect("Failed to locate swiftc")
+                .stdout,
+        )
+        .expect("swiftc path is not valid UTF-8")
+        .trim()
+        .to_string()
+    });
+    let arch = match env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
+        Ok("x86_64") => "x86_64",
+        _ => "arm64",
+    };
+    let target = format!("{arch}-apple-macosx11.0");
+    let status = Command::new(&swiftc)
+        .args([
+            "-parse-as-library",
+            "-target",
+            &target,
+            "-sdk",
+            &sdk,
+            "-O",
+            "-c",
+            SOURCE,
+            "-o",
+            object.to_str().expect("object path is not UTF-8"),
+        ])
+        .status()
+        .expect("Failed to invoke swiftc for the call screen bridge");
+    if !status.success() {
+        panic!("swiftc failed to compile {SOURCE}");
+    }
+    let status = Command::new("libtool")
+        .args([
+            "-static",
+            "-o",
+            lib.to_str().expect("lib path is not UTF-8"),
+            object.to_str().expect("object path is not UTF-8"),
+        ])
+        .status()
+        .expect("Failed to run libtool for the call screen bridge");
+    if !status.success() {
+        panic!("libtool failed for the call screen bridge");
+    }
+
+    let toolchain_swift_lib = Path::new(&swiftc)
+        .parent()
+        .and_then(|p| p.parent())
+        .map(|root| root.join("lib/swift/macosx"))
+        .expect("Unable to determine Swift toolchain lib directory");
+    println!("cargo:rustc-link-search=native={}", out_dir.display());
+    println!("cargo:rustc-link-lib=static=call_screen");
+    println!(
+        "cargo:rustc-link-search=native={}",
+        toolchain_swift_lib.display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}",
+        Path::new(&sdk).join("usr/lib/swift").display()
+    );
+    println!("cargo:rustc-link-lib=framework=Foundation");
+    println!("cargo:rustc-link-lib=framework=CoreGraphics");
+    println!("cargo:rustc-link-lib=framework=Vision");
+    // macOS 12.3+; Bolke still opens on older systems.
+    println!("cargo:rustc-link-arg=-weak_framework");
+    println!("cargo:rustc-link-arg=ScreenCaptureKit");
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
 }
 
