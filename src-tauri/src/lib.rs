@@ -898,6 +898,7 @@ pub fn run(cli_args: CliArgs) {
             commands::notes::summarize_note,
             commands::notes::get_summary_source,
             commands::ask::ask_note,
+            commands::ask::warm_note_helper,
             commands::ask::list_note_answers,
             commands::ask::clear_note_answers,
             commands::notes::can_record_calls,

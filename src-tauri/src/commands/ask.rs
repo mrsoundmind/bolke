@@ -61,6 +61,30 @@ pub fn clear_note_answers(app: AppHandle, id: i64) -> Result<(), String> {
     notes.clear_answers(id).map_err(|e| e.to_string())
 }
 
+/// Gets the on-device model ready while the question is being typed, so the
+/// first answer doesn't also wait for the model to load. Does nothing when a
+/// service or Apple Intelligence writes the answers.
+#[tauri::command]
+#[specta::specta]
+pub async fn warm_note_helper(app: AppHandle) -> Result<(), String> {
+    with_writer(&app, |writer| async move {
+        if !matches!(writer, Writer::Local { .. }) {
+            return Ok(());
+        }
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": { "ok": { "type": "boolean" } },
+            "required": ["ok"],
+        });
+        writer
+            .ask("Reply that you are ready.", schema, "Ready?".into())
+            .await
+            .map(|_| ())
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
 /// Answers `question` from the note's words and keeps it with the note.
 #[tauri::command]
 #[specta::specta]

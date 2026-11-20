@@ -68,8 +68,9 @@ const CATALOG: &[Catalog] = &[
 /// summarized in parts (see `commands::notes`), so 8K keeps memory modest:
 /// about 1.2 GB beside the 4B model's 2.5 GB.
 const CONTEXT_TOKENS: u32 = 8192;
-/// The helper stops after this long without a summary.
-const IDLE_STOP: Duration = Duration::from_secs(180);
+/// The helper stops after this long without a summary or answer. Long
+/// enough that follow-up questions in Ask don't reload the model.
+const IDLE_STOP: Duration = Duration::from_secs(600);
 /// Loading a model from a slow disk can take a while.
 const START_TIMEOUT: Duration = Duration::from_secs(180);
 

@@ -5,6 +5,7 @@ import {
   type AnswerCheck,
   type Note,
   type NoteAnswer,
+  type Result,
 } from "@/bindings";
 import { colorOf } from "./noteUtils";
 
@@ -21,6 +22,14 @@ const clock = (ms: number) => {
     ? `${Math.floor(s / 3600)}:${two(Math.floor(s / 60) % 60)}:${two(s % 60)}`
     : `${Math.floor(s / 60)}:${two(s % 60)}`;
 };
+
+/** Questions still being answered, by note. Kept outside the tab so that
+ * leaving the meeting and coming back still shows "Reading…" and then the
+ * answer, instead of losing both. */
+const pending = new Map<
+  number,
+  { question: string; done: Promise<Result<NoteAnswer, string>> }
+>();
 
 /** How well the meeting backs an answer up, from Bolke's word check. */
 const CheckBadge: React.FC<{ check: AnswerCheck; quoted: boolean }> = ({
@@ -62,10 +71,47 @@ export const NoteAsk: React.FC<NoteAskProps> = ({ note, onJump }) => {
   const [error, setError] = useState<string | null>(null);
   const end = useRef<HTMLDivElement>(null);
 
+  const alive = useRef(true);
   useEffect(() => {
-    commands.listNoteAnswers(note.id).then((r) => {
-      if (r.status === "ok") setAnswers(r.data);
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+
+  const loadAnswers = (id: number) =>
+    commands.listNoteAnswers(id).then((r) => {
+      if (alive.current && r.status === "ok") setAnswers(r.data);
     });
+
+  // Shows a question until its answer is in, even one asked before the
+  // user left this meeting and came back.
+  const follow = (id: number, question: string) => {
+    const job = pending.get(id);
+    if (!job) return;
+    setAsking(question);
+    job.done.then(async (result) => {
+      if (!alive.current) return;
+      if (result.status === "ok") {
+        await loadAnswers(id);
+      } else {
+        setTyped(question);
+        setError(
+          result.error === "no_ai_provider"
+            ? t("notes.ask.noModel")
+            : t("notes.ask.failed"),
+        );
+      }
+      if (alive.current) setAsking(null);
+    });
+  };
+
+  useEffect(() => {
+    loadAnswers(note.id);
+    const job = pending.get(note.id);
+    if (job) follow(note.id, job.question);
+    // Load the model while the question is typed.
+    else commands.warmNoteHelper().catch(() => {});
   }, [note.id]);
 
   useEffect(() => {
@@ -94,24 +140,21 @@ export const NoteAsk: React.FC<NoteAskProps> = ({ note, onJump }) => {
     return all.filter((q) => !asked.has(q));
   }, [note.people, answers, t]);
 
-  const ask = async (question: string) => {
+  const ask = (question: string) => {
     const q = question.trim();
-    if (!q || asking) return;
-    setAsking(q);
+    if (!q || asking || pending.has(note.id)) return;
     setError(null);
     setTyped("");
-    const result = await commands.askNote(note.id, q);
-    setAsking(null);
-    if (result.status === "ok") {
-      setAnswers((a) => [...a, result.data]);
-    } else {
-      setTyped(q);
-      setError(
-        result.error === "no_ai_provider"
-          ? t("notes.ask.noModel")
-          : t("notes.ask.failed"),
-      );
-    }
+    const id = note.id;
+    const done = commands.askNote(id, q).catch(
+      (e): Result<NoteAnswer, string> => ({
+        status: "error",
+        error: String(e),
+      }),
+    );
+    pending.set(id, { question: q, done });
+    done.finally(() => pending.delete(id));
+    follow(id, q);
   };
 
   const clear = async () => {

@@ -1257,6 +1257,19 @@ async askNote(id: number, question: string) : Promise<Result<NoteAnswer, string>
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Gets the on-device model ready while the question is being typed, so the
+ * first answer doesn't also wait for the model to load. Does nothing when a
+ * service or Apple Intelligence writes the answers.
+ */
+async warmNoteHelper() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("warm_note_helper") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async listNoteAnswers(id: number) : Promise<Result<NoteAnswer[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("list_note_answers", { id }) };
