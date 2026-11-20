@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "यह कौन है? नाम दें",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "{{time}} बोले · मीटिंग का {{percent}}%",
       "readWords": "उनकी बातें पढ़ें · {{count}} बार ›",
       "noSummary": "{{name}} का सारांश अभी नहीं है। यह मीटिंग के सारांश के साथ लिखा जाता है।",

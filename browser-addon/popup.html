@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        margin: 0;
+        width: 280px;
+        background: #070a14;
+        color: #e8eeff;
+        font:
+          14px/1.5 Inter,
+          system-ui,
+          sans-serif;
+      }
+      main {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      p {
+        margin: 0;
+        color: #9aa7c7;
+        font-size: 13px;
+      }
+      .state {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #9aa7c7;
+        flex: none;
+      }
+      .on .dot {
+        background: #7fe0b8;
+      }
+      .off .dot {
+        background: #f2b36b;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Bolke</h1>
+      <div id="state" class="state">
+        <span class="dot"></span><span id="text">Checking…</span>
+      </div>
+      <p id="call" hidden></p>
+      <p>
+        In a Google Meet call, Bolke reads who is there and who is talking, so
+        your meeting notes get real names. It reads nothing else, and nothing
+        leaves this computer.
+      </p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

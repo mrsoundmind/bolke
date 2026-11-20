@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Vem är det? Namnge",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Pratade {{time}} · {{percent}} % av mötet",
       "readWords": "Läs vad de sa · {{count}} gånger ›",
       "noSummary": "Ingen sammanfattning för {{name}} än. Den skrivs med mötets sammanfattning.",

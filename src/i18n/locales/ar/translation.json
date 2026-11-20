@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "من هذا؟ سمّه",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "تحدث {{time}} · {{percent}}% من الاجتماع",
       "readWords": "اقرأ كلامه · تحدث {{count}} مرة ›",
       "noSummary": "لا يوجد ملخص لـ {{name}} بعد. يُكتب مع ملخص الاجتماع.",

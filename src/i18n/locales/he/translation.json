@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "מי זה? תנו שם",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "דיבר/ה {{time}} · {{percent}}% מהפגישה",
       "readWords": "קרא את דבריו · {{count}} פעמים ›",
       "noSummary": "עדיין אין סיכום עבור {{name}}. הוא נכתב עם סיכום הפגישה.",

@@ -88,7 +88,17 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
   focus,
   onReadWords,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // "Dev or Rahul", in the app's language.
+  const orList = (names: string[]) => {
+    try {
+      return new Intl.ListFormat(i18n.language, {
+        type: "disjunction",
+      }).format(names);
+    } catch {
+      return names.join(" / ");
+    }
+  };
   const { models, progress } = useSpeakerModels();
   const [who, setWho] = useState<number | null>(null);
   const [naming, setNaming] = useState<number | null>(null);
@@ -300,8 +310,10 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
   }
 
   const named = naming != null;
+  // The names the call suggests for this voice come first.
   const choices = Array.from(
     new Set([
+      ...(people.people.find((p) => p.id === naming)?.choices ?? []),
       ...people.people.filter((p) => p.name).map((p) => p.name as string),
       ...knownNames,
     ]),
@@ -455,7 +467,16 @@ export const NotePeople: React.FC<NotePeopleProps> = ({
                 </span>
                 {!p.name && (
                   <span className="text-[12px] text-[#8fb4ff]">
-                    {t("notes.people.nameThem")}
+                    {p.choices?.length
+                      ? t("notes.people.maybe", {
+                          names: orList(p.choices),
+                        })
+                      : t("notes.people.nameThem")}
+                  </span>
+                )}
+                {p.name && p.from_call && (
+                  <span className="text-[12px] text-[#9fe8c8]">
+                    {t("notes.people.fromCall")}
                   </span>
                 )}
               </button>

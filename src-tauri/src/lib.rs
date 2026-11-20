@@ -5,6 +5,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod autostart;
 mod call_audio;
+mod call_names;
 mod call_watch;
 mod catalog;
 mod chinese_script;
@@ -279,6 +280,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     tauri::async_runtime::spawn(commands::notes::rescue_meetings(app_handle.clone()));
     reminders::start(app_handle);
     call_watch::start(app_handle);
+    call_names::listen();
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command

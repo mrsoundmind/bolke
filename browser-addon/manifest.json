@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Bolke: names from your calls",
+  "short_name": "Bolke",
+  "version": "0.1.0",
+  "description": "Tells the Bolke app who is in your Google Meet call and who is talking, so meeting notes have real names. Nothing leaves your computer.",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_title": "Bolke",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["meet.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": ["http://127.0.0.1:47213/*"]
+}

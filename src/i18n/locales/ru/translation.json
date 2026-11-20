@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Кто это? Назвать",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Говорил(а) {{time}} · {{percent}}% встречи",
       "readWords": "Читать реплики · {{count}} раз ›",
       "noSummary": "Сводки для {{name}} пока нет. Она пишется вместе со сводкой встречи.",

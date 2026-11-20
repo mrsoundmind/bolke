@@ -17,6 +17,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
+use crate::call_names::CallNames;
+
 use crate::managers::history::HistoryManager;
 
 static MIGRATIONS: &[M] = &[
@@ -186,6 +188,12 @@ pub struct Person {
     /// Named because the voice matched one Bolke knows, not by the user.
     #[serde(default)]
     pub guessed: bool,
+    /// Named from the call (Google Meet showed them talking at those times).
+    #[serde(default)]
+    pub from_call: bool,
+    /// Names from the call this voice might be, when Bolke isn't sure.
+    #[serde(default)]
+    pub choices: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Type)]
@@ -708,10 +716,20 @@ impl NotesManager {
         id: i64,
         mut people: NotePeople,
         fingerprints: &[(u32, Vec<f32>)],
+        call: Option<&CallNames>,
     ) -> Result<()> {
         let mut conn = self.connection()?;
         let known = Self::known_voices(&conn)?;
         name_known_voices(&mut people.people, fingerprints, &known);
+        if let Some(call) = call {
+            let sure = name_from_call(&mut people, call);
+            // Voices the call named for sure are known from now on.
+            for (person, name) in sure {
+                if let Some((_, fingerprint)) = fingerprints.iter().find(|(p, _)| *p == person) {
+                    self.remember_voice(&conn, &name, fingerprint)?;
+                }
+            }
+        }
         let tx = conn.transaction()?;
         tx.execute("DELETE FROM note_voices WHERE note_id = ?1", [id])?;
         for (person, fingerprint) in fingerprints {
@@ -786,6 +804,8 @@ impl NotesManager {
         } else if let Some(p) = people.people.iter_mut().find(|p| p.id == person) {
             p.name = name.clone();
             p.guessed = false;
+            p.from_call = false;
+            p.choices.clear();
         }
         conn.execute(
             "UPDATE notes SET people = ?1, updated_at = ?2 WHERE id = ?3",
@@ -911,6 +931,108 @@ fn from_blob(blob: &[u8]) -> Vec<f32> {
         .collect()
 }
 
+/// A voice takes a name from the call when at least this share of its
+/// talking lines up with that name's tile lighting up...
+const CALL_SURE: f32 = 0.5;
+/// ...and this many times more than with anyone else's.
+const CALL_AHEAD: f32 = 2.0;
+/// Below sure, names lining up at least this much are offered as choices.
+const CALL_MAYBE: f32 = 0.15;
+
+/// Names the people a known voice didn't name, from who the call showed
+/// talking at the same moments. Each name goes to one voice, the best
+/// matches first. Unsure voices get the likeliest names as one-tap choices.
+/// Returns the people named for sure.
+fn name_from_call(people: &mut NotePeople, call: &CallNames) -> Vec<(u32, String)> {
+    let first_word = |n: &str| n.split_whitespace().next().unwrap_or("").to_lowercase();
+    // A name already on someone (a known voice) isn't free, nor is one with
+    // the same first name ("Sam" for "Sam Lee").
+    let taken: Vec<String> = people
+        .people
+        .iter()
+        .filter_map(|p| p.name.as_deref().map(first_word))
+        .collect();
+    let free: Vec<&String> = call
+        .people
+        .iter()
+        .filter(|n| !taken.contains(&first_word(n)))
+        .collect();
+
+    // How long each unnamed voice talked while each name's tile was lit.
+    let mut scores: Vec<(f32, u32, usize)> = Vec::new();
+    let mut by_person: Vec<(u32, Vec<(f32, usize)>)> = Vec::new();
+    for person in people.people.iter().filter(|p| p.name.is_none()) {
+        let lines: Vec<&NoteLine> = people
+            .lines
+            .iter()
+            .filter(|l| l.person == person.id)
+            .collect();
+        let talk: i64 = lines.iter().map(|l| (l.end_ms - l.start_ms).max(0)).sum();
+        if talk <= 0 {
+            continue;
+        }
+        let mut shares: Vec<(f32, usize)> = free
+            .iter()
+            .enumerate()
+            .map(|(k, name)| {
+                let together: i64 = call
+                    .speaking
+                    .iter()
+                    .filter(|s| &&s.name == name)
+                    .map(|s| {
+                        lines
+                            .iter()
+                            .map(|l| (l.end_ms.min(s.end_ms) - l.start_ms.max(s.start_ms)).max(0))
+                            .sum::<i64>()
+                    })
+                    .sum();
+                (together as f32 / talk as f32, k)
+            })
+            .filter(|(share, _)| *share > 0.0)
+            .collect();
+        shares.sort_by(|a, b| b.0.total_cmp(&a.0));
+        if let Some(&(best, k)) = shares.first() {
+            let next = shares.get(1).map_or(0.0, |s| s.0);
+            if best >= CALL_SURE && best >= next * CALL_AHEAD {
+                scores.push((best, person.id, k));
+            }
+        }
+        by_person.push((person.id, shares));
+    }
+
+    scores.sort_by(|a, b| b.0.total_cmp(&a.0));
+    let mut sure: Vec<(u32, String)> = Vec::new();
+    let mut used: Vec<usize> = Vec::new();
+    for (_, person, k) in scores {
+        if used.contains(&k) || sure.iter().any(|(p, _)| *p == person) {
+            continue;
+        }
+        used.push(k);
+        sure.push((person, free[k].clone()));
+    }
+    for p in people.people.iter_mut() {
+        if let Some((_, name)) = sure.iter().find(|(id, _)| *id == p.id) {
+            p.name = Some(name.clone());
+            p.guessed = true;
+            p.from_call = true;
+        } else if p.name.is_none() {
+            p.choices = by_person
+                .iter()
+                .find(|(id, _)| *id == p.id)
+                .map(|(_, shares)| {
+                    shares
+                        .iter()
+                        .filter(|(share, k)| *share >= CALL_MAYBE && !used.contains(k))
+                        .take(3)
+                        .map(|(_, k)| free[*k].clone())
+                        .collect()
+                })
+                .unwrap_or_default();
+        }
+    }
+    sure
+}
+
 /// Gives people the names of known voices they match, each name once, the
 /// closest matches first.
 fn name_known_voices(
@@ -949,6 +1071,75 @@ fn name_known_voices(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn voices_take_names_from_who_the_call_showed_talking() {
+        use crate::call_names::Speech;
+        let person = |id, name: Option<&str>| Person {
+            id,
+            name: name.map(String::from),
+            talk_ms: 0,
+            guessed: false,
+            from_call: false,
+            choices: Vec::new(),
+        };
+        let line = |person, start_ms, end_ms| NoteLine {
+            start_ms,
+            end_ms,
+            person,
+            text: String::new(),
+        };
+        let speech = |name: &str, start_ms, end_ms| Speech {
+            name: name.into(),
+            start_ms,
+            end_ms,
+        };
+        let mut people = NotePeople {
+            people: vec![
+                person(1, Some("sam")),
+                person(2, None),
+                person(3, None),
+                person(4, None),
+            ],
+            lines: vec![
+                line(1, 0, 5_000),
+                // Voice 2 talks when Anita's tile lights up.
+                line(2, 5_000, 9_000),
+                line(2, 20_000, 24_000),
+                // Voice 3 talks over both Dev and Rahul: not sure.
+                line(3, 10_000, 14_000),
+                // Voice 4 talks when no tile is lit.
+                line(4, 30_000, 31_000),
+            ],
+        };
+        let call = CallNames {
+            platform: "meet".into(),
+            people: vec![
+                "Sam Lee".into(),
+                "Anita".into(),
+                "Dev".into(),
+                "Rahul".into(),
+            ],
+            self_name: Some("Sam Lee".into()),
+            speaking: vec![
+                speech("Sam Lee", 0, 5_000),
+                speech("Anita", 5_300, 9_000),
+                speech("Anita", 20_100, 23_800),
+                speech("Dev", 10_000, 12_200),
+                speech("Rahul", 11_800, 14_000),
+            ],
+        };
+        let sure = name_from_call(&mut people, &call);
+        assert_eq!(sure, vec![(2, "Anita".to_string())]);
+        let p = |id: u32| people.people.iter().find(|p| p.id == id).unwrap();
+        assert_eq!(p(1).name.as_deref(), Some("sam"));
+        assert_eq!(p(2).name.as_deref(), Some("Anita"));
+        assert!(p(2).from_call);
+        assert_eq!(p(3).name, None);
+        assert_eq!(p(3).choices, vec!["Dev".to_string(), "Rahul".to_string()]);
+        assert_eq!(p(4).name, None);
+        assert!(p(4).choices.is_empty());
+    }
 
     #[test]
     fn migrations_are_valid() {

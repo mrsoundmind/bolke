@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "यो को हो? नाम दिनुहोस्",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "{{time}} बोल्नुभयो · मिटिङको {{percent}}%",
       "readWords": "उहाँका कुरा पढ्नुहोस् · {{count}} पटक ›",
       "noSummary": "{{name}} को सारांश अझै छैन। यो मिटिङको सारांशसँगै लेखिन्छ।",

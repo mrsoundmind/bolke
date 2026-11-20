@@ -469,6 +469,7 @@ impl HistoryManager {
 
             // Delete WAV file
             let file_path = self.recordings_dir.join(file_name);
+            crate::call_names::remove(&file_path);
             if file_path.exists() {
                 if let Err(e) = fs::remove_file(&file_path) {
                     error!("Failed to delete WAV file {}: {}", file_name, e);
@@ -695,6 +696,7 @@ impl HistoryManager {
         if let Some(entry) = self.get_entry_by_id(id).await? {
             // Delete the audio file first
             let file_path = self.get_audio_file_path(&entry.file_name);
+            crate::call_names::remove(&file_path);
             if file_path.exists() {
                 if let Err(e) = fs::remove_file(&file_path) {
                     error!("Failed to delete audio file {}: {}", entry.file_name, e);

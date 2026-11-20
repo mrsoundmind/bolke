@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Kdo to je? Pojmenujte",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Mluvil/a {{time}} · {{percent}} % schůzky",
       "readWords": "Číst jejich slova · {{count}}× ›",
       "noSummary": "Shrnutí pro {{name}} zatím není. Píše se se shrnutím schůzky.",

@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Siapa ini? Beri nama",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Bicara {{time}} · {{percent}}% dari rapat",
       "readWords": "Baca ucapannya · {{count}} kali ›",
       "noSummary": "Belum ada ringkasan untuk {{name}}. Ditulis bersama ringkasan rapat.",

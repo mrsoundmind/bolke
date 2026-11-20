@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Quem é? Dê um nome",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Falou {{time}} · {{percent}}% da reunião",
       "readWords": "Ler o que disse · {{count}} vezes ›",
       "noSummary": "Ainda sem resumo de {{name}}. É escrito com o resumo da reunião.",

@@ -245,6 +245,7 @@ impl MeetingRecorder {
             },
             None => None,
         };
+        crate::call_names::begin(&path, chrono::Utc::now().timestamp_millis());
         info!("Meeting recording started: {}", pending.file_name);
         *active = Some(Active {
             recorder,
@@ -283,6 +284,7 @@ impl MeetingRecorder {
             return Ok(None);
         };
         crate::tray::update_tray_menu(&self.app);
+        crate::call_names::end();
         let call = active.call.map(|capture| {
             let delay_ms = capture.started.duration_since(active.started).as_millis() as i64;
             capture.stop();
@@ -330,6 +332,7 @@ impl MeetingRecorder {
         if let Some(saved) = self.stop()? {
             let dir = self.recordings_dir();
             remove_quietly(&dir.join(&saved.pending.file_name));
+            crate::call_names::remove(&dir.join(&saved.pending.file_name));
             if let Some(call_file) = &saved.pending.call_file {
                 remove_quietly(&dir.join(call_file));
             }

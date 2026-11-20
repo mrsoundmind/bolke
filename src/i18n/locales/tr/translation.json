@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Bu kim? Ad verin",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "{{time}} konuştu · toplantının %{{percent}}'i",
       "readWords": "Söylediklerini oku · {{count}} kez ›",
       "noSummary": "{{name}} için henüz özet yok. Toplantı özetiyle birlikte yazılır.",

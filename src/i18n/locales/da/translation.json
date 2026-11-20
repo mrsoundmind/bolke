@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Hvem er det? Giv navn",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Talte {{time}} · {{percent}}% af mødet",
       "readWords": "Læs hvad de sagde · {{count}} gange ›",
       "noSummary": "Endnu intet resumé for {{name}}. Det skrives med mødets resumé.",

@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Qui és? Posa-li nom",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Ha parlat {{time}} · {{percent}}% de la reunió",
       "readWords": "Llegeix què ha dit · {{count}} vegades ›",
       "noSummary": "Encara no hi ha resum de {{name}}. S'escriu amb el resum de la reunió.",

@@ -1443,6 +1443,8 @@ mod tests {
             name: None,
             talk_ms,
             guessed: false,
+            from_call: false,
+            choices: Vec::new(),
         };
         let line = |person, text: &str| NoteLine {
             start_ms: 0,

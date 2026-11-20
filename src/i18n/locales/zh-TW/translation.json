@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "這是誰？命名",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "發言 {{time}} · 佔會議 {{percent}}%",
       "readWords": "查看發言 · {{count}} 次 ›",
       "noSummary": "還沒有 {{name}} 的摘要，會和會議摘要一起產生。",

@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "누구인가요? 이름 지정",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "{{time}} 발언 · 회의의 {{percent}}%",
       "readWords": "발언 읽기 · {{count}}회 ›",
       "noSummary": "{{name}}의 요약이 아직 없어요. 회의 요약과 함께 작성돼요.",

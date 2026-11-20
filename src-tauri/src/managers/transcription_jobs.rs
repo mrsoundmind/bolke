@@ -400,14 +400,14 @@ impl TranscriptionJobManager {
         {
             let wav = hm.get_audio_file_path(&entry.file_name);
             match self.find_people_in(note_id, &wav, &samples, &models, &control, cancelled)? {
-                PeopleEnd::Found(people) => found = Some((note_id, people)),
+                PeopleEnd::Found(people) => found = Some((note_id, people, wav)),
                 PeopleEnd::Cancelled => return Ok(JobEnd::Cancelled),
                 // Transcribed the usual way below, without people.
                 PeopleEnd::NotFound => {}
             }
         }
         let transcription = match &found {
-            Some((_, people)) => Some(Transcription {
+            Some((_, people, _)) => Some(Transcription {
                 text: people
                     .people
                     .lines
@@ -439,8 +439,8 @@ impl TranscriptionJobManager {
             return Ok(JobEnd::Cancelled);
         }
         let post_process_failed = processed.post_process_failed;
-        if let Some((note_id, people)) = found {
-            self.save_people(note_id, people)?;
+        if let Some((note_id, people, wav)) = found {
+            self.save_people(note_id, people, &wav)?;
         }
         hm.update_transcription(
             entry.id,
@@ -476,7 +476,7 @@ impl TranscriptionJobManager {
         };
         match self.find_people_in(note_id, &wav, &samples, &models, &control, cancelled)? {
             PeopleEnd::Found(people) => {
-                self.save_people(note_id, people)?;
+                self.save_people(note_id, people, &wav)?;
                 Ok(JobEnd::Finished {
                     post_process_failed: false,
                 })
@@ -504,9 +504,10 @@ impl TranscriptionJobManager {
         }
     }
 
-    fn save_people(&self, note_id: i64, found: FoundPeople) -> Result<()> {
+    fn save_people(&self, note_id: i64, found: FoundPeople, wav: &Path) -> Result<()> {
         let notes = self.app.state::<Arc<NotesManager>>();
-        notes.set_people(note_id, found.people, &found.fingerprints)?;
+        let call = crate::call_names::load(wav);
+        notes.set_people(note_id, found.people, &found.fingerprints, call.as_ref())?;
         crate::commands::notes::emit_notes_changed(&self.app);
         Ok(())
     }
@@ -574,6 +575,8 @@ impl TranscriptionJobManager {
                     .map(|s| s.end_ms - s.start_ms)
                     .sum(),
                 guessed: false,
+                from_call: false,
+                choices: Vec::new(),
             })
             .filter(|p| lines.iter().any(|l| l.person == p.id))
             .collect();

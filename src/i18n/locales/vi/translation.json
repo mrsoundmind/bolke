@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Ai đây? Đặt tên",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Nói {{time}} · {{percent}}% cuộc họp",
       "readWords": "Đọc lời của họ · {{count}} lần ›",
       "noSummary": "Chưa có tóm tắt cho {{name}}. Nó được viết cùng tóm tắt cuộc họp.",

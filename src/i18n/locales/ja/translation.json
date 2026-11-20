@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "誰ですか？名前を付ける",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "{{time}} 発言 · 会議の {{percent}}%",
       "readWords": "発言を読む · {{count}} 回 ›",
       "noSummary": "{{name}} の要約はまだありません。会議の要約と一緒に作られます。",

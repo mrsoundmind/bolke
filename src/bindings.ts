@@ -1961,7 +1961,15 @@ talk_ms: number;
 /**
  * Named because the voice matched one Bolke knows, not by the user.
  */
-guessed?: boolean }
+guessed?: boolean; 
+/**
+ * Named from the call (Google Meet showed them talking at those times).
+ */
+from_call?: boolean; 
+/**
+ * Names from the call this voice might be, when Bolke isn't sure.
+ */
+choices?: string[] }
 /**
  * Request format a post-processing endpoint speaks. Built-in providers have a
  * fixed format; only the custom provider lets the user change it.

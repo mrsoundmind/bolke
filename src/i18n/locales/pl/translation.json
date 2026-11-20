@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Kto to? Nadaj imię",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Mówił(a) {{time}} · {{percent}}% spotkania",
       "readWords": "Czytaj wypowiedzi · {{count}} razy ›",
       "noSummary": "Brak jeszcze podsumowania dla {{name}}. Powstaje z podsumowaniem spotkania.",

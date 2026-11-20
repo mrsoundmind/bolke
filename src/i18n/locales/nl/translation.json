@@ -1208,6 +1208,8 @@
       "person": "Person {{number}}",
       "everyone": "Everyone",
       "nameThem": "Wie is dit? Geef een naam",
+      "maybe": "Maybe {{names}}?",
+      "fromCall": "Name from Google Meet",
       "talked": "Sprak {{time}} · {{percent}}% van de vergadering",
       "readWords": "Lees wat ze zeiden · {{count}} keer ›",
       "noSummary": "Nog geen samenvatting voor {{name}}. Die komt met de samenvatting van de vergadering.",
