@@ -40,6 +40,11 @@ fn main() {
         std::process::exit(bolke_app_lib::speakers::run_worker());
     }
 
+    // Call-window helper for meeting names (Mac): also on its own.
+    if bolke_app_lib::call_screen::is_worker_invocation() {
+        std::process::exit(bolke_app_lib::call_screen::run_worker());
+    }
+
     let cli_args = CliArgs::parse();
     bolke_app_lib::run(cli_args)
 }

@@ -965,7 +965,9 @@
     "filePostProcessFailed": "Постобработката не завърши, затова транскрипцията беше запазена без промени.",
     "fileTranscriptionFailedTitle": "Неуспешна транскрипция на файла",
     "transcriptionFailedTitle": "Неуспешна транскрипция",
-    "ideaSaveFailedTitle": "Couldn't Save Your Idea"
+    "ideaSaveFailedTitle": "Couldn't Save Your Idea",
+    "callNamesNeedScreenTitle": "Names Need Screen Recording",
+    "callNamesNeedScreen": "To name people from the call, turn on Bolke in System Settings → Privacy & Security → Screen & System Audio Recording (the top list, not System Audio Recording Only). It starts reading names as soon as you do."
   },
   "notices": {
     "errorOne": "{{n}} грешка",

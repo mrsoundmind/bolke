@@ -965,7 +965,9 @@
     "filePostProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 저장했습니다.",
     "fileTranscriptionFailedTitle": "파일 음성 인식 실패",
     "transcriptionFailedTitle": "음성 인식 실패",
-    "ideaSaveFailedTitle": "Couldn't Save Your Idea"
+    "ideaSaveFailedTitle": "Couldn't Save Your Idea",
+    "callNamesNeedScreenTitle": "Names Need Screen Recording",
+    "callNamesNeedScreen": "To name people from the call, turn on Bolke in System Settings → Privacy & Security → Screen & System Audio Recording (the top list, not System Audio Recording Only). It starts reading names as soon as you do."
   },
   "notices": {
     "errorOne": "오류 {{n}}개",

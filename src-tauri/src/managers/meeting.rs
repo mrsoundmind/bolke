@@ -247,7 +247,7 @@ impl MeetingRecorder {
         };
         crate::call_names::begin(&path, chrono::Utc::now().timestamp_millis());
         if call.is_some() {
-            crate::call_screen::watch();
+            crate::call_screen::watch(&self.app);
         }
         info!("Meeting recording started: {}", pending.file_name);
         *active = Some(Active {

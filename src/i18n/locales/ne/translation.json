@@ -965,7 +965,9 @@
     "filePostProcessFailed": "पोस्ट प्रोसेस पूरा भएन, त्यसैले ट्रान्सक्रिप्ट जस्तो थियो त्यस्तै सुरक्षित गरियो।",
     "fileTranscriptionFailedTitle": "फाइल ट्रान्सक्रिप्सन गर्न सकिएन",
     "transcriptionFailedTitle": "ट्रान्सक्रिप्सन गर्न सकिएन",
-    "ideaSaveFailedTitle": "Couldn't Save Your Idea"
+    "ideaSaveFailedTitle": "Couldn't Save Your Idea",
+    "callNamesNeedScreenTitle": "Names Need Screen Recording",
+    "callNamesNeedScreen": "To name people from the call, turn on Bolke in System Settings → Privacy & Security → Screen & System Audio Recording (the top list, not System Audio Recording Only). It starts reading names as soon as you do."
   },
   "notices": {
     "errorOne": "{{n}} त्रुटि",

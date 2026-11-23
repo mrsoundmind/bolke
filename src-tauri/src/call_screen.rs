@@ -6,17 +6,54 @@
 //! talked enough to be recognised, it stops looking: the voices are matched
 //! to those names after the meeting and remembered from then on. Mac only
 //! for now; elsewhere the browser add-on does this job.
+//!
+//! The looking happens in a small helper process (Bolke started with
+//! [`WORKER_FLAG`]). macOS decides once per process whether it may see other
+//! windows, so a Bolke that was open before Screen Recording was allowed
+//! would never see them; a fresh helper does, without reopening Bolke.
+
+use tauri::AppHandle;
+
+pub const WORKER_FLAG: &str = "--call-screen-worker";
+
+/// Whether this process was started as the call-window helper.
+pub fn is_worker_invocation() -> bool {
+    std::env::args_os()
+        .nth(1)
+        .is_some_and(|arg| arg == WORKER_FLAG)
+}
+
+/// Runs the call-window helper: one line of JSON per look, on stdout, until
+/// Bolke stops reading or Screen Recording isn't allowed.
+pub fn run_worker() -> i32 {
+    #[cfg(target_os = "macos")]
+    return mac::run_worker();
+    #[cfg(not(target_os = "macos"))]
+    2
+}
+
+/// Starts learning names from the call window, for the meeting just started.
+pub fn watch(app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    mac::watch(app.clone());
+    #[cfg(not(target_os = "macos"))]
+    let _ = app;
+}
 
 #[cfg(target_os = "macos")]
 mod mac {
     use std::collections::HashMap;
     use std::ffi::{c_char, CStr};
+    use std::io::{BufRead, BufReader, Write};
+    use std::process::{Child, Command, Stdio};
     use std::time::{Duration, Instant};
 
     use log::{debug, info, warn};
     use serde::Deserialize;
+    use tauri::AppHandle;
 
     use crate::call_names;
+    use crate::notices::{self, Notice, NoticeCode, NoticeSource};
 
     extern "C" {
         fn bolke_call_frame() -> *mut c_char;
@@ -25,6 +62,8 @@ mod mac {
     }
 
     const LOOK_EVERY: Duration = Duration::from_millis(500);
+    /// How often to check again while Screen Recording isn't allowed.
+    const ASK_AGAIN: Duration = Duration::from_secs(5);
     /// A pause shorter than this is the same stretch of talking.
     const GAP_MS: i64 = 900;
     /// Looking stops after this long whatever happens...
@@ -48,16 +87,39 @@ mod mac {
         error: String,
     }
 
-    fn frame() -> Option<Frame> {
+    impl Frame {
+        /// Looking can't work in this process (or on this Mac) at all.
+        fn hopeless(&self) -> bool {
+            !self.ok && (self.error == "no_permission" || self.error == "old_macos")
+        }
+    }
+
+    /// One look, as the bridge's JSON text.
+    fn look() -> String {
         // SAFETY: the bridge returns a strdup'd C string (or null), freed here.
         unsafe {
             let raw = bolke_call_frame();
             if raw.is_null() {
-                return None;
+                return r#"{"ok":false,"error":"none"}"#.to_string();
             }
             let text = CStr::from_ptr(raw).to_string_lossy().into_owned();
             bolke_free_string(raw);
-            serde_json::from_str(&text).ok()
+            text
+        }
+    }
+
+    pub fn run_worker() -> i32 {
+        let mut out = std::io::stdout().lock();
+        loop {
+            let text = look();
+            // Bolke stopped reading: it's done with us, or gone.
+            if writeln!(out, "{text}").and_then(|_| out.flush()).is_err() {
+                return 0;
+            }
+            if serde_json::from_str::<Frame>(&text).is_ok_and(|f| f.hopeless()) {
+                return 3;
+            }
+            std::thread::sleep(LOOK_EVERY);
         }
     }
 
@@ -65,103 +127,220 @@ mod mac {
         chrono::Utc::now().timestamp_millis()
     }
 
-    pub fn watch() {
-        std::thread::spawn(|| {
-            // SAFETY: plain C call into the Swift bridge.
-            if unsafe { bolke_screen_access(1) } == 0 {
-                info!("Names from the call window are off: Screen Recording isn't allowed");
-                return;
-            }
-            let started = Instant::now();
-            let mut last_new = Instant::now();
-            let mut last_window = Instant::now();
-            let mut app = String::new();
-            // name -> (start, last seen) while talking.
-            let mut open: HashMap<String, (i64, i64)> = HashMap::new();
-            let mut talk: HashMap<String, i64> = HashMap::new();
-            let mut people: Vec<String> = Vec::new();
-            let mut finished: Vec<(String, i64, i64)> = Vec::new();
-            let mut last_send = Instant::now();
+    /// What has been seen so far in this meeting.
+    struct Seen {
+        started: Instant,
+        last_new: Instant,
+        last_window: Instant,
+        app: String,
+        /// name -> (start, last seen) while talking.
+        open: HashMap<String, (i64, i64)>,
+        talk: HashMap<String, i64>,
+        people: Vec<String>,
+        finished: Vec<(String, i64, i64)>,
+        last_send: Instant,
+    }
 
-            let why = loop {
-                std::thread::sleep(LOOK_EVERY);
-                if !call_names::wants_screen() {
-                    break "the meeting ended or the add-on took over";
-                }
-                let now = now_ms();
-                match frame() {
-                    Some(f) if f.ok => {
-                        last_window = Instant::now();
-                        app = f.app;
-                        for name in f.speaking {
-                            if !people.contains(&name) {
-                                debug!("Saw a new person talking in the call window");
-                                people.push(name.clone());
-                                last_new = Instant::now();
-                            }
-                            let entry = open.entry(name).or_insert((now, now));
-                            entry.1 = now;
-                        }
-                    }
-                    Some(f) if f.error == "no_permission" => {
-                        break "Screen Recording was turned off"
-                    }
-                    _ => {}
-                }
-                // Stretches that went quiet are finished.
-                open.retain(|name, (start, last)| {
-                    if now - *last > GAP_MS {
-                        *talk.entry(name.clone()).or_default() += *last - *start;
-                        finished.push((name.clone(), *start, *last));
-                        false
-                    } else {
-                        true
-                    }
-                });
-                if last_send.elapsed() >= Duration::from_secs(2) && !finished.is_empty() {
-                    call_names::add_from_screen(
-                        &app,
-                        people.clone(),
-                        std::mem::take(&mut finished),
-                    );
-                    last_send = Instant::now();
-                }
+    impl Seen {
+        fn new() -> Self {
+            let now = Instant::now();
+            Self {
+                started: now,
+                last_new: now,
+                last_window: now,
+                app: String::new(),
+                open: HashMap::new(),
+                talk: HashMap::new(),
+                people: Vec::new(),
+                finished: Vec::new(),
+                last_send: now,
+            }
+        }
 
-                let elapsed = started.elapsed();
-                if elapsed >= AT_MOST {
-                    break "15 minutes passed";
+        /// Takes in one look. Returns why to stop looking, if it's time.
+        fn take(&mut self, frame: Frame) -> Option<&'static str> {
+            let now = now_ms();
+            if frame.ok {
+                self.last_window = Instant::now();
+                self.app = frame.app;
+                for name in frame.speaking {
+                    if !self.people.contains(&name) {
+                        debug!("Saw a new person talking in the call window");
+                        self.people.push(name.clone());
+                        self.last_new = Instant::now();
+                    }
+                    let entry = self.open.entry(name).or_insert((now, now));
+                    entry.1 = now;
                 }
-                if last_window.elapsed() >= NO_WINDOW_FOR {
-                    break "no call window in view";
-                }
-                let everyone_heard = !people.is_empty()
-                    && people
-                        .iter()
-                        .all(|p| talk.get(p).copied().unwrap_or(0) >= ENOUGH_TALK_MS);
-                if elapsed >= AT_LEAST && last_new.elapsed() >= NOBODY_NEW && everyone_heard {
-                    break "everyone has been heard";
-                }
-            };
-            for (name, (start, last)) in open.drain() {
-                finished.push((name, start, last));
             }
-            if !finished.is_empty() {
-                call_names::add_from_screen(&app, people.clone(), finished);
+            // Stretches that went quiet are finished.
+            let (talk, finished) = (&mut self.talk, &mut self.finished);
+            self.open.retain(|name, (start, last)| {
+                if now - *last > GAP_MS {
+                    *talk.entry(name.clone()).or_default() += *last - *start;
+                    finished.push((name.clone(), *start, *last));
+                    false
+                } else {
+                    true
+                }
+            });
+            if self.last_send.elapsed() >= Duration::from_secs(2) && !self.finished.is_empty() {
+                self.send();
             }
-            if people.is_empty() {
+            self.time_to_stop()
+        }
+
+        fn time_to_stop(&self) -> Option<&'static str> {
+            let elapsed = self.started.elapsed();
+            if elapsed >= AT_MOST {
+                return Some("15 minutes passed");
+            }
+            if self.last_window.elapsed() >= NO_WINDOW_FOR {
+                return Some("no call window in view");
+            }
+            let everyone_heard = !self.people.is_empty()
+                && self
+                    .people
+                    .iter()
+                    .all(|p| self.talk.get(p).copied().unwrap_or(0) >= ENOUGH_TALK_MS);
+            if elapsed >= AT_LEAST && self.last_new.elapsed() >= NOBODY_NEW && everyone_heard {
+                return Some("everyone has been heard");
+            }
+            None
+        }
+
+        fn send(&mut self) {
+            if !self.finished.is_empty() {
+                call_names::add_from_screen(
+                    &self.app,
+                    self.people.clone(),
+                    std::mem::take(&mut self.finished),
+                );
+            }
+            self.last_send = Instant::now();
+        }
+
+        fn finish(mut self, why: &str) {
+            let open: Vec<_> = self.open.drain().collect();
+            for (name, (start, last)) in open {
+                self.finished.push((name, start, last));
+            }
+            self.send();
+            if self.people.is_empty() {
                 warn!("Stopped looking at the call window ({why}); saw nobody talking");
             } else {
                 info!(
                     "Stopped looking at the call window ({why}); saw {} people talking",
-                    people.len()
+                    self.people.len()
                 );
             }
+        }
+    }
+
+    /// How a helper's run ended.
+    enum Ended {
+        Stop(&'static str),
+        NotAllowed,
+        Broke,
+    }
+
+    fn start_helper() -> std::io::Result<Child> {
+        Command::new(std::env::current_exe()?)
+            .arg(super::WORKER_FLAG)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+    }
+
+    /// Reads one helper's looks until it's time to stop or the helper ends.
+    fn follow(helper: &mut Child, seen: &mut Seen, app: &AppHandle, warned: &mut bool) -> Ended {
+        let Some(stdout) = helper.stdout.take() else {
+            return Ended::Broke;
+        };
+        for line in BufReader::new(stdout).lines() {
+            let Ok(line) = line else { break };
+            if !call_names::wants_screen() {
+                return Ended::Stop("the meeting ended or the add-on took over");
+            }
+            let Ok(frame) = serde_json::from_str::<Frame>(&line) else {
+                continue;
+            };
+            if frame.hopeless() {
+                return Ended::NotAllowed;
+            }
+            if *warned {
+                notices::clear(app, NoticeSource::Meeting);
+                *warned = false;
+                info!("Screen Recording is allowed now; reading names from the call window");
+            }
+            if let Some(why) = seen.take(frame) {
+                return Ended::Stop(why);
+            }
+        }
+        Ended::Broke
+    }
+
+    /// Waits up to `wait`, unless the meeting ends first.
+    fn pause(wait: Duration) -> bool {
+        let until = Instant::now() + wait;
+        while Instant::now() < until {
+            if !call_names::wants_screen() {
+                return false;
+            }
+            std::thread::sleep(Duration::from_millis(500));
+        }
+        true
+    }
+
+    pub fn watch(app: AppHandle) {
+        std::thread::spawn(move || {
+            // Lets macOS ask the user, the first time only. What this process
+            // is told doesn't matter: the helper finds out for itself.
+            // SAFETY: plain C call into the Swift bridge.
+            unsafe { bolke_screen_access(1) };
+            let mut seen = Seen::new();
+            let mut warned = false;
+            let why = loop {
+                if !call_names::wants_screen() {
+                    break "the meeting ended or the add-on took over";
+                }
+                if seen.started.elapsed() >= AT_MOST {
+                    break "15 minutes passed";
+                }
+                let mut helper = match start_helper() {
+                    Ok(h) => h,
+                    Err(e) => {
+                        warn!("Couldn't start looking at the call window: {e}");
+                        break "the helper wouldn't start";
+                    }
+                };
+                let ended = follow(&mut helper, &mut seen, &app, &mut warned);
+                let _ = helper.kill();
+                let _ = helper.wait();
+                match ended {
+                    Ended::Stop(why) => break why,
+                    Ended::NotAllowed => {
+                        if !warned {
+                            info!("Names from the call window wait for Screen Recording to be allowed");
+                            notices::raise(
+                                &app,
+                                Notice::new(NoticeCode::CallNamesNeedScreen, NoticeSource::Meeting),
+                            );
+                            warned = true;
+                        }
+                        if !pause(ASK_AGAIN) {
+                            break "the meeting ended";
+                        }
+                    }
+                    Ended::Broke => {
+                        if !pause(ASK_AGAIN) {
+                            break "the meeting ended";
+                        }
+                    }
+                }
+            };
+            seen.finish(why);
         });
     }
-}
-
-/// Starts learning names from the call window, for the meeting just started.
-pub fn watch() {
-    #[cfg(target_os = "macos")]
-    mac::watch();
 }

@@ -1893,7 +1893,7 @@ detail: string | null }
 /**
  * The frontend maps each code to its text in `src/lib/notices.ts`.
  */
-export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "PasteBlockedElevated" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed" | "IdeaSaveFailed"
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "PasteBlockedElevated" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed" | "IdeaSaveFailed" | "CallNamesNeedScreen"
 export type NoticeLevel = 
 /**
  * Nothing came out, or Bolke can't do its job.
@@ -1908,7 +1908,7 @@ export type NoticeLevel =
  * overlay: a file job finishes while the user is doing something else, and
  * `Model` is a switch the user made in Settings or the tray.
  */
-export type NoticeSource = "dictation" | "file" | "model"
+export type NoticeSource = "dictation" | "file" | "model" | "meeting"
 export type NoticesChanged = { 
 /**
  * Every active notice, newest first.

@@ -6,7 +6,7 @@ pub mod audio_toolkit;
 mod autostart;
 mod call_audio;
 mod call_names;
-mod call_screen;
+pub mod call_screen;
 mod call_watch;
 mod catalog;
 mod chinese_script;

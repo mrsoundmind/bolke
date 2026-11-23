@@ -59,6 +59,10 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     explanation: (t) => t("errors.filePostProcessFailed"),
   },
   IdeaSaveFailed: { title: "errors.ideaSaveFailedTitle" },
+  CallNamesNeedScreen: {
+    title: "errors.callNamesNeedScreenTitle",
+    explanation: (t) => t("errors.callNamesNeedScreen"),
+  },
 };
 
 export const noticeDisplay = (code: NoticeCode) => NOTICE_DISPLAY[code];

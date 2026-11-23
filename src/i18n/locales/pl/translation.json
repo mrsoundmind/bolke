@@ -965,7 +965,9 @@
     "filePostProcessFailed": "Postproces nie został ukończony, więc transkrypcja została zapisana bez zmian.",
     "fileTranscriptionFailedTitle": "Transkrypcja pliku nie powiodła się",
     "transcriptionFailedTitle": "Transkrypcja nie powiodła się",
-    "ideaSaveFailedTitle": "Couldn't Save Your Idea"
+    "ideaSaveFailedTitle": "Couldn't Save Your Idea",
+    "callNamesNeedScreenTitle": "Names Need Screen Recording",
+    "callNamesNeedScreen": "To name people from the call, turn on Bolke in System Settings → Privacy & Security → Screen & System Audio Recording (the top list, not System Audio Recording Only). It starts reading names as soon as you do."
   },
   "notices": {
     "errorOne": "{{n}} błąd",
