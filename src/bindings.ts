@@ -1213,6 +1213,18 @@ async dismissCallPrompt() : Promise<void> {
     await TAURI_INVOKE("dismiss_call_prompt");
 },
 /**
+ * "Stop and save" in the "Meeting ended?" bubble.
+ */
+async stopCallMeeting() : Promise<void> {
+    await TAURI_INVOKE("stop_call_meeting");
+},
+/**
+ * "Keep going" in the "Meeting ended?" bubble.
+ */
+async keepMeeting() : Promise<void> {
+    await TAURI_INVOKE("keep_meeting");
+},
+/**
  * Undo in the bubble, after a reminder was changed by voice.
  */
 async undoReminderChange() : Promise<void> {
@@ -1749,6 +1761,30 @@ export type MacPermission = "accessibility" | "microphone"
 /**
  * The recording under way, for the app's screens.
  */
+/**
+ * What "Meeting ended?" shows.
+ */
+export type CallEnd = { place: CallPlace; elapsed_ms: number; 
+/**
+ * Seconds before it stops and saves by itself.
+ */
+wait_secs: number }
+/**
+ * Where a call is.
+ */
+export type CallPlace = { 
+/**
+ * The app holding the microphone: "Dia", "Zoom".
+ */
+app: string; 
+/**
+ * The meeting service, when Bolke can tell: "Google Meet".
+ */
+service: string | null; 
+/**
+ * The meeting's own name from the tab or window, when it has one.
+ */
+title: string | null }
 export type MeetingStatus = { recording: boolean; title: string; project_id: number | null; elapsed_ms: number; 
 /**
  * The call's sound is being recorded too.

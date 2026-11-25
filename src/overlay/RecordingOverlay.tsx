@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
 import { commands, events } from "@/bindings";
 import type {
+  CallEnd,
+  CallPlace,
   Notice,
   StreamPhase,
   StreamPhaseEvent,
@@ -33,7 +35,9 @@ type OverlayState =
   | "reminder_set"
   | "reminder_due"
   // A call app started using the microphone: "Record this meeting?"
-  | "call_prompt";
+  | "call_prompt"
+  // The call being recorded ended: "Meeting ended?"
+  | "call_end";
 
 const isIdeaState = (state: OverlayState) => state.startsWith("idea_");
 
@@ -94,7 +98,10 @@ const RecordingOverlay: React.FC = () => {
   const [overflowing, setOverflowing] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [reminder, setReminder] = useState<ReminderBubble | null>(null);
-  const [callApp, setCallApp] = useState<string | null>(null);
+  const [callPlace, setCallPlace] = useState<CallPlace | null>(null);
+  const [callEnd, setCallEnd] = useState<CallEnd | null>(null);
+  // Seconds left before "Meeting ended?" saves by itself.
+  const [endLeft, setEndLeft] = useState(0);
   const [noticeWidth, setNoticeWidth] = useState<number>();
   const noticeProbeRef = useRef<HTMLSpanElement>(null);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -119,9 +126,14 @@ const RecordingOverlay: React.FC = () => {
         (event) => setReminder(event.payload),
       );
 
-      const unlistenCall = await listen<string>("call-prompt", (event) =>
-        setCallApp(event.payload),
+      const unlistenCall = await listen<CallPlace>("call-prompt", (event) =>
+        setCallPlace(event.payload),
       );
+
+      const unlistenCallEnd = await listen<CallEnd>("call-end", (event) => {
+        setCallEnd(event.payload);
+        setEndLeft(event.payload.wait_secs);
+      });
 
       const unlistenShow = await listen("show-overlay", async (event) => {
         const overlayState = event.payload as OverlayState;
@@ -236,6 +248,7 @@ const RecordingOverlay: React.FC = () => {
         unlistenNotice();
         unlistenReminder();
         unlistenCall();
+        unlistenCallEnd();
         unlistenShow();
         unlistenHide();
         unlistenReady();
@@ -258,6 +271,13 @@ const RecordingOverlay: React.FC = () => {
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
   }, [state, isVisible, captureReady]);
+
+  // "Meeting ended?" counts down to the save Bolke makes by itself.
+  useEffect(() => {
+    if (state !== "call_end" || !callEnd) return;
+    const id = setInterval(() => setEndLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [state, callEnd]);
 
   // Stick to the bottom as text streams in — but only while pinned, so a user who
   // has scrolled up to read history isn't yanked back down by the next chunk.
@@ -463,14 +483,30 @@ const RecordingOverlay: React.FC = () => {
 
   // ---- "Record this meeting?" (design/wireframes/MeetingCapture): a call
   // app started using the microphone. One tap records it.
-  if (state === "call_prompt" && callApp && !shownNotice) {
+  if (state === "call_prompt" && callPlace && !shownNotice) {
+    const { app, service, title } = callPlace;
     const record = () => {
       const date = new Intl.DateTimeFormat(i18n.language, {
         day: "numeric",
         month: "short",
       }).format(new Date());
-      commands.recordCall(t("overlay.callTitle", { app: callApp, date }));
+      // The meeting's own name, else the service, else the app.
+      commands.recordCall(
+        title ??
+          (service
+            ? t("overlay.callServiceTitle", { service, date })
+            : t("overlay.callTitle", { app, date })),
+      );
     };
+    const where =
+      service && service !== app
+        ? t("overlay.callPromptWhere", { service, app })
+        : (service ?? null);
+    const detail = where
+      ? title
+        ? `${where} · ${title}`
+        : where
+      : t("overlay.callPromptApp", { app });
     return (
       <div
         dir={direction}
@@ -502,7 +538,7 @@ const RecordingOverlay: React.FC = () => {
             <span className="sreminder-text">
               <span className="sreminder-title">{t("overlay.callPrompt")}</span>
               <span className="sreminder-when">
-                {t("overlay.callPromptApp", { app: callApp })}
+                {detail}
               </span>
             </span>
             <button className="sreminder-btn main" onClick={record}>
@@ -513,6 +549,54 @@ const RecordingOverlay: React.FC = () => {
               onClick={() => commands.dismissCallPrompt()}
             >
               {t("overlay.callNotNow")}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- "Meeting ended?" (design/wireframes/MeetingStartEnd): the call
+  // being recorded ended. Unanswered, Bolke stops and saves by itself.
+  if (state === "call_end" && callEnd && !shownNotice) {
+    const { app, service } = callEnd.place;
+    const minutes = Math.max(1, Math.round(callEnd.elapsed_ms / 60000));
+    const left = Math.max(0, endLeft);
+    const share = callEnd.wait_secs > 0 ? left / callEnd.wait_secs : 0;
+    return (
+      <div
+        dir={direction}
+        className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
+      >
+        <div className="scard compact reminder callend">
+          <div className="sbase sreminder" role="status">
+            <span
+              className="sendring"
+              style={{ "--left": share } as React.CSSProperties}
+              aria-label={t("overlay.callEndSaving", { seconds: left })}
+            >
+              <span>{left}</span>
+            </span>
+            <span className="sreminder-text">
+              <span className="sreminder-title">{t("overlay.callEnded")}</span>
+              <span className="sreminder-when">
+                {t("overlay.callEndedWhere", {
+                  service: service ?? app,
+                  minutes,
+                })}
+              </span>
+            </span>
+            <button
+              className="sreminder-btn main"
+              onClick={() => commands.stopCallMeeting()}
+            >
+              {t("overlay.callStopSave")}
+            </button>
+            <button
+              className="sreminder-btn"
+              onClick={() => commands.keepMeeting()}
+            >
+              {t("overlay.callKeepGoing")}
             </button>
           </div>
         </div>

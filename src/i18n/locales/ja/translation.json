@@ -1014,7 +1014,14 @@
     "callPromptApp": "{{app}} がマイクを使っています",
     "callRecord": "録音",
     "callNotNow": "今はしない",
-    "callTitle": "{{app}} の通話、{{date}}"
+    "callTitle": "{{app}} の通話、{{date}}",
+    "callPromptWhere": "{{service}} in {{app}}",
+    "callServiceTitle": "{{service}}, {{date}}",
+    "callEnded": "Meeting ended?",
+    "callEndedWhere": "{{service}} closed · {{minutes}} min",
+    "callEndSaving": "Saves by itself in {{seconds}} seconds",
+    "callStopSave": "Stop and save",
+    "callKeepGoing": "Keep going"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} が1個のショートカットをブロックしている可能性があります",
@@ -1131,7 +1138,8 @@
       "call": {
         "title": "It's a call",
         "body": "Also records the other people on the call, from what this computer plays. Works with headphones."
-      }
+      },
+      "callOutOfSight": "The call window is out of sight, so names come from voices."
     },
     "note": {
       "copy": "Copy text",

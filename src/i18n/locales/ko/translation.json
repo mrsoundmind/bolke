@@ -1014,7 +1014,14 @@
     "callPromptApp": "{{app}}에서 마이크를 사용 중입니다",
     "callRecord": "녹음",
     "callNotNow": "나중에",
-    "callTitle": "{{app}} 통화, {{date}}"
+    "callTitle": "{{app}} 통화, {{date}}",
+    "callPromptWhere": "{{service}} in {{app}}",
+    "callServiceTitle": "{{service}}, {{date}}",
+    "callEnded": "Meeting ended?",
+    "callEndedWhere": "{{service}} closed · {{minutes}} min",
+    "callEndSaving": "Saves by itself in {{seconds}} seconds",
+    "callStopSave": "Stop and save",
+    "callKeepGoing": "Keep going"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}}이(가) 단축키 1개를 차단하고 있을 수 있습니다",
@@ -1131,7 +1138,8 @@
       "call": {
         "title": "It's a call",
         "body": "Also records the other people on the call, from what this computer plays. Works with headphones."
-      }
+      },
+      "callOutOfSight": "The call window is out of sight, so names come from voices."
     },
     "note": {
       "copy": "Copy text",

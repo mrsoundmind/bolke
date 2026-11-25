@@ -6,6 +6,7 @@ pub mod audio_toolkit;
 mod autostart;
 mod call_audio;
 mod call_names;
+mod call_place;
 pub mod call_screen;
 mod call_watch;
 mod catalog;
@@ -896,6 +897,8 @@ pub fn run(cli_args: CliArgs) {
             commands::todos::undo_reminder_change,
             commands::notes::record_call,
             commands::notes::dismiss_call_prompt,
+            commands::notes::stop_call_meeting,
+            commands::notes::keep_meeting,
             commands::notes::toggle_idea_recording,
             commands::notes::import_audio_note,
             commands::notes::summarize_note,

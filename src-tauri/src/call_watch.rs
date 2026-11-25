@@ -1,7 +1,9 @@
-//! Notices a call starting: when a call app or a browser starts using the
-//! microphone, Bolke offers to record it (design/wireframes/MeetingCapture,
-//! "Record this meeting?"). "Not now" keeps it quiet until that app stops
-//! using the microphone.
+//! Notices a call starting and ending: when a call app or a browser starts
+//! using the microphone, Bolke offers to record it (design/wireframes/
+//! MeetingCapture, "Record this meeting?"), saying where the call is
+//! (call_place.rs). "Not now" keeps it quiet until that app stops using the
+//! microphone. When the call being recorded ends, Bolke asks "Meeting
+//! ended?" (design/wireframes/MeetingStartEnd).
 //!
 //! Only which apps use the microphone is read, never what they hear.
 
@@ -10,6 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
+use crate::call_place::{self, CallPlace};
 use crate::managers::meeting::MeetingRecorder;
 
 /// How often the microphone's users are checked.
@@ -20,6 +23,9 @@ const POLLS_BEFORE_ASKING: u32 = 2;
 /// The app has to let go of the microphone for this many checks before the
 /// call counts as over (and a new one may be asked about).
 const POLLS_BEFORE_OVER: u32 = 2;
+/// While the call's tab is still open on its call page (say, Meet's "You
+/// left the meeting"), the end of a recorded call waits this many checks.
+const POLLS_WHILE_TAB_OPEN: u32 = 10;
 
 /// Call apps and browsers, matched by lower-case parts of what the system
 /// calls them: a Mac bundle id, a Windows program or package, a Linux binary.
@@ -66,11 +72,12 @@ fn call_app_name(id: &str) -> Option<&'static str> {
         .map(|(_, name)| *name)
 }
 
-/// The first call app using the microphone now.
-fn call_app_now() -> Option<&'static str> {
+/// The first call app using the microphone now: what the system calls it,
+/// and its name.
+fn call_app_now() -> Option<(String, &'static str)> {
     imp::apps_using_mic()
-        .iter()
-        .find_map(|id| call_app_name(id))
+        .into_iter()
+        .find_map(|id| call_app_name(&id).map(|name| (id, name)))
 }
 
 /// What to do after a check.
@@ -80,6 +87,8 @@ enum Step {
     Ask(&'static str),
     /// The call ended with the question still up.
     Withdraw,
+    /// The call being recorded ended: ask "Meeting ended?".
+    Ended,
 }
 
 #[derive(Default)]
@@ -89,17 +98,37 @@ struct Watch {
     gone: u32,
     /// Asked about, recorded or "Not now" for this call.
     handled: bool,
+    /// This call was going while a meeting recorded.
+    recorded: bool,
+    /// "Meeting ended?" was asked for the meeting recording now.
+    end_asked: bool,
 }
 
 impl Watch {
     /// `busy`: a meeting is recording, so this call is handled already.
     /// `held`: the overlay is busy with something else; ask after it.
-    fn step(&mut self, now: Option<&'static str>, busy: bool, held: bool) -> Step {
+    /// `tab_open`: the call's tab is still on its call page.
+    fn step(&mut self, now: Option<&'static str>, busy: bool, held: bool, tab_open: bool) -> Step {
+        if !busy {
+            self.end_asked = false;
+        }
         let Some(app) = now else {
             self.gone += 1;
-            if self.gone >= POLLS_BEFORE_OVER && self.app.is_some() {
+            let needed = if tab_open {
+                POLLS_WHILE_TAB_OPEN
+            } else {
+                POLLS_BEFORE_OVER
+            };
+            if self.gone >= needed && self.app.is_some() {
                 let asked = self.handled && !busy;
-                *self = Watch::default();
+                let ended = busy && self.recorded && !self.end_asked;
+                *self = Watch {
+                    end_asked: self.end_asked || ended,
+                    ..Watch::default()
+                };
+                if ended {
+                    return Step::Ended;
+                }
                 if asked {
                     return Step::Withdraw;
                 }
@@ -110,12 +139,14 @@ impl Watch {
         if self.app != Some(app) {
             *self = Watch {
                 app: Some(app),
+                end_asked: self.end_asked,
                 ..Watch::default()
             };
         }
         self.polls += 1;
         if busy {
             self.handled = true;
+            self.recorded = true;
         }
         if self.handled || held || self.polls < POLLS_BEFORE_ASKING {
             return Step::Nothing;
@@ -132,21 +163,54 @@ pub fn start(app: &AppHandle) {
         .name("call-watch".into())
         .spawn(move || {
             let mut watch = Watch::default();
+            // The call app as the system calls it, and where its call is.
+            let mut id = String::new();
+            let mut place: Option<CallPlace> = None;
             loop {
                 std::thread::sleep(POLL);
                 let meeting = app.state::<Arc<MeetingRecorder>>();
-                let busy = meeting.status().recording;
-                let held =
-                    crate::overlay::is_session_showing() || crate::overlay::is_reminder_showing();
-                match watch.step(call_app_now(), busy, held) {
+                let status = meeting.status();
+                let busy = status.recording;
+                let held = crate::overlay::is_session_showing()
+                    || crate::overlay::is_reminder_showing()
+                    || crate::overlay::is_call_end_showing();
+                let found = call_app_now();
+                if let Some((now_id, name)) = &found {
+                    if *now_id != id {
+                        id = now_id.clone();
+                        place = None;
+                    }
+                    // A meeting started by hand during a call: learn where.
+                    if busy && place.is_none() {
+                        place = Some(call_place::find(&id, name));
+                    }
+                }
+                let tab_open = found.is_none()
+                    && busy
+                    && place
+                        .as_ref()
+                        .and_then(|p| call_place::tab_still_open(&id, p))
+                        .unwrap_or(false);
+                match watch.step(found.as_ref().map(|f| f.1), busy, held, tab_open) {
                     Step::Nothing => {}
                     Step::Ask(name) => {
-                        info!("{name} started using the microphone; offering to record");
-                        crate::overlay::show_call_prompt(&app, name);
+                        let here = call_place::find(&id, name);
+                        info!(
+                            "{name} started using the microphone ({}); offering to record",
+                            here.service.as_deref().unwrap_or("no known service")
+                        );
+                        crate::overlay::show_call_prompt(&app, &here);
+                        place = Some(here);
                     }
                     Step::Withdraw => {
                         debug!("The call ended before an answer");
                         crate::overlay::hide_call_prompt(&app);
+                        place = None;
+                    }
+                    Step::Ended => {
+                        let here = place.take().unwrap_or_default();
+                        info!("The recorded call ended; asking whether the meeting did");
+                        crate::overlay::show_call_end(&app, &here, status.elapsed_ms);
                     }
                 }
             }
@@ -374,31 +438,72 @@ mod tests {
     #[test]
     fn asks_once_per_call_after_two_checks() {
         let mut w = Watch::default();
-        assert_eq!(w.step(Some("Zoom"), false, false), Step::Nothing);
-        assert_eq!(w.step(Some("Zoom"), false, false), Step::Ask("Zoom"));
-        assert_eq!(w.step(Some("Zoom"), false, false), Step::Nothing);
+        assert_eq!(w.step(Some("Zoom"), false, false, false), Step::Nothing);
+        assert_eq!(w.step(Some("Zoom"), false, false, false), Step::Ask("Zoom"));
+        assert_eq!(w.step(Some("Zoom"), false, false, false), Step::Nothing);
         // One missed check isn't the end of the call.
-        assert_eq!(w.step(None, false, false), Step::Nothing);
-        assert_eq!(w.step(Some("Zoom"), false, false), Step::Nothing);
-        assert_eq!(w.step(None, false, false), Step::Nothing);
-        assert_eq!(w.step(None, false, false), Step::Withdraw);
+        assert_eq!(w.step(None, false, false, false), Step::Nothing);
+        assert_eq!(w.step(Some("Zoom"), false, false, false), Step::Nothing);
+        assert_eq!(w.step(None, false, false, false), Step::Nothing);
+        assert_eq!(w.step(None, false, false, false), Step::Withdraw);
         // A new call is asked about again.
-        assert_eq!(w.step(Some("Zoom"), false, false), Step::Nothing);
-        assert_eq!(w.step(Some("Zoom"), false, false), Step::Ask("Zoom"));
+        assert_eq!(w.step(Some("Zoom"), false, false, false), Step::Nothing);
+        assert_eq!(w.step(Some("Zoom"), false, false, false), Step::Ask("Zoom"));
     }
 
     #[test]
     fn waits_for_the_overlay_and_skips_a_recorded_call() {
         let mut w = Watch::default();
-        w.step(Some("Chrome"), false, true);
-        assert_eq!(w.step(Some("Chrome"), false, true), Step::Nothing);
-        assert_eq!(w.step(Some("Chrome"), false, false), Step::Ask("Chrome"));
+        w.step(Some("Chrome"), false, true, false);
+        assert_eq!(w.step(Some("Chrome"), false, true, false), Step::Nothing);
+        assert_eq!(
+            w.step(Some("Chrome"), false, false, false),
+            Step::Ask("Chrome")
+        );
 
         let mut w = Watch::default();
-        w.step(Some("Zoom"), true, false);
-        w.step(Some("Zoom"), true, false);
+        w.step(Some("Zoom"), true, false, false);
+        w.step(Some("Zoom"), true, false, false);
         // The meeting stopped while the call goes on: no question.
-        assert_eq!(w.step(Some("Zoom"), false, false), Step::Nothing);
+        assert_eq!(w.step(Some("Zoom"), false, false, false), Step::Nothing);
+    }
+
+    #[test]
+    fn asks_once_when_the_recorded_call_ends() {
+        let mut w = Watch::default();
+        w.step(Some("Dia"), false, false, false);
+        assert_eq!(w.step(Some("Dia"), false, false, false), Step::Ask("Dia"));
+        // Recorded from here on.
+        assert_eq!(w.step(Some("Dia"), true, false, false), Step::Nothing);
+        assert_eq!(w.step(None, true, false, false), Step::Nothing);
+        assert_eq!(w.step(None, true, false, false), Step::Ended);
+        // "Keep going": not asked again while that meeting records.
+        w.step(Some("Dia"), true, false, false);
+        w.step(None, true, false, false);
+        assert_eq!(w.step(None, true, false, false), Step::Nothing);
+        // A new recording asks again.
+        w.step(None, false, false, false);
+        w.step(Some("Dia"), true, false, false);
+        w.step(None, true, false, false);
+        assert_eq!(w.step(None, true, false, false), Step::Ended);
+    }
+
+    #[test]
+    fn waits_longer_while_the_call_tab_is_open() {
+        let mut w = Watch::default();
+        w.step(Some("Dia"), true, false, false);
+        for _ in 1..POLLS_WHILE_TAB_OPEN {
+            assert_eq!(w.step(None, true, false, true), Step::Nothing);
+        }
+        assert_eq!(w.step(None, true, false, true), Step::Ended);
+    }
+
+    #[test]
+    fn a_meeting_without_a_call_is_never_asked_about() {
+        let mut w = Watch::default();
+        for _ in 0..5 {
+            assert_eq!(w.step(None, true, false, false), Step::Nothing);
+        }
     }
 
     #[test]

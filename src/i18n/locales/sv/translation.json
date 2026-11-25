@@ -1014,7 +1014,14 @@
     "callPromptApp": "{{app}} använder mikrofonen",
     "callRecord": "Spela in",
     "callNotNow": "Inte nu",
-    "callTitle": "{{app}}-samtal, {{date}}"
+    "callTitle": "{{app}}-samtal, {{date}}",
+    "callPromptWhere": "{{service}} in {{app}}",
+    "callServiceTitle": "{{service}}, {{date}}",
+    "callEnded": "Meeting ended?",
+    "callEndedWhere": "{{service}} closed · {{minutes}} min",
+    "callEndSaving": "Saves by itself in {{seconds}} seconds",
+    "callStopSave": "Stop and save",
+    "callKeepGoing": "Keep going"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} kanske blockerar 1 kortkommando",
@@ -1131,7 +1138,8 @@
       "call": {
         "title": "It's a call",
         "body": "Also records the other people on the call, from what this computer plays. Works with headphones."
-      }
+      },
+      "callOutOfSight": "The call window is out of sight, so names come from voices."
     },
     "note": {
       "copy": "Copy text",

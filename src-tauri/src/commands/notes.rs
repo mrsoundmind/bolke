@@ -215,6 +215,34 @@ pub fn record_call(app: AppHandle, title: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Stops and saves the meeting whose call ended: "Stop and save" in
+/// "Meeting ended?", or no answer in time. Tells the main window, which may
+/// be showing the recording.
+pub async fn stop_after_call(app: AppHandle) {
+    crate::overlay::hide_call_end(&app);
+    match stop_meeting(app.clone()).await {
+        Ok(Some(note)) => {
+            let _ = app.emit("meeting-saved", &note);
+        }
+        Ok(None) => {}
+        Err(e) => error!("Couldn't save the meeting after its call ended: {e}"),
+    }
+}
+
+/// "Stop and save" in the "Meeting ended?" bubble.
+#[tauri::command]
+#[specta::specta]
+pub async fn stop_call_meeting(app: AppHandle) {
+    stop_after_call(app).await;
+}
+
+/// "Keep going" in the "Meeting ended?" bubble.
+#[tauri::command]
+#[specta::specta]
+pub fn keep_meeting(app: AppHandle) {
+    crate::overlay::hide_call_end(&app);
+}
+
 /// "Not now" in the "Record this meeting?" bubble.
 #[tauri::command]
 #[specta::specta]
@@ -251,6 +279,8 @@ pub fn update_meeting(
 #[tauri::command]
 #[specta::specta]
 pub async fn stop_meeting(app: AppHandle) -> Result<Option<Note>, String> {
+    // Stopped some other way: "Meeting ended?" no longer applies.
+    crate::overlay::hide_call_end(&app);
     let meeting = Arc::clone(&app.state::<Arc<MeetingRecorder>>());
     let Some(saved) = meeting.stop().map_err(err)? else {
         return Ok(None);
@@ -260,7 +290,11 @@ pub async fn stop_meeting(app: AppHandle) -> Result<Option<Note>, String> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn discard_meeting(meeting: State<'_, Arc<MeetingRecorder>>) -> Result<(), String> {
+pub fn discard_meeting(
+    app: AppHandle,
+    meeting: State<'_, Arc<MeetingRecorder>>,
+) -> Result<(), String> {
+    crate::overlay::hide_call_end(&app);
     meeting.discard().map_err(err)
 }
 

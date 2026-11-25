@@ -786,3 +786,34 @@
   outline: 2px solid #f6cb98;
   outline-offset: 1px;
 }
+/* "Meeting ended?" (design/wireframes/MeetingStartEnd): the reminder
+   bubble's amber, with a ring counting down to the automatic save. */
+.sendring {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(
+    #f2b36b 0 calc(var(--left, 1) * 100%),
+    rgba(242, 179, 107, 0.18) calc(var(--left, 1) * 100%) 100%
+  );
+}
+.sendring::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #1a1830;
+}
+.sendring span {
+  position: relative;
+  z-index: 1;
+  font-size: 9px;
+  font-weight: 600;
+  color: #f6cb98;
+  font-variant-numeric: tabular-nums;
+}

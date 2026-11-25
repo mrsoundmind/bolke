@@ -98,7 +98,10 @@ fn overlay_dimensions(state: &str) -> (f64, f64) {
         (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
     } else if state.starts_with("idea_") {
         (OVERLAY_IDEA_WIDTH, OVERLAY_HEIGHT)
-    } else if state.starts_with("reminder_") || state == CALL_PROMPT_STATE {
+    } else if state.starts_with("reminder_")
+        || state == CALL_PROMPT_STATE
+        || state == CALL_END_STATE
+    {
         (OVERLAY_REMINDER_WIDTH, OVERLAY_HEIGHT)
     } else {
         (OVERLAY_WIDTH, OVERLAY_HEIGHT)
@@ -653,15 +656,15 @@ const CALL_PROMPT_STATE: &str = "call_prompt";
 const CALL_PROMPT_HOLD: Duration = Duration::from_secs(30);
 static CALL_PROMPT_GENERATION: AtomicU64 = AtomicU64::new(u64::MAX);
 
-/// Asks whether to record the call `app` just started.
-pub fn show_call_prompt(app_handle: &AppHandle, app: &str) {
+/// Asks whether to record the call that just started, saying where it is.
+pub fn show_call_prompt(app_handle: &AppHandle, place: &crate::call_place::CallPlace) {
     if settings::get_settings(app_handle).overlay_style == OverlayStyle::None {
         return;
     }
     let handle = app_handle.clone();
-    let app = app.to_string();
+    let place = place.clone();
     let _ = app_handle.run_on_main_thread(move || {
-        let _ = handle.emit_to("recording_overlay", "call-prompt", &app);
+        let _ = handle.emit_to("recording_overlay", "call-prompt", &place);
         show_overlay_state_on_main(&handle, CALL_PROMPT_STATE);
         let shown = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
         CALL_PROMPT_GENERATION.store(shown, Ordering::SeqCst);
@@ -681,6 +684,74 @@ pub fn hide_call_prompt(app_handle: &AppHandle) {
     {
         hide_recording_overlay(app_handle);
     }
+}
+
+/// "Meeting ended?" (design/wireframes/MeetingStartEnd): the call being
+/// recorded ended. Unanswered, the meeting stops and saves by itself.
+const CALL_END_STATE: &str = "call_end";
+/// How long Bolke waits for an answer before it stops and saves.
+pub const CALL_END_WAIT: Duration = Duration::from_secs(30);
+static CALL_END_GENERATION: AtomicU64 = AtomicU64::new(u64::MAX);
+/// The question waiting for an answer, if any (0 = none).
+static CALL_END_ASKED: AtomicU64 = AtomicU64::new(0);
+static CALL_END_COUNT: AtomicU64 = AtomicU64::new(0);
+
+/// What "Meeting ended?" shows.
+#[derive(Clone, serde::Serialize, specta::Type)]
+pub struct CallEnd {
+    pub place: crate::call_place::CallPlace,
+    pub elapsed_ms: u64,
+    /// Seconds before it stops and saves by itself.
+    pub wait_secs: u64,
+}
+
+/// Asks whether the meeting ended with its call. With no answer by
+/// [`CALL_END_WAIT`], the meeting stops and saves.
+pub fn show_call_end(
+    app_handle: &AppHandle,
+    place: &crate::call_place::CallPlace,
+    elapsed_ms: u64,
+) {
+    let asked = CALL_END_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
+    CALL_END_ASKED.store(asked, Ordering::SeqCst);
+    let end = CallEnd {
+        place: place.clone(),
+        elapsed_ms,
+        wait_secs: CALL_END_WAIT.as_secs(),
+    };
+    if settings::get_settings(app_handle).overlay_style != OverlayStyle::None {
+        let handle = app_handle.clone();
+        let _ = app_handle.run_on_main_thread(move || {
+            let _ = handle.emit_to("recording_overlay", "call-end", &end);
+            show_overlay_state_on_main(&handle, CALL_END_STATE);
+            CALL_END_GENERATION.store(
+                OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst),
+                Ordering::SeqCst,
+            );
+        });
+    }
+    let handle = app_handle.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(CALL_END_WAIT);
+        if CALL_END_ASKED.load(Ordering::SeqCst) == asked {
+            log::info!("No answer to \"Meeting ended?\"; stopping and saving");
+            tauri::async_runtime::spawn(crate::commands::notes::stop_after_call(handle));
+        }
+    });
+}
+
+/// Answers "Meeting ended?" (either way): takes the question down and
+/// stops the wait.
+pub fn hide_call_end(app_handle: &AppHandle) {
+    CALL_END_ASKED.store(0, Ordering::SeqCst);
+    if is_call_end_showing() {
+        hide_recording_overlay(app_handle);
+    }
+}
+
+/// Whether "Meeting ended?" is what the overlay shows now.
+pub fn is_call_end_showing() -> bool {
+    CALL_END_GENERATION.load(Ordering::SeqCst) == OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst)
 }
 
 /// Whether the reminder bubble is what the overlay shows now.

@@ -1014,7 +1014,14 @@
     "callPromptApp": "{{app}} ले माइक्रोफोन प्रयोग गर्दैछ",
     "callRecord": "रेकर्ड",
     "callNotNow": "अहिले होइन",
-    "callTitle": "{{app}} कल, {{date}}"
+    "callTitle": "{{app}} कल, {{date}}",
+    "callPromptWhere": "{{service}} in {{app}}",
+    "callServiceTitle": "{{service}}, {{date}}",
+    "callEnded": "Meeting ended?",
+    "callEndedWhere": "{{service}} closed · {{minutes}} min",
+    "callEndSaving": "Saves by itself in {{seconds}} seconds",
+    "callStopSave": "Stop and save",
+    "callKeepGoing": "Keep going"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} ले 1 सर्टकट रोकिरहेको हुन सक्छ",
@@ -1131,7 +1138,8 @@
       "call": {
         "title": "It's a call",
         "body": "Also records the other people on the call, from what this computer plays. Works with headphones."
-      }
+      },
+      "callOutOfSight": "The call window is out of sight, so names come from voices."
     },
     "note": {
       "copy": "Copy text",

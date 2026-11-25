@@ -6,5 +6,7 @@
   <string>Request microphone access to transcribe audio locally</string>
   <key>NSAudioCaptureUsageDescription</key>
   <string>Bolke records a call's sound so everyone in your meeting is in the notes, even with headphones. Only sound, never the screen.</string>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>Bolke asks your browser which tab holds a call, so it can name the meeting and know when it ends. Only tab addresses and titles are read.</string>
 </dict>
 </plist>

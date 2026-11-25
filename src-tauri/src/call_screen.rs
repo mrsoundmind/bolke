@@ -50,7 +50,7 @@ mod mac {
 
     use log::{debug, info, warn};
     use serde::Deserialize;
-    use tauri::AppHandle;
+    use tauri::{AppHandle, Emitter};
 
     use crate::call_names;
     use crate::notices::{self, Notice, NoticeCode, NoticeSource};
@@ -77,6 +77,9 @@ mod mac {
     const AT_LEAST: Duration = Duration::from_secs(4 * 60);
     const NOBODY_NEW: Duration = Duration::from_secs(3 * 60);
     const ENOUGH_TALK_MS: i64 = 15_000;
+    /// Out of sight this long, the recording screen says names will come
+    /// from voices (design/wireframes/MeetingStartEnd).
+    const OUT_OF_SIGHT: Duration = Duration::from_secs(30);
 
     #[derive(Deserialize)]
     struct Frame {
@@ -147,6 +150,10 @@ mod mac {
         people: Vec<String>,
         finished: Vec<(String, i64, i64)>,
         last_send: Instant,
+        /// Since when the call window hasn't been found.
+        unseen_since: Option<Instant>,
+        /// The recording screen says the call is out of sight.
+        said_unseen: bool,
     }
 
     impl Seen {
@@ -161,6 +168,8 @@ mod mac {
                 people: Vec::new(),
                 finished: Vec::new(),
                 last_send: now,
+                unseen_since: None,
+                said_unseen: false,
             }
         }
 
@@ -277,6 +286,20 @@ mod mac {
                 notices::clear(app, NoticeSource::Meeting);
                 *warned = false;
                 info!("Screen Recording is allowed now; reading names from the call window");
+            }
+            // Tell the recording screen when the call stays out of sight.
+            if frame.ok {
+                seen.unseen_since = None;
+                if seen.said_unseen {
+                    seen.said_unseen = false;
+                    let _ = app.emit("call-in-sight", true);
+                }
+            } else if frame.error == "no_call_window" {
+                let since = *seen.unseen_since.get_or_insert_with(Instant::now);
+                if !seen.said_unseen && since.elapsed() >= OUT_OF_SIGHT {
+                    seen.said_unseen = true;
+                    let _ = app.emit("call-in-sight", false);
+                }
             }
             if let Some(why) = seen.take(frame) {
                 return Ended::Stop(why);

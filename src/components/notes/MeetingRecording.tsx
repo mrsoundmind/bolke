@@ -58,6 +58,8 @@ export const MeetingRecording: React.FC<MeetingRecordingProps> = ({
   // The others on a video call, from what the computer plays.
   const [canCall, setCanCall] = useState(false);
   const [call, setCall] = useState(readCallChoice);
+  // The call window has been out of sight a while: names come from voices.
+  const [outOfSight, setOutOfSight] = useState(false);
   const started = useRef(false);
 
   // Start, or pick up the recording already under way.
@@ -108,6 +110,21 @@ export const MeetingRecording: React.FC<MeetingRecordingProps> = ({
       off.then((fn) => fn());
     };
   }, []);
+
+  // "Meeting ended?" saved it (by a click, or by itself after the wait), and
+  // whether the call window can be seen.
+  useEffect(() => {
+    const saved = listen<Note>("meeting-saved", ({ payload }) =>
+      onSaved(payload),
+    );
+    const sight = listen<boolean>("call-in-sight", ({ payload }) =>
+      setOutOfSight(!payload),
+    );
+    return () => {
+      saved.then((fn) => fn());
+      sight.then((fn) => fn());
+    };
+  }, [onSaved]);
 
   // Title and project are kept with the recording as they change.
   useEffect(() => {
@@ -277,6 +294,15 @@ export const MeetingRecording: React.FC<MeetingRecordingProps> = ({
           {t("notes.recording.stop")}
         </button>
       </div>
+
+      {outOfSight && (
+        <p
+          role="status"
+          className="m-0 max-w-[460px] px-4 py-2 rounded-full border border-[rgba(140,170,255,0.2)] bg-[rgba(12,18,40,0.92)] text-[12px] leading-[1.45] text-[#aeb9d6]"
+        >
+          {t("notes.recording.callOutOfSight")}
+        </p>
+      )}
 
       <p className="m-0 max-w-[460px] text-[13px] leading-[1.55] text-ink-2">
         {t("notes.recording.hint")}
