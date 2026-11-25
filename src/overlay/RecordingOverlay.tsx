@@ -537,9 +537,7 @@ const RecordingOverlay: React.FC = () => {
             </span>
             <span className="sreminder-text">
               <span className="sreminder-title">{t("overlay.callPrompt")}</span>
-              <span className="sreminder-when">
-                {detail}
-              </span>
+              <span className="sreminder-when">{detail}</span>
             </span>
             <button className="sreminder-btn main" onClick={record}>
               {t("overlay.callRecord")}
