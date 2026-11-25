@@ -37,19 +37,40 @@ pub fn init_shortcuts(app: &AppHandle) {
 
     // Check which implementation to use
     match user_settings.keyboard_implementation {
+        KeyboardImplementation::Tauri if user_settings.keyboard_fell_back => {
+            // Bolke chose Tauri itself last time: its own shortcuts may work now.
+            match native_keys::init_shortcuts(app) {
+                Ok(()) => {
+                    info!("Keyboard can be read again; back to Bolke's own shortcuts");
+                    let mut settings = settings::get_settings(app);
+                    settings.keyboard_implementation = KeyboardImplementation::NativeKeys;
+                    settings.keyboard_fell_back = false;
+                    settings::write_settings(app, settings);
+                    say_implementation_changed(app);
+                }
+                Err(e) => {
+                    warn!("Keyboard still can't be read: {e}");
+                    say_keyboard_unreadable(app, e);
+                    tauri_impl::init_shortcuts(app);
+                }
+            }
+        }
         KeyboardImplementation::Tauri => {
             tauri_impl::init_shortcuts(app);
         }
         KeyboardImplementation::NativeKeys => {
             if let Err(e) = native_keys::init_shortcuts(app) {
                 error!("Failed to initialize hotkeys shortcuts: {}", e);
-                // Fall back to Tauri implementation and persist this fallback
+                // Fall back to Tauri implementation and persist this fallback.
                 warn!("Falling back to Tauri global shortcut implementation and saving fallback to settings");
-
-                // Update settings to persist the fallback so we don't retry NativeKeys on next launch
                 let mut settings = settings::get_settings(app);
                 settings.keyboard_implementation = KeyboardImplementation::Tauri;
+                // Only Linux retries: there the cause is fixed outside Bolke
+                // (the installer's keyboard rule), and nothing asks again.
+                settings.keyboard_fell_back = cfg!(target_os = "linux");
                 settings::write_settings(app, settings);
+                say_implementation_changed(app);
+                say_keyboard_unreadable(app, e);
 
                 tauri_impl::init_shortcuts(app);
             }
@@ -58,6 +79,34 @@ pub fn init_shortcuts(app: &AppHandle) {
             info!("Built-in keyboard shortcuts disabled; use CLI flags or signals");
         }
     }
+}
+
+/// The settings window may have read the setting already; its shortcut
+/// recorder must follow the implementation actually running.
+fn say_implementation_changed(app: &AppHandle) {
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({ "setting": "keyboard_implementation" }),
+    );
+}
+
+/// Linux on Wayland: the Tauri shortcuts Bolke falls back to see no keys
+/// there, so say how to let Bolke read the keyboard. (On X11 they work, and
+/// elsewhere the failure is a permission macOS asks for itself.)
+fn say_keyboard_unreadable(app: &AppHandle, error: String) {
+    #[cfg(target_os = "linux")]
+    if crate::utils::is_wayland() {
+        crate::notices::raise_without_overlay(
+            app,
+            crate::notices::Notice::new(
+                crate::notices::NoticeCode::ShortcutNeedsKeyboard,
+                crate::notices::NoticeSource::Shortcut,
+            )
+            .with_detail(error),
+        );
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = (app, error);
 }
 
 /// Whether the recording lifecycle currently wants the cancel shortcut.
@@ -379,9 +428,10 @@ pub fn change_keyboard_implementation_setting(
     // Unregister all shortcuts from the current implementation
     unregister_all_shortcuts(&app, current_impl);
 
-    // Update the setting
+    // Update the setting: the person's own choice from now on.
     let mut settings = settings::get_settings(&app);
     settings.keyboard_implementation = new_impl;
+    settings.keyboard_fell_back = false;
     settings::write_settings(&app, settings);
 
     // Carbon fallback registrations use the Tauri plugin. Remove them before

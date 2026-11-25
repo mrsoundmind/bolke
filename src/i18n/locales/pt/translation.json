@@ -967,7 +967,9 @@
     "transcriptionFailedTitle": "Falha na transcrição",
     "ideaSaveFailedTitle": "Couldn't Save Your Idea",
     "callNamesNeedScreenTitle": "Names Need Screen Recording",
-    "callNamesNeedScreen": "To name people from the call, turn on Bolke in System Settings → Privacy & Security → Screen & System Audio Recording (the top list, not System Audio Recording Only). If Bolke is already on there, select it, remove it with −, and add it again with +. It starts reading names as soon as you do."
+    "callNamesNeedScreen": "To name people from the call, turn on Bolke in System Settings → Privacy & Security → Screen & System Audio Recording (the top list, not System Audio Recording Only). If Bolke is already on there, select it, remove it with −, and add it again with +. It starts reading names as soon as you do.",
+    "shortcutNeedsKeyboardTitle": "Shortcut Can't Read the Keyboard",
+    "shortcutNeedsKeyboard": "Linux isn't letting Bolke read the keyboard, so its shortcuts don't work. Install Bolke from the .deb or .rpm file, which allows it, and restart Bolke. Using the AppImage? Run the one-line command under \"The shortcut doesn't work\" on Bolke's GitHub page, then restart Bolke."
   },
   "notices": {
     "errorOne": "{{n}} erro",

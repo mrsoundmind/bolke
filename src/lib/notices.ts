@@ -59,6 +59,10 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     explanation: (t) => t("errors.filePostProcessFailed"),
   },
   IdeaSaveFailed: { title: "errors.ideaSaveFailedTitle" },
+  ShortcutNeedsKeyboard: {
+    title: "errors.shortcutNeedsKeyboardTitle",
+    explanation: (t) => t("errors.shortcutNeedsKeyboard"),
+  },
   CallNamesNeedScreen: {
     title: "errors.callNamesNeedScreenTitle",
     explanation: (t) => t("errors.callNamesNeedScreen"),

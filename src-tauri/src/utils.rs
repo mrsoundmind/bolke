@@ -350,11 +350,21 @@ fn requested_gdk_backend(value: Option<&str>) -> Option<&str> {
 /// reaches Bolke. The hook cannot overwrite a variable it does not know about,
 /// so `BOLKE_GDK_BACKEND=wayland ./Bolke.AppImage` is the opt-in to native
 /// Wayland (issue #1729, #2034). Must run before GTK initializes.
+///
+/// With neither set, GNOME on Wayland runs Bolke through XWayland, as the
+/// AppImage always does: GNOME has no layer shell, so a native Wayland
+/// overlay can't be placed and is given the focus when shown, which sends
+/// the pasted text into the overlay instead of the app.
 #[cfg(target_os = "linux")]
 pub fn apply_bolke_gdk_backend() {
     let requested = std::env::var("BOLKE_GDK_BACKEND").ok();
     if let Some(backend) = requested_gdk_backend(requested.as_deref()) {
         std::env::set_var("GDK_BACKEND", backend);
+    } else if std::env::var_os("GDK_BACKEND").is_none()
+        && std::env::var_os("DISPLAY").is_some()
+        && is_gnome_wayland()
+    {
+        std::env::set_var("GDK_BACKEND", "x11");
     }
 }
 

@@ -95,8 +95,7 @@ impl NativeKeysState {
         // Create the manager here rather than inside the thread so a startup
         // failure (e.g. missing Accessibility permission) reaches the caller,
         // which can then fall back to the Tauri implementation.
-        let manager = HotkeyManager::new_with_blocking()
-            .map_err(|e| format!("Failed to create HotkeyManager: {e}"))?;
+        let manager = Self::new_manager()?;
         let thread_handle = thread::spawn(move || {
             Self::manager_thread(cmd_rx, app_clone, manager);
         });
@@ -109,6 +108,23 @@ impl NativeKeysState {
             recording_binding_id: Mutex::new(None),
             recording_running: Arc::new(AtomicBool::new(false)),
         })
+    }
+
+    /// Keeps the shortcut's own key press from reaching the app in front where
+    /// it can. On Linux that takes write access to /dev/uinput, which most
+    /// people don't have: without it the shortcut still works, and the app in
+    /// front sees the key press too.
+    fn new_manager() -> Result<HotkeyManager, String> {
+        match HotkeyManager::new_with_blocking() {
+            Ok(manager) => Ok(manager),
+            #[cfg(target_os = "linux")]
+            Err(blocking_error) => {
+                info!("Shortcut keys can't be held back from other apps ({blocking_error}); listening without that");
+                HotkeyManager::new().map_err(|e| format!("Failed to create HotkeyManager: {e}"))
+            }
+            #[cfg(not(target_os = "linux"))]
+            Err(e) => Err(format!("Failed to create HotkeyManager: {e}")),
+        }
     }
 
     /// The main manager thread - owns the HotkeyManager and processes commands

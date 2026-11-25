@@ -58,8 +58,11 @@
         ],
         "files": {
           "/usr/lib/Bolke": "transcribe-libs",
-          "/usr/share/metainfo/app.bolke.desktop.metainfo.xml": "linux/app.bolke.desktop.metainfo.xml"
-        }
+          "/usr/share/metainfo/app.bolke.desktop.metainfo.xml": "linux/app.bolke.desktop.metainfo.xml",
+          "/usr/lib/udev/rules.d/70-bolke-keyboard.rules": "linux/70-bolke-keyboard.rules"
+        },
+        "postInstallScript": "linux/postinst.sh",
+        "postRemoveScript": "linux/postrm.sh"
       },
       "rpm": {
         "depends": [
@@ -71,8 +74,11 @@
         },
         "files": {
           "/usr/lib/Bolke": "transcribe-libs",
-          "/usr/share/metainfo/app.bolke.desktop.metainfo.xml": "linux/app.bolke.desktop.metainfo.xml"
-        }
+          "/usr/share/metainfo/app.bolke.desktop.metainfo.xml": "linux/app.bolke.desktop.metainfo.xml",
+          "/usr/lib/udev/rules.d/70-bolke-keyboard.rules": "linux/70-bolke-keyboard.rules"
+        },
+        "postInstallScript": "linux/postinst.sh",
+        "postRemoveScript": "linux/postrm.sh"
       },
       "appimage": {
         "bundleMediaFramework": true,

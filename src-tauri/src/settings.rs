@@ -239,11 +239,10 @@ pub enum KeyboardImplementation {
 }
 
 impl Default for KeyboardImplementation {
+    // On Linux too: the Tauri shortcuts can't see keys on Wayland. Reading the
+    // keyboard needs the installer's udev rule (linux/70-bolke-keyboard.rules).
     fn default() -> Self {
-        #[cfg(target_os = "linux")]
-        return KeyboardImplementation::Tauri;
-        #[cfg(not(target_os = "linux"))]
-        return KeyboardImplementation::NativeKeys;
+        KeyboardImplementation::NativeKeys
     }
 }
 
@@ -523,6 +522,10 @@ pub struct AppSettings {
     pub airpods_mode: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
+    /// Bolke switched to the Tauri shortcuts itself because the keyboard
+    /// couldn't be read, so it tries its own again at the next start.
+    #[serde(default)]
+    pub keyboard_fell_back: bool,
     #[serde(default = "default_show_tray_icon")]
     pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
@@ -585,7 +588,7 @@ fn default_model() -> String {
     "".to_string()
 }
 
-const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 3;
+const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 4;
 
 fn default_settings_schema_version() -> u32 {
     CURRENT_SETTINGS_SCHEMA_VERSION
@@ -634,12 +637,10 @@ fn default_overlay_position() -> OverlayPosition {
 }
 
 fn default_overlay_style() -> OverlayStyle {
-    // Linux hides the overlay by default; other platforms show the live overlay.
-    // Position is independent and only selects top vs. bottom placement.
-    #[cfg(target_os = "linux")]
-    return OverlayStyle::None;
-    #[cfg(not(target_os = "linux"))]
-    return OverlayStyle::Live;
+    // Every platform shows the live overlay: on Linux it's placed by the layer
+    // shell where there is one, and through XWayland on GNOME (see
+    // utils::apply_bolke_gdk_backend). Position only selects top vs. bottom.
+    OverlayStyle::Live
 }
 
 fn default_vad_enabled() -> bool {
@@ -1088,6 +1089,7 @@ pub fn get_default_settings() -> AppSettings {
         lazy_stream_close: false,
         airpods_mode: false,
         keyboard_implementation: KeyboardImplementation::default(),
+        keyboard_fell_back: false,
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         paste_delay_after_ms: default_paste_delay_after_ms(),
@@ -1369,6 +1371,26 @@ fn apply_settings_migrations(
             )
         {
             settings.paste_delay_after_ms = default_paste_delay_after_ms();
+        }
+        settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
+        updated = true;
+    }
+    if stored_schema_version < 4 {
+        // Linux used to hide the speaking pop-up by default, and used the
+        // Tauri shortcuts, which can't see keys on Wayland. Show the pop-up,
+        // and try Bolke's own shortcuts at the next start.
+        #[cfg(target_os = "linux")]
+        {
+            // A stored style was Linux's old default. (Without one, "None"
+            // came from hiding it with the retired position "none", above.)
+            if settings.overlay_style == OverlayStyle::None
+                && settings_value.get("overlay_style").is_some()
+            {
+                settings.overlay_style = OverlayStyle::Live;
+            }
+            if settings.keyboard_implementation == KeyboardImplementation::Tauri {
+                settings.keyboard_fell_back = true;
+            }
         }
         settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
         updated = true;
@@ -1852,6 +1874,23 @@ mod tests {
     fn default_overlay_style_is_live_when_overlay_defaults_on() {
         let settings = get_default_settings();
         assert_eq!(settings.overlay_style, OverlayStyle::Live);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_settings_get_the_pop_up_and_own_shortcuts_once() {
+        let mut settings = get_default_settings();
+        settings.overlay_style = OverlayStyle::None;
+        settings.keyboard_implementation = KeyboardImplementation::Tauri;
+        let raw = serde_json::json!({
+            "selected_model": "",
+            "overlay_style": "none",
+            "settings_schema_version": 3
+        });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.overlay_style, OverlayStyle::Live);
+        assert!(settings.keyboard_fell_back);
     }
 
     #[test]

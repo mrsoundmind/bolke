@@ -36,6 +36,8 @@ pub enum NoticeSource {
     Model,
     /// A meeting being recorded.
     Meeting,
+    /// The keyboard shortcuts.
+    Shortcut,
 }
 
 /// The frontend maps each code to its text in `src/lib/notices.ts`.
@@ -55,6 +57,9 @@ pub enum NoticeCode {
     FilePostProcessFailed,
     IdeaSaveFailed,
     CallNamesNeedScreen,
+    /// Linux: Bolke isn't allowed to read the keyboard, so its shortcuts
+    /// can't work.
+    ShortcutNeedsKeyboard,
 }
 
 impl NoticeCode {
@@ -70,7 +75,8 @@ impl NoticeCode {
             | Self::ModelLoadFailed
             | Self::NoModelSelected
             | Self::FileTranscriptionFailed
-            | Self::IdeaSaveFailed => NoticeLevel::Error,
+            | Self::IdeaSaveFailed
+            | Self::ShortcutNeedsKeyboard => NoticeLevel::Error,
             Self::PostProcessFailed | Self::FilePostProcessFailed | Self::CallNamesNeedScreen => {
                 NoticeLevel::Warning
             }
@@ -94,6 +100,7 @@ impl NoticeCode {
             Self::FilePostProcessFailed => &strings.file_post_process_failed_title,
             Self::IdeaSaveFailed => &strings.idea_save_failed_title,
             Self::CallNamesNeedScreen => &strings.call_names_need_screen_title,
+            Self::ShortcutNeedsKeyboard => &strings.shortcut_needs_keyboard_title,
         }
     }
 }

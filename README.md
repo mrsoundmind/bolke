@@ -250,7 +250,14 @@ To uninstall: `sudo apt remove bolke` (Ubuntu and Debian), `sudo dnf remove Bolk
 
 Shortcuts and typing work differently on each Linux desktop.
 
-- **The shortcut doesn't work (common on Wayland):** add a shortcut in your desktop's keyboard settings that runs `Bolke --toggle-transcription`. Press it once to start and again to stop.
+- **The shortcut doesn't work:** Bolke reads the keyboard itself, so its shortcuts work on Wayland and X11 alike. The .deb and .rpm installers allow this for whoever is sitting at the computer. With the AppImage, run this once in a terminal, then restart Bolke:
+
+  ```bash
+  echo 'SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}=="1", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-bolke-keyboard.rules && sudo udevadm control --reload-rules && sudo udevadm trigger --subsystem-match=input --action=change
+  ```
+
+  Still nothing? Add a shortcut in your desktop's keyboard settings that runs `Bolke --toggle-transcription`. Press it once to start and again to stop.
+
 - **Text isn't typed into other apps:** install a typing helper. On Wayland, install `wtype` (or `dotool` or `ydotool` on GNOME and KDE). On X11, install `xdotool`. Then restart Bolke.
 - **No microphone:** allow microphone access in your system's sound or privacy settings.
 - **Reminders make no sound:** install `libnotify-bin` (for the notification) and `gnome-session-canberra` or `libcanberra-gtk3-module` (for the sound).

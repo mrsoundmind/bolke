@@ -1584,7 +1584,12 @@ summary_model_queued?: string | null; mute_while_recording?: boolean; append_tra
  * Mac while recording, so its microphone does not return silence while
  * another Apple device is playing through it.
  */
-airpods_mode?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
+airpods_mode?: boolean; keyboard_implementation?: KeyboardImplementation; 
+/**
+ * Bolke switched to the Tauri shortcuts itself because the keyboard
+ * couldn't be read, so it tries its own again at the next start.
+ */
+keyboard_fell_back?: boolean; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
 /**
  * Debug-gated ("beta") receipt-sequenced paste: restore the clipboard only
  * after the target app actually reads the transcript, instead of after a
@@ -1929,7 +1934,12 @@ detail: string | null }
 /**
  * The frontend maps each code to its text in `src/lib/notices.ts`.
  */
-export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "PasteBlockedElevated" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed" | "IdeaSaveFailed" | "CallNamesNeedScreen"
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "PasteBlockedElevated" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed" | "IdeaSaveFailed" | "CallNamesNeedScreen" | 
+/**
+ * Linux: Bolke isn't allowed to read the keyboard, so its shortcuts
+ * can't work.
+ */
+"ShortcutNeedsKeyboard"
 export type NoticeLevel = 
 /**
  * Nothing came out, or Bolke can't do its job.
@@ -1944,7 +1954,15 @@ export type NoticeLevel =
  * overlay: a file job finishes while the user is doing something else, and
  * `Model` is a switch the user made in Settings or the tray.
  */
-export type NoticeSource = "dictation" | "file" | "model" | "meeting"
+export type NoticeSource = "dictation" | "file" | "model" | 
+/**
+ * A meeting being recorded.
+ */
+"meeting" | 
+/**
+ * The keyboard shortcuts.
+ */
+"shortcut"
 export type NoticesChanged = { 
 /**
  * Every active notice, newest first.

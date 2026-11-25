@@ -1,0 +1,5 @@
+# Bolke's shortcut reads the keyboard itself, so it works on every Linux
+# desktop, Wayland included. This lets the person sitting at the computer
+# (the active login, not other users or remote logins) read keyboards.
+# Number 70 so it runs before systemd's 73-seat-late.rules applies "uaccess".
+SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}=="1", TAG+="uaccess"
