@@ -62,19 +62,21 @@ mod mac {
     }
 
     const LOOK_EVERY: Duration = Duration::from_millis(500);
+    /// Slower while no call window is to be found, to spare the battery.
+    const LOOK_FOR_WINDOW_EVERY: Duration = Duration::from_secs(2);
     /// How often to check again while Screen Recording isn't allowed.
     const ASK_AGAIN: Duration = Duration::from_secs(5);
     /// A pause shorter than this is the same stretch of talking.
     const GAP_MS: i64 = 900;
-    /// Looking stops after this long whatever happens...
+    /// Looking stops once the call has been seen this long...
     const AT_MOST: Duration = Duration::from_secs(15 * 60);
-    /// ...or, after this long, once nobody new has shown up for a while and
-    /// everyone seen has talked enough for their voice to be matched.
+    /// ...or, once it's been seen this long, when nobody new has shown up for
+    /// a while and everyone seen has talked enough for their voice to be
+    /// matched. Until then Bolke keeps looking for the call all meeting: it
+    /// may only come into view now and then.
     const AT_LEAST: Duration = Duration::from_secs(4 * 60);
     const NOBODY_NEW: Duration = Duration::from_secs(3 * 60);
     const ENOUGH_TALK_MS: i64 = 15_000;
-    /// The window must stay out of view this long before Bolke gives up.
-    const NO_WINDOW_FOR: Duration = Duration::from_secs(5 * 60);
 
     #[derive(Deserialize)]
     struct Frame {
@@ -116,10 +118,16 @@ mod mac {
             if writeln!(out, "{text}").and_then(|_| out.flush()).is_err() {
                 return 0;
             }
-            if serde_json::from_str::<Frame>(&text).is_ok_and(|f| f.hopeless()) {
+            let frame = serde_json::from_str::<Frame>(&text).ok();
+            if frame.as_ref().is_some_and(|f| f.hopeless()) {
                 return 3;
             }
-            std::thread::sleep(LOOK_EVERY);
+            let seen = frame.is_some_and(|f| f.ok);
+            std::thread::sleep(if seen {
+                LOOK_EVERY
+            } else {
+                LOOK_FOR_WINDOW_EVERY
+            });
         }
     }
 
@@ -129,9 +137,9 @@ mod mac {
 
     /// What has been seen so far in this meeting.
     struct Seen {
-        started: Instant,
+        /// How long the call window has been in sight.
+        seen_for: Duration,
         last_new: Instant,
-        last_window: Instant,
         app: String,
         /// name -> (start, last seen) while talking.
         open: HashMap<String, (i64, i64)>,
@@ -145,9 +153,8 @@ mod mac {
         fn new() -> Self {
             let now = Instant::now();
             Self {
-                started: now,
+                seen_for: Duration::ZERO,
                 last_new: now,
-                last_window: now,
                 app: String::new(),
                 open: HashMap::new(),
                 talk: HashMap::new(),
@@ -161,7 +168,7 @@ mod mac {
         fn take(&mut self, frame: Frame) -> Option<&'static str> {
             let now = now_ms();
             if frame.ok {
-                self.last_window = Instant::now();
+                self.seen_for += LOOK_EVERY;
                 self.app = frame.app;
                 for name in frame.speaking {
                     if !self.people.contains(&name) {
@@ -191,19 +198,16 @@ mod mac {
         }
 
         fn time_to_stop(&self) -> Option<&'static str> {
-            let elapsed = self.started.elapsed();
-            if elapsed >= AT_MOST {
-                return Some("15 minutes passed");
-            }
-            if self.last_window.elapsed() >= NO_WINDOW_FOR {
-                return Some("no call window in view");
+            if self.seen_for >= AT_MOST {
+                return Some("the call was seen for 15 minutes");
             }
             let everyone_heard = !self.people.is_empty()
                 && self
                     .people
                     .iter()
                     .all(|p| self.talk.get(p).copied().unwrap_or(0) >= ENOUGH_TALK_MS);
-            if elapsed >= AT_LEAST && self.last_new.elapsed() >= NOBODY_NEW && everyone_heard {
+            if self.seen_for >= AT_LEAST && self.last_new.elapsed() >= NOBODY_NEW && everyone_heard
+            {
                 return Some("everyone has been heard");
             }
             None
@@ -304,9 +308,6 @@ mod mac {
             let why = loop {
                 if !call_names::wants_screen() {
                     break "the meeting ended or the add-on took over";
-                }
-                if seen.started.elapsed() >= AT_MOST {
-                    break "15 minutes passed";
                 }
                 let mut helper = match start_helper() {
                     Ok(h) => h,

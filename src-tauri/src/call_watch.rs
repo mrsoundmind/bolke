@@ -37,7 +37,13 @@ const KNOWN_APPS: &[(&[&str], &str)] = &[
     (&["google.chrome", "chrome"], "Chrome"),
     (&["microsoft.edge", "msedge"], "Edge"),
     (&["firefox", "mozilla"], "Firefox"),
+    (&["thebrowser.dia", "\\dia.exe"], "Dia"),
     (&["thebrowser", "\\arc.exe"], "Arc"),
+    (&["perplexity.comet", "\\comet.exe"], "Comet"),
+    (&["openai.atlas"], "ChatGPT Atlas"),
+    (&["kagi"], "Orion"),
+    (&["zen-browser", "zen.exe"], "Zen"),
+    (&["chromium"], "Chromium"),
     (&["brave"], "Brave"),
     (&["vivaldi"], "Vivaldi"),
     (&["opera"], "Opera"),
@@ -345,6 +351,8 @@ mod tests {
     #[test]
     fn call_apps_are_named_and_bolke_is_not() {
         assert_eq!(call_app_name("us.zoom.xos"), Some("Zoom"));
+        assert_eq!(call_app_name("company.thebrowser.dia"), Some("Dia"));
+        assert_eq!(call_app_name("company.thebrowser.Browser"), Some("Arc"));
         assert_eq!(
             call_app_name("com.microsoft.teams2"),
             Some("Microsoft Teams")

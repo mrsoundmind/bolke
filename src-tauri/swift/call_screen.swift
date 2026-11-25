@@ -16,6 +16,8 @@ private let browserIDs: Set<String> = [
   "company.thebrowser.Browser", "com.google.Chrome", "com.google.Chrome.beta",
   "com.microsoft.edgemac", "com.brave.Browser", "com.apple.Safari",
   "com.operasoftware.Opera", "com.vivaldi.Vivaldi", "org.chromium.Chromium",
+  "company.thebrowser.dia", "ai.perplexity.comet", "com.openai.atlas",
+  "com.kagi.kagimacOS", "app.zen-browser.zen", "org.mozilla.firefox",
 ]
 private let zoomIDs: Set<String> = ["us.zoom.xos"]
 private let teamsIDs: Set<String> = ["com.microsoft.teams2", "com.microsoft.teams"]
@@ -66,8 +68,10 @@ public func bolkeCallFrame() -> UnsafeMutablePointer<CChar>? {
 @available(macOS 14.0, *)
 private func look() async -> [String: Any] {
   guard
+    // Not only windows in view: the call may sit behind other apps or on
+    // another desktop while the user works.
     let content = try? await SCShareableContent.excludingDesktopWindows(
-      true, onScreenWindowsOnly: true)
+      true, onScreenWindowsOnly: false)
   else { return ["ok": false, "error": "no_windows"] }
   guard let (window, app) = callWindow(in: content.windows) else {
     return ["ok": false, "error": "no_call_window"]
@@ -97,11 +101,14 @@ private func look() async -> [String: Any] {
 @available(macOS 14.0, *)
 private func callWindow(in windows: [SCWindow]) -> (SCWindow, String)? {
   var best: (SCWindow, String, CGFloat)?
-  for w in windows where w.isOnScreen && w.frame.width >= 400 && w.frame.height >= 300 {
+  for w in windows where w.windowLayer == 0 && w.frame.width >= 400 && w.frame.height >= 300 {
     guard let id = w.owningApplication?.bundleIdentifier else { continue }
     let title = (w.title ?? "").lowercased()
     var app: String?
-    if browserIDs.contains(id), title.contains("meet") { app = "meet" }
+    // A browser window's title is its showing tab's: "Meet – …" for a call
+    // (not "Meeting notes"). A Meet tab hidden behind another tab can't be
+    // seen at all.
+    if browserIDs.contains(id), title.hasPrefix("meet ") { app = "meet" }
     if zoomIDs.contains(id), title.contains("zoom") { app = "zoom" }
     if teamsIDs.contains(id), title.contains("meeting") || title.contains("call") {
       app = "teams"
@@ -118,9 +125,9 @@ private struct Ring {
   var x0: Int, y0: Int, x1: Int, y1: Int
 }
 
-/// Finds hollow rectangles drawn in one bright, saturated colour: the ring
-/// a call puts around whoever is talking (blue in Meet, green or yellow in
-/// Zoom, purple in Teams). Filled buttons and plain borders don't count.
+/// Finds hollow rectangles drawn in one bright colour: the ring a call puts
+/// around whoever is talking (pale blue in Meet, green or yellow in Zoom,
+/// purple in Teams). Filled buttons and plain borders don't count.
 private func talkingRings(in image: CGImage) -> [Ring] {
   // Work on a copy at most 960 wide.
   let scale = min(1.0, 960.0 / Double(image.width))
@@ -140,7 +147,7 @@ private func talkingRings(in image: CGImage) -> [Ring] {
   for i in 0..<(w * h) {
     let r = Float(px[i * 4]) / 255, g = Float(px[i * 4 + 1]) / 255, b = Float(px[i * 4 + 2]) / 255
     let mx = max(r, g, b), mn = min(r, g, b), d = mx - mn
-    guard mx >= 0.55, d / mx >= 0.33 else { continue }
+    guard mx >= 0.55, d / mx >= 0.2 else { continue }
     var hh: Float
     if mx == r { hh = 60 * ((g - b) / d).truncatingRemainder(dividingBy: 6) }
     else if mx == g { hh = 60 * ((b - r) / d + 2) }
